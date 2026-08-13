@@ -1,0 +1,136 @@
+import React, { useState } from 'react';
+import { Head, router, usePage } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { FileCheck, Download, Eye, ArrowRight, X } from 'lucide-react';
+
+const STATUS_CONFIG = {
+    DRAFT:       { label: 'Draft',         color: 'bg-gray-100 text-gray-600',      dot: 'bg-gray-400' },
+    SUBMITTED:   { label: 'Disubmit',      color: 'bg-blue-100 text-blue-700',      dot: 'bg-blue-500' },
+    IN_REVIEW:   { label: 'Sedang Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'Revisi Submit', color: 'bg-indigo-100 text-indigo-700',  dot: 'bg-indigo-500' },
+    APPROVED:    { label: 'Disetujui',     color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    REVISION:    { label: 'Perlu Revisi',  color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
+    REJECTED:    { label: 'Ditolak',       color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
+};
+
+function StatusBadge({ status }) {
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+            {cfg.label}
+        </span>
+    );
+}
+
+function Toast({ flash }) {
+    const [visible, setVisible] = useState(true);
+    if (!visible || (!flash?.success && !flash?.error)) return null;
+    return (
+        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm ${flash.success ? 'bg-emerald-600' : 'bg-red-600'}`}>
+            <span className="flex-1">{flash.success || flash.error}</span>
+            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
+        </div>
+    );
+}
+
+const STATUS_FILTERS = ['', 'SUBMITTED', 'IN_REVIEW', 'RESUBMITTED', 'APPROVED', 'REVISION', 'REJECTED'];
+
+export default function VerifikatorSoalIndex({ soalList, filters }) {
+    const { flash } = usePage().props;
+    const [statusFilter, setStatusFilter] = useState(filters?.status || '');
+
+    const handleFilter = (s) => {
+        setStatusFilter(s);
+        router.get('/verifikator/soal', { status: s }, { preserveState: true });
+    };
+
+    return (
+        <AuthenticatedLayout title="Verifikasi Soal">
+            <Head title="Verifikasi Soal" />
+            <Toast flash={flash} />
+
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
+                        <FileCheck className="w-6 h-6 text-[#801720]" /> Verifikasi Soal
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-0.5">Review dan berikan keputusan verifikasi pada soal yang masuk</p>
+                </div>
+
+                {/* Status Filter */}
+                <div className="flex gap-2 flex-wrap">
+                    {STATUS_FILTERS.map(s => (
+                        <button key={s} onClick={() => handleFilter(s)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${statusFilter === s ? 'bg-[#801720] text-white border-[#801720]' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                            {s || 'Menunggu Review'}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase">No</th>
+                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase">Judul Soal</th>
+                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase">Mata Kuliah</th>
+                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase">Diunggah oleh</th>
+                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase">Status</th>
+                                    <th className="text-right px-5 py-3.5 text-xs font-bold text-gray-500 uppercase">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {soalList.data?.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-16">
+                                            <FileCheck className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                            <p className="text-gray-400 text-sm">Tidak ada soal untuk ditampilkan</p>
+                                        </td>
+                                    </tr>
+                                ) : soalList.data?.map((soal, idx) => (
+                                    <tr key={soal.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-5 py-4 text-gray-500 text-xs">{(soalList.current_page - 1) * soalList.per_page + idx + 1}</td>
+                                        <td className="px-5 py-4">
+                                            <p className="font-semibold text-gray-800 text-xs">{soal.judul}</p>
+                                            <p className="text-[10px] text-gray-400">{soal.kategori?.nama}</p>
+                                        </td>
+                                        <td className="px-5 py-4 text-xs text-gray-700">{soal.mata_kuliah?.nama_mk}</td>
+                                        <td className="px-5 py-4 text-xs text-gray-600">{soal.uploaded_by?.name}</td>
+                                        <td className="px-5 py-4"><StatusBadge status={soal.status} /></td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center justify-end gap-1.5">
+                                                <a href={`/verifikator/soal/${soal.id}/download`}
+                                                    className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg" title="Download">
+                                                    <Download className="w-3.5 h-3.5" />
+                                                </a>
+                                                <a href={`/verifikator/soal/${soal.id}`}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 bg-[#801720] text-white rounded-lg text-xs font-semibold hover:bg-[#6a1219] transition-colors">
+                                                    <Eye className="w-3 h-3" /> Review
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {soalList.last_page > 1 && (
+                        <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                            <span>Menampilkan {soalList.from}–{soalList.to} dari {soalList.total} data</span>
+                            <div className="flex gap-1">
+                                {soalList.links?.map((link, i) => (
+                                    <button key={i} disabled={!link.url}
+                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
+                                        className={`px-2.5 py-1 rounded-lg font-semibold ${link.active ? 'bg-[#801720] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}
+                                        dangerouslySetInnerHTML={{ __html: link.label }} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </AuthenticatedLayout>
+    );
+}
