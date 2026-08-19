@@ -2,18 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Clo extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasUuids;
 
     protected $table = 'clo';
     protected $keyType = 'string';
     public $incrementing = false;
 
-    protected $fillable = ['kode_clo', 'deskripsi'];
+    protected $fillable = ['kode_clo', 'deskripsi', 'bloom'];
 
     public function mataKuliah()
     {

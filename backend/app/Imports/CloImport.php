@@ -3,27 +3,37 @@
 namespace App\Imports;
 
 use App\Models\Clo;
-use Illuminate\Support\Str;
-use Maatwebsite\Excel\Concerns\ToModel;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
 
-class CloImport implements ToModel, WithHeadingRow, WithValidation
+class CloImport implements ToCollection, WithHeadingRow
 {
-    public function model(array $row)
+    public function collection(Collection $rows)
     {
-        return new Clo([
-            'id'        => (string) Str::uuid(),
-            'kode_clo'  => trim($row['kode_clo']),
-            'deskripsi' => trim($row['deskripsi']),
-        ]);
-    }
+        foreach ($rows as $row) {
+            $kodeClo    = trim($row['kode_clo'] ?? '');
+            $deskripsi  = trim($row['deskripsi'] ?? '');
 
-    public function rules(): array
-    {
-        return [
-            'kode_clo'  => ['required', 'string', 'unique:clo,kode_clo'],
-            'deskripsi' => ['required', 'string'],
-        ];
+            if ($kodeClo === '' || $deskripsi === '') {
+                continue;
+            }
+
+            $clo = Clo::withTrashed()->where('kode_clo', $kodeClo)->first();
+
+            if ($clo) {
+                if ($clo->trashed()) {
+                    $clo->restore();
+                }
+                $clo->update(['deskripsi' => $deskripsi]);
+            } else {
+                Clo::create([
+                    'kode_clo'  => $kodeClo,
+                    'deskripsi' => $deskripsi,
+                ]);
+            }
+        }
     }
 }
+
+

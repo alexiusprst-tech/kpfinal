@@ -137,6 +137,38 @@ class PeriodeController extends Controller
 
     public function store(Request $request)
     {
+        $tahunAjaranInput = $request->input('tahun_ajaran') ?? $request->input('tahun_ajaran_nama') ?? $request->input('tahun_ajaran_id');
+        $tahunAjaranId = null;
+
+        if ($tahunAjaranInput) {
+            if (Str::isUuid($tahunAjaranInput)) {
+                $ta = TahunAjaran::find($tahunAjaranInput);
+                if ($ta) {
+                    $tahunAjaranId = $ta->id;
+                }
+            }
+
+            if (!$tahunAjaranId) {
+                $ta = TahunAjaran::where('nama', $tahunAjaranInput)->first();
+                if (!$ta) {
+                    preg_match('/(\d{4})\s*[\/-]\s*(\d{4})/', $tahunAjaranInput, $matches);
+                    $tahunMulai = isset($matches[1]) ? (int) $matches[1] : (int) date('Y');
+                    $tahunSelesai = isset($matches[2]) ? (int) $matches[2] : $tahunMulai + 1;
+
+                    $ta = TahunAjaran::create([
+                        'id'            => (string) Str::uuid(),
+                        'nama'          => $tahunAjaranInput,
+                        'tahun_mulai'   => $tahunMulai,
+                        'tahun_selesai' => $tahunSelesai,
+                        'status'        => 'ACTIVE',
+                    ]);
+                }
+                $tahunAjaranId = $ta->id;
+            }
+        }
+
+        $request->merge(['tahun_ajaran_id' => $tahunAjaranId]);
+
         $validated = $request->validate([
             'tahun_ajaran_id'  => ['required', 'exists:tahun_ajaran,id'],
             'nama'             => ['required', 'string', 'max:100'],
@@ -144,6 +176,9 @@ class PeriodeController extends Controller
             'tanggal_selesai'  => ['required', 'date', 'after:tanggal_mulai'],
             'deadline_upload'  => ['required', 'date'],
             'catatan'          => ['nullable', 'string', 'max:2000'],
+        ], [
+            'tahun_ajaran_id.required' => 'Tahun ajaran wajib diisi.',
+            'tahun_ajaran_id.exists'   => 'Tahun ajaran tidak valid.',
         ]);
 
         $item = PeriodeVerifikasi::create(['id' => (string) Str::uuid()] + $validated + ['status' => 'DRAFT']);
@@ -153,7 +188,35 @@ class PeriodeController extends Controller
 
     public function update(Request $request, PeriodeVerifikasi $periode)
     {
+        $tahunAjaranInput = $request->input('tahun_ajaran') ?? $request->input('tahun_ajaran_nama') ?? $request->input('tahun_ajaran_id');
+        if ($tahunAjaranInput) {
+            $tahunAjaranId = null;
+            if (Str::isUuid($tahunAjaranInput)) {
+                $ta = TahunAjaran::find($tahunAjaranInput);
+                if ($ta) $tahunAjaranId = $ta->id;
+            }
+            if (!$tahunAjaranId) {
+                $ta = TahunAjaran::where('nama', $tahunAjaranInput)->first();
+                if (!$ta) {
+                    preg_match('/(\d{4})\s*[\/-]\s*(\d{4})/', $tahunAjaranInput, $matches);
+                    $tahunMulai = isset($matches[1]) ? (int) $matches[1] : (int) date('Y');
+                    $tahunSelesai = isset($matches[2]) ? (int) $matches[2] : $tahunMulai + 1;
+
+                    $ta = TahunAjaran::create([
+                        'id'            => (string) Str::uuid(),
+                        'nama'          => $tahunAjaranInput,
+                        'tahun_mulai'   => $tahunMulai,
+                        'tahun_selesai' => $tahunSelesai,
+                        'status'        => 'ACTIVE',
+                    ]);
+                }
+                $tahunAjaranId = $ta->id;
+            }
+            $request->merge(['tahun_ajaran_id' => $tahunAjaranId]);
+        }
+
         $validated = $request->validate([
+            'tahun_ajaran_id' => ['nullable', 'exists:tahun_ajaran,id'],
             'nama'            => ['required', 'string', 'max:100'],
             'tanggal_mulai'   => ['required', 'date'],
             'tanggal_selesai' => ['required', 'date'],
@@ -162,7 +225,7 @@ class PeriodeController extends Controller
         ]);
 
         $old = $periode->toArray();
-        $periode->update($validated);
+        $periode->update(array_filter($validated, fn($v) => !is_null($v)));
         AuditLog::record($request->user()->id, 'UPDATE_PERIODE', 'PeriodeVerifikasi', $periode->id, $old, $periode->toArray());
         return redirect()->back()->with('success', 'Periode Verifikasi berhasil diperbarui.');
     }

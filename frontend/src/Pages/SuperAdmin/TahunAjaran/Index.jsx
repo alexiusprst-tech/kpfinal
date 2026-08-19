@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
@@ -31,6 +31,46 @@ function Modal({ open, onClose, title, children }) {
                 <div className="p-5">{children}</div>
             </div>
         </div>
+    );
+}
+
+function TahunAjaranForm({ form, setForm, onSubmit, processing, editItem }) {
+    return (
+        <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Nama Tahun Ajaran <span className="text-red-500">*</span></label>
+                <input type="text" value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none"
+                    placeholder="Contoh: 2026/2027" required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Tahun Mulai</label>
+                    <input type="number" min="2000" max="2100" value={form.tahun_mulai} onChange={e => setForm(f => ({ ...f, tahun_mulai: +e.target.value }))}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none" required />
+                </div>
+                <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Tahun Selesai</label>
+                    <input type="number" min="2000" max="2100" value={form.tahun_selesai} onChange={e => setForm(f => ({ ...f, tahun_selesai: +e.target.value }))}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none" required />
+                </div>
+            </div>
+            {editItem && (
+                <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Status</label>
+                    <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                    </select>
+                </div>
+            )}
+            <div className="flex justify-end pt-2">
+                <button type="submit" disabled={processing} className="px-5 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-60 cursor-pointer">
+                    {processing ? 'Menyimpan...' : 'Simpan'}
+                </button>
+            </div>
+        </form>
     );
 }
 
@@ -96,6 +136,18 @@ export default function TahunAjaranIndex({ list, stats, filters, selectedTahunAj
     const [detailTab, setDetailTab] = useState('periode');
     const [search, setSearch] = useState(filters?.search || '');
 
+    // Real-time reactive search with 300ms debounce
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const currentSearch = filters?.search || '';
+            if (search !== currentSearch) {
+                applyFilters({ search });
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
     const currentYear = new Date().getFullYear();
     const today = new Date().toISOString().substring(0, 10);
     const [form, setForm] = useState({ nama: '', tahun_mulai: currentYear, tahun_selesai: currentYear + 1, status: 'ACTIVE' });
@@ -139,43 +191,7 @@ export default function TahunAjaranIndex({ list, stats, filters, selectedTahunAj
         });
     };
 
-    const FormFields = ({ onSubmit }) => (
-        <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Nama Tahun Ajaran <span className="text-red-500">*</span></label>
-                <input type="text" value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none"
-                    placeholder="Contoh: 2026/2027" required />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-                <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Tahun Mulai</label>
-                    <input type="number" min="2000" max="2100" value={form.tahun_mulai} onChange={e => setForm(f => ({ ...f, tahun_mulai: +e.target.value }))}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none" required />
-                </div>
-                <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Tahun Selesai</label>
-                    <input type="number" min="2000" max="2100" value={form.tahun_selesai} onChange={e => setForm(f => ({ ...f, tahun_selesai: +e.target.value }))}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none" required />
-                </div>
-            </div>
-            {editItem && (
-                <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Status</label>
-                    <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none">
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="INACTIVE">INACTIVE</option>
-                    </select>
-                </div>
-            )}
-            <div className="flex justify-end pt-2">
-                <button type="submit" disabled={processing} className="px-5 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-60">
-                    {processing ? 'Menyimpan...' : 'Simpan'}
-                </button>
-            </div>
-        </form>
-    );
+
 
     const st = selectedTahunAjaran?.statistik;
 
@@ -204,7 +220,7 @@ export default function TahunAjaranIndex({ list, stats, filters, selectedTahunAj
 
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap gap-2 flex-1">
-                                <form onSubmit={e => { e.preventDefault(); applyFilters({ search }); }} className="relative flex-1 min-w-[180px]">
+                                <form onSubmit={e => e.preventDefault()} className="relative flex-1 min-w-[180px]">
                                     <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                     <input
                                         value={search}
@@ -264,7 +280,7 @@ export default function TahunAjaranIndex({ list, stats, filters, selectedTahunAj
                                                 <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
                                                     <div className="flex items-center justify-end gap-1">
                                                         <Link href={`/superadmin/tahun-ajaran/${item.id}`} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"><Eye className="w-3.5 h-3.5" /></Link>
-                                                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-amber-50 text-amber-600 rounded-lg"><Pencil className="w-3.5 h-3.5" /></button>
+                                                        <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
                                                         <button onClick={() => setDeleteItem(item)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
                                                     </div>
                                                 </td>
@@ -458,10 +474,22 @@ export default function TahunAjaranIndex({ list, stats, filters, selectedTahunAj
             </div>
 
             <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Tambah Tahun Ajaran">
-                <FormFields onSubmit={handleAdd} />
+                <TahunAjaranForm
+                    form={form}
+                    setForm={setForm}
+                    onSubmit={handleAdd}
+                    processing={processing}
+                    editItem={null}
+                />
             </Modal>
             <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Edit Tahun Ajaran">
-                <FormFields onSubmit={handleEdit} />
+                <TahunAjaranForm
+                    form={form}
+                    setForm={setForm}
+                    onSubmit={handleEdit}
+                    processing={processing}
+                    editItem={editItem}
+                />
             </Modal>
             <Modal open={!!deleteItem} onClose={() => setDeleteItem(null)} title="Hapus Tahun Ajaran">
                 <div className="flex items-start gap-3 mb-5">

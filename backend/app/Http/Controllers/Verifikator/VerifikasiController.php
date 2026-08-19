@@ -44,6 +44,16 @@ class VerifikasiController extends Controller
 
         AuditLog::record($user->id, "VERIFIKASI_{$validated['action']}", 'Soal', $soal->id, null, ['action' => $validated['action']]);
 
+        $actionText = match ($validated['action']) {
+            'APPROVED' => 'Disetujui',
+            'REVISION' => 'Perlu Revisi',
+            'REJECTED' => 'Ditolak',
+        };
+        $soal->notifyCoordinator(
+            'Verifikasi Soal Selesai',
+            "Soal \"" . $soal->judul . "\" untuk mata kuliah " . ($soal->mataKuliah?->nama_mk ?? '') . " telah " . $actionText . " oleh Verifikator " . $user->name . "."
+        );
+
         return redirect()->back()->with('success', "Soal berhasil di-{$validated['action']}.");
     }
 }

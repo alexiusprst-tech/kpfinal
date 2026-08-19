@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 import { Head, useForm, router } from '@inertiajs/react';
-import { Users, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, UserCheck, FileCheck, ShieldAlert, AlertTriangle, X, Filter } from 'lucide-react';
+import { 
+    Users, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, 
+    UserCheck, FileCheck, ShieldAlert, AlertTriangle, X, Filter,
+    UserMinus, ShieldOff, BookOpen, Calendar, AlertCircle
+} from 'lucide-react';
 
 export default function Index({ dosenList, filters }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -9,6 +13,9 @@ export default function Index({ dosenList, filters }) {
     const [status, setStatus] = useState(filters.status || '');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editDosen, setEditDosen] = useState(null);
+    const [deleteDosen, setDeleteDosen] = useState(null);
+    const [revokeDosen, setRevokeDosen] = useState(null);
+    const [isRevoking, setIsRevoking] = useState(false);
 
     // Real-time reactive search & filtering with 250ms debounce
     useEffect(() => {
@@ -83,8 +90,6 @@ export default function Index({ dosenList, filters }) {
         });
     };
 
-    const [deleteDosen, setDeleteDosen] = useState(null);
-
     const handleConfirmDelete = () => {
         if (!deleteDosen) return;
         router.delete(`/superadmin/dosen/${deleteDosen.id}`, {
@@ -92,6 +97,29 @@ export default function Index({ dosenList, filters }) {
                 setDeleteDosen(null);
             },
         });
+    };
+
+    const handleRevokeAssignment = (type, penugasanId = null, penugasanType = null) => {
+        if (!revokeDosen) return;
+        setIsRevoking(true);
+        router.post(
+            `/superadmin/dosen/${revokeDosen.id}/cabut-penugasan`,
+            {
+                type,
+                penugasan_id: penugasanId,
+                penugasan_type: penugasanType,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setRevokeDosen(null);
+                    setIsRevoking(false);
+                },
+                onError: () => {
+                    setIsRevoking(false);
+                },
+            }
+        );
     };
 
     return (
@@ -103,7 +131,7 @@ export default function Index({ dosenList, filters }) {
                 <div>
                     <h1 className="text-2xl font-extrabold text-[#1E293B] tracking-tight">Manajemen Dosen</h1>
                     <p className="text-xs sm:text-sm text-[#64748B] font-medium">
-                        Kelola data master dosen dan pembuatan akun autentikasi sistem secara real-time.
+                        Kelola data master dosen, hak akses penugasan, dan pencabutan peran secara real-time.
                     </p>
                 </div>
 
@@ -228,76 +256,89 @@ export default function Index({ dosenList, filters }) {
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-[#1E293B] font-medium">
                             {dosenList.data.length > 0 ? (
-                                dosenList.data.map((dosen) => (
-                                    <tr key={dosen.id} className="hover:bg-slate-50/80 transition-colors">
-                                        <td className="p-4 font-bold text-[#801720]">{dosen.kode_dosen}</td>
-                                        <td className="p-4 font-bold">{dosen.nama_lengkap}</td>
-                                        <td className="p-4">
-                                            <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] ${dosen.kategori_dosen === 'LB' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-purple-50 text-purple-700 border border-purple-200'}`}>
-                                                {dosen.kategori_dosen || 'Dosen Tetap'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-slate-500">{dosen.email || '-'}</td>
-                                        <td className="p-4">
-                                            <div className="flex flex-wrap gap-1">
-                                                {dosen.user?.role === 'SUPER_ADMIN' && (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-white font-bold text-[10px]">
-                                                        <ShieldAlert className="w-3 h-3 text-red-400" />
-                                                        SUPER ADMIN
-                                                    </span>
-                                                )}
-                                                {dosen.active_koordinator_count > 0 && (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200">
-                                                        <UserCheck className="w-3 h-3" />
-                                                        KOORDINATOR
-                                                    </span>
-                                                )}
-                                                {dosen.active_verifikator_count > 0 && (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-[10px] border border-indigo-200">
-                                                        <FileCheck className="w-3 h-3" />
-                                                        VERIFIKATOR
-                                                    </span>
-                                                )}
-                                                {!(dosen.active_koordinator_count > 0) && !(dosen.active_verifikator_count > 0) && dosen.user?.role !== 'SUPER_ADMIN' && (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-semibold text-[10px]">
-                                                        Belum Ditugaskan
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            {dosen.status === 'ACTIVE' ? (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px]">
-                                                    <CheckCircle className="w-3 h-3" />
-                                                    ACTIVE
+                                dosenList.data.map((dosen) => {
+                                    const hasAssignments = (dosen.active_koordinator_count > 0) || (dosen.active_verifikator_count > 0);
+
+                                    return (
+                                        <tr key={dosen.id} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="p-4 font-bold text-[#801720]">{dosen.kode_dosen}</td>
+                                            <td className="p-4 font-bold">{dosen.nama_lengkap}</td>
+                                            <td className="p-4">
+                                                <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] ${dosen.kategori_dosen === 'LB' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-purple-50 text-purple-700 border border-purple-200'}`}>
+                                                    {dosen.kategori_dosen || 'Dosen Tetap'}
                                                 </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-bold text-[10px]">
-                                                    <XCircle className="w-3 h-3" />
-                                                    INACTIVE
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="p-4 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button 
-                                                    onClick={() => handleEditOpen(dosen)}
-                                                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
-                                                    title="Edit"
-                                                >
-                                                    <Edit2 className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button 
-                                                    onClick={() => setDeleteDosen(dosen)}
-                                                    className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
-                                                    title="Hapus"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                            <td className="p-4 text-slate-500">{dosen.email || '-'}</td>
+                                            <td className="p-4">
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {dosen.user?.role === 'SUPER_ADMIN' && (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-white font-bold text-[10px]">
+                                                            <ShieldAlert className="w-3 h-3 text-red-400" />
+                                                            SUPER ADMIN
+                                                        </span>
+                                                    )}
+                                                    {dosen.active_koordinator_count > 0 && (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200">
+                                                            <UserCheck className="w-3 h-3" />
+                                                            KOORDINATOR ({dosen.active_koordinator_count})
+                                                        </span>
+                                                    )}
+                                                    {dosen.active_verifikator_count > 0 && (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-[10px] border border-indigo-200">
+                                                            <FileCheck className="w-3 h-3" />
+                                                            VERIFIKATOR ({dosen.active_verifikator_count})
+                                                        </span>
+                                                    )}
+                                                    {!hasAssignments && dosen.user?.role !== 'SUPER_ADMIN' && (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-semibold text-[10px]">
+                                                            Belum Ditugaskan
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                {dosen.status === 'ACTIVE' ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px]">
+                                                        <CheckCircle className="w-3 h-3" />
+                                                        ACTIVE
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-bold text-[10px]">
+                                                        <XCircle className="w-3 h-3" />
+                                                        INACTIVE
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    {hasAssignments && (
+                                                        <button 
+                                                            onClick={() => setRevokeDosen(dosen)}
+                                                            className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors cursor-pointer"
+                                                            title="Cabut Penugasan (Koordinator / Verifikator)"
+                                                        >
+                                                            <UserMinus className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => handleEditOpen(dosen)}
+                                                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                                                        title="Edit"
+                                                    >
+                                                        <Edit2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setDeleteDosen(dosen)}
+                                                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
+                                                        title="Hapus"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
                                     <td colSpan="7" className="p-8 text-center text-slate-400 font-semibold">
@@ -358,10 +399,11 @@ export default function Index({ dosenList, filters }) {
                                     type="text"
                                     value={createForm.data.nama_lengkap}
                                     onChange={(e) => createForm.setData('nama_lengkap', e.target.value)}
-                                    placeholder="Lengkap dengan gelar"
+                                    placeholder="Contoh: Dr. Budi Santoso, M.Kom."
                                     required
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
                                 />
+                                {createForm.errors.nama_lengkap && <p className="text-[10px] text-red-600 mt-1">{createForm.errors.nama_lengkap}</p>}
                             </div>
 
                             <div>
@@ -370,9 +412,10 @@ export default function Index({ dosenList, filters }) {
                                     type="email"
                                     value={createForm.data.email}
                                     onChange={(e) => createForm.setData('email', e.target.value)}
-                                    placeholder="dosen@telkomuniversity.ac.id"
+                                    placeholder="Contoh: budi@telkomuniversity.ac.id"
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
                                 />
+                                {createForm.errors.email && <p className="text-[10px] text-red-600 mt-1">{createForm.errors.email}</p>}
                             </div>
 
                             <div>
@@ -387,7 +430,7 @@ export default function Index({ dosenList, filters }) {
                                 </select>
                             </div>
 
-                            <div className="pt-2 border-t border-slate-100">
+                            <div className="pt-2 border-t border-slate-100 space-y-3">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input 
                                         type="checkbox"
@@ -395,23 +438,28 @@ export default function Index({ dosenList, filters }) {
                                         onChange={(e) => createForm.setData('create_user', e.target.checked)}
                                         className="rounded border-slate-300 text-[#801720] focus:ring-[#801720]"
                                     />
-                                    <span className="text-xs font-bold text-slate-700">Buatkan Akun User Aplikasi</span>
+                                    <span className="text-xs font-bold text-slate-700">Buat Akun User Sekaligus</span>
                                 </label>
-                            </div>
 
-                            {createForm.data.create_user && (
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Role Akun</label>
-                                    <select 
-                                        value={createForm.data.role}
-                                        onChange={(e) => createForm.setData('role', e.target.value)}
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
-                                    >
-                                        <option value="KOORDINATOR">KOORDINATOR (Dosen MK)</option>
-                                        <option value="VERIFIKATOR">VERIFIKATOR (Dosen Verifikator)</option>
-                                    </select>
-                                </div>
-                            )}
+                                {createForm.data.create_user && (
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 animate-in fade-in duration-200">
+                                        <p className="text-[10px] text-slate-500">
+                                            Password default: <code className="bg-white px-1 py-0.5 rounded text-[#801720] font-bold">password</code>
+                                        </p>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">Role Akun</label>
+                                            <select 
+                                                value={createForm.data.role}
+                                                onChange={(e) => createForm.setData('role', e.target.value)}
+                                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                            >
+                                                <option value="KOORDINATOR">Koordinator</option>
+                                                <option value="VERIFIKATOR">Verifikator</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="flex justify-end gap-2 pt-4">
                                 <button 
@@ -426,7 +474,7 @@ export default function Index({ dosenList, filters }) {
                                     disabled={createForm.processing}
                                     className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]"
                                 >
-                                    Simpan
+                                    Simpan Dosen
                                 </button>
                             </div>
                         </form>
@@ -450,6 +498,7 @@ export default function Index({ dosenList, filters }) {
                                     required
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
                                 />
+                                {editForm.errors.kode_dosen && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.kode_dosen}</p>}
                             </div>
 
                             <div>
@@ -461,6 +510,7 @@ export default function Index({ dosenList, filters }) {
                                     required
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
                                 />
+                                {editForm.errors.nama_lengkap && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.nama_lengkap}</p>}
                             </div>
 
                             <div>
@@ -471,6 +521,7 @@ export default function Index({ dosenList, filters }) {
                                     onChange={(e) => editForm.setData('email', e.target.value)}
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
                                 />
+                                {editForm.errors.email && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.email}</p>}
                             </div>
 
                             <div>
@@ -517,6 +568,7 @@ export default function Index({ dosenList, filters }) {
                     </div>
                 </div>
             )}
+
             {/* Custom UI Delete Confirmation Modal */}
             {deleteDosen && (
                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -547,6 +599,188 @@ export default function Index({ dosenList, filters }) {
                                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724] transition-colors shadow-md cursor-pointer"
                             >
                                 Ya, Hapus Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ================= MODAL CABUT PENUGASAN ================= */}
+            {revokeDosen && (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto space-y-5">
+                        
+                        {/* Header */}
+                        <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                                    <UserMinus className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-extrabold text-gray-900">Cabut Penugasan Dosen</h3>
+                                    <p className="text-xs text-gray-500">
+                                        Pilih penugasan yang ingin dicabut dari dosen ini.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setRevokeDosen(null)}
+                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Dosen Info Card */}
+                        <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <span className="font-extrabold text-sm text-[#801720] block">
+                                    {revokeDosen.kode_dosen}
+                                </span>
+                                <span className="text-xs font-bold text-gray-800">
+                                    {revokeDosen.nama_lengkap}
+                                </span>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                                {revokeDosen.email || 'Tanpa Email'}
+                            </span>
+                        </div>
+
+                        {/* 1. Active Koordinator Assignments */}
+                        {revokeDosen.penugasan_koordinator && revokeDosen.penugasan_koordinator.length > 0 && (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-blue-900 uppercase">
+                                        <UserCheck className="w-4 h-4 text-blue-600" />
+                                        Penugasan Sebagai Koordinator ({revokeDosen.penugasan_koordinator.length})
+                                    </div>
+                                    <button
+                                        type="button"
+                                        disabled={isRevoking}
+                                        onClick={() => handleRevokeAssignment('KOORDINATOR')}
+                                        className="text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                                    >
+                                        Cabut Semua Koordinator
+                                    </button>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    {revokeDosen.penugasan_koordinator.map((penugasan) => (
+                                        <div 
+                                            key={penugasan.id}
+                                            className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl flex items-center justify-between text-xs"
+                                        >
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-extrabold text-blue-950">
+                                                        {penugasan.mata_kuliah?.kode_mk}
+                                                    </span>
+                                                    <span className="font-bold text-gray-800">
+                                                        {penugasan.mata_kuliah?.nama_mk}
+                                                    </span>
+                                                </div>
+                                                <div className="text-[11px] text-gray-500 flex items-center gap-3">
+                                                    <span>Periode: {penugasan.periode?.nama_periode || '-'}</span>
+                                                    {penugasan.kelompok?.nama && (
+                                                        <span>Kelompok: {penugasan.kelompok.nama}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                disabled={isRevoking}
+                                                onClick={() => handleRevokeAssignment('SPECIFIC', penugasan.id, 'KOORDINATOR')}
+                                                className="px-2.5 py-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 ml-2"
+                                            >
+                                                Cabut MK Ini
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2. Active Verifikator Assignments */}
+                        {revokeDosen.penugasan_verifikator && revokeDosen.penugasan_verifikator.length > 0 && (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-indigo-900 uppercase">
+                                        <FileCheck className="w-4 h-4 text-indigo-600" />
+                                        Penugasan Sebagai Verifikator ({revokeDosen.penugasan_verifikator.length})
+                                    </div>
+                                    <button
+                                        type="button"
+                                        disabled={isRevoking}
+                                        onClick={() => handleRevokeAssignment('VERIFIKATOR')}
+                                        className="text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                                    >
+                                        Cabut Semua Verifikator
+                                    </button>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    {revokeDosen.penugasan_verifikator.map((penugasan) => (
+                                        <div 
+                                            key={penugasan.id}
+                                            className="p-3 bg-indigo-50/60 border border-indigo-200/80 rounded-xl flex items-center justify-between text-xs"
+                                        >
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-extrabold text-indigo-950">
+                                                        {penugasan.mata_kuliah?.kode_mk}
+                                                    </span>
+                                                    <span className="font-bold text-gray-800">
+                                                        {penugasan.mata_kuliah?.nama_mk}
+                                                    </span>
+                                                </div>
+                                                <div className="text-[11px] text-gray-500 flex items-center gap-3">
+                                                    <span>Periode: {penugasan.periode?.nama_periode || '-'}</span>
+                                                    {penugasan.kelompok?.nama && (
+                                                        <span>Kelompok: {penugasan.kelompok.nama}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                disabled={isRevoking}
+                                                onClick={() => handleRevokeAssignment('SPECIFIC', penugasan.id, 'VERIFIKATOR')}
+                                                className="px-2.5 py-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 ml-2"
+                                            >
+                                                Cabut MK Ini
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Notice */}
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900">
+                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                            <p>
+                                Mencabut penugasan akan mengakhiri akses dosen terhadap mata kuliah terkait. Jika seluruh penugasan dicabut, role akun akan disesuaikan secara otomatis.
+                            </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                            <button
+                                type="button"
+                                disabled={isRevoking}
+                                onClick={() => handleRevokeAssignment('ALL')}
+                                className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
+                            >
+                                {isRevoking ? 'Memproses...' : 'Cabut SEMUA Penugasan (Koor & Verifikator)'}
+                            </button>
+
+                            <button 
+                                type="button" 
+                                onClick={() => setRevokeDosen(null)}
+                                className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer text-center"
+                            >
+                                Tutup
                             </button>
                         </div>
                     </div>

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Dosen extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasUuids;
 
     protected $table = 'dosen';
     protected $keyType = 'string';
@@ -42,5 +44,15 @@ class Dosen extends Model
     public function beritaAcara()
     {
         return $this->hasMany(BeritaAcara::class, 'koordinator_id');
+    }
+
+    public function kelompokKoordinator()
+    {
+        return $this->hasMany(KelompokMataKuliah::class, 'koordinator_id');
+    }
+
+    public function kelompokVerifikator()
+    {
+        return $this->hasMany(KelompokVerifikator::class, 'dosen_id');
     }
 }

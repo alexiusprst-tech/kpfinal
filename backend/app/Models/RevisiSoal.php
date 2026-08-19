@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
 use Illuminate\Database\Eloquent\Model;
 
 class RevisiSoal extends Model
 {
+    use HasUuids;
     protected $table = 'revisi_soal';
     protected $keyType = 'string';
     public $incrementing = false;

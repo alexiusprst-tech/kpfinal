@@ -3,7 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     ArrowLeft, BookOpen, Target, FileText, Users, Activity as ActivityIcon,
-    Download, GraduationCap, FilePlus2, Eye, Pencil, Send, X, AlertTriangle,
+    Download, GraduationCap, FilePlus2, Eye, Pencil, Send, X, AlertTriangle, Sparkles
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -124,16 +124,24 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                     <Link href="/koordinator/dashboard" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720]">
                         <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Dashboard
                     </Link>
-                    {uploadOpen ? (
-                        <Link href={`/koordinator/soal/create?mata_kuliah_id=${mataKuliah.id}`}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219]">
-                            <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
-                        </Link>
-                    ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 text-gray-400 rounded-xl text-xs font-semibold cursor-not-allowed" title="Periode verifikasi tidak aktif atau deadline sudah lewat">
-                            <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
-                        </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {uploadOpen && (
+                            <Link href={`/koordinator/soal/create?mata_kuliah_id=${mataKuliah.id}&tab=generator`}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm transition-all duration-200">
+                                <Sparkles className="w-3.5 h-3.5" /> Generator Lembar Soal
+                            </Link>
+                        )}
+                        {uploadOpen ? (
+                            <Link href={`/koordinator/soal/create?mata_kuliah_id=${mataKuliah.id}`}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] shadow-sm transition-all duration-200">
+                                <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
+                            </Link>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 text-gray-400 rounded-xl text-xs font-semibold cursor-not-allowed" title="Periode verifikasi tidak aktif atau deadline sudah lewat">
+                                <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Informasi Mata Kuliah */}

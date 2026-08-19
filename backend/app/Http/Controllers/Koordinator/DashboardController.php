@@ -36,7 +36,7 @@ class DashboardController extends Controller
         $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
 
         $assignments = ($dosen && $activePeriod)
-            ? PenugasanKoordinator::with('mataKuliah.clo.plo')
+            ? PenugasanKoordinator::with(['mataKuliah.clo.plo', 'mataKuliah.plo', 'mataKuliah.clo'])
                 ->where('dosen_id', $dosen->id)
                 ->where('periode_id', $activePeriod->id)
                 ->where('status', 'ACTIVE')
@@ -105,6 +105,16 @@ class DashboardController extends Controller
                 'pending'    => $mkSoal->whereIn('status', self::PENDING_STATUSES)->count(),
                 'rejected'   => $mkSoal->where('status', Soal::STATUS_REJECTED)->count(),
                 'progress'   => $total > 0 ? (int) round(($approved / $total) * 100) : 0,
+                'plo'        => $a->mataKuliah?->plo ? $a->mataKuliah->plo->map(fn ($p) => [
+                    'id' => $p->id,
+                    'kode_plo' => $p->kode_plo,
+                    'deskripsi' => $p->deskripsi,
+                ])->values()->all() : [],
+                'clo'        => $a->mataKuliah?->clo ? $a->mataKuliah->clo->map(fn ($c) => [
+                    'id' => $c->id,
+                    'kode_clo' => $c->kode_clo,
+                    'deskripsi' => $c->deskripsi,
+                ])->values()->all() : [],
             ];
         })->values()->all();
     }

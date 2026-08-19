@@ -4,7 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     FileText, CheckCircle2, AlertTriangle, Eye, FilePlus2,
     LayoutDashboard, ArrowRight, BookOpen, Upload, Search, ChevronLeft, ChevronRight,
-    Users, Target, Activity as ActivityIcon, CalendarClock,
+    Users, Target, Activity as ActivityIcon, CalendarClock, Bell, ShieldCheck, Calendar,
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -79,7 +79,8 @@ const PROGRESS_ROWS = [
 const PER_PAGE = 5;
 
 export default function KoordinatorDashboard({ activePeriod, deadline, stats, mataKuliahList, attention, verifikators, cloPloOverview, activity }) {
-    const { auth } = usePage().props;
+    const { auth, notifications } = usePage().props;
+    const notifCount = notifications?.count || 0;
     const userName = auth?.user?.name || 'Koordinator';
     const kodeDosen = auth?.user?.dosen?.kode_dosen;
 
@@ -120,51 +121,67 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
             <Head title="Dashboard Koordinator" />
 
             <div className="space-y-6">
-                {/* Header */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
-                                <LayoutDashboard className="w-6 h-6 text-[#801720]" /> Dashboard Koordinator
-                            </h1>
-                            <p className="text-sm text-gray-500 mt-1">
-                                Selamat datang, <strong className="text-gray-700">{userName}</strong>
-                                {kodeDosen && <span className="text-gray-400"> · Kode Dosen: <strong className="text-gray-600">{kodeDosen}</strong></span>}
-                            </p>
-                        </div>
-
-                        {activePeriod ? (
-                            <div className="flex flex-wrap items-center gap-3">
-                                <div className="text-right">
-                                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wide">Periode</p>
-                                    <p className="text-sm font-extrabold text-gray-800">{activePeriod.nama}</p>
-                                </div>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Aktif
-                                </span>
-                            </div>
-                        ) : (
-                            <p className="text-sm text-amber-600 flex items-center gap-1.5">
-                                <AlertTriangle className="w-4 h-4" /> Tidak ada periode verifikasi yang aktif saat ini.
-                            </p>
+                {/* Header Row */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Dashboard Overview</h1>
+                        <p className="text-xs text-slate-500 font-semibold mt-0.5">Sistem penyusunan dan verifikasi soal oleh dosen koordinator</p>
+                    </div>
+                    <button 
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-notifications'))}
+                        className="relative p-2.5 bg-white rounded-xl border border-gray-200 shadow-xs hover:bg-slate-50 transition-colors text-slate-700 cursor-pointer"
+                        title="Notifikasi"
+                    >
+                        <Bell className="w-5 h-5 text-slate-700" />
+                        {notifCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white animate-pulse">
+                                {notifCount}
+                            </span>
                         )}
+                    </button>
+                </div>
+
+                {/* Banner Hero */}
+                <div className="relative overflow-hidden bg-gradient-to-r from-[#801720] via-[#9B1B26] to-[#B82332] text-white rounded-3xl p-6 lg:p-8 shadow-xl shadow-[#801720]/15">
+                    <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 pointer-events-none flex items-center justify-end pr-8">
+                        <BookOpen className="w-64 h-64 text-white" />
                     </div>
 
-                    {deadline && (
-                        <div className={`mt-4 rounded-xl px-4 py-3 text-sm flex items-center gap-2 ${
-                            deadline.is_past ? 'bg-red-50 text-red-700' : deadline.is_warning ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-600'
-                        }`}>
-                            <CalendarClock className="w-4 h-4 flex-shrink-0" />
-                            {deadline.is_past ? (
-                                <span>Periode verifikasi telah berakhir pada {formatDate(deadline.deadline)}.</span>
+                    <div className="relative z-10 max-w-3xl space-y-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white/90 text-xs font-semibold">
+                            <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+                            <span>Dosen Koordinator Mata Kuliah</span>
+                        </div>
+
+                        <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-white">
+                            Selamat Datang, {userName} 👋
+                        </h1>
+
+                        <p className="text-white/80 text-sm leading-relaxed font-normal">
+                            Kelola penyusunan soal ujian, petakan CPMK (CLO) ke CPL (PLO), serta unggah draf soal untuk diverifikasi oleh Dosen Verifikator guna menjamin mutu soal ujian.
+                        </p>
+
+                        <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-medium text-white/90">
+                            {activePeriod ? (
+                                <div className="flex items-center gap-2 bg-black/20 px-3.5 py-1.5 rounded-xl border border-white/10">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span>Periode Aktif: <strong className="text-white font-bold">{activePeriod.nama}</strong></span>
+                                </div>
                             ) : (
-                                <span>
-                                    Deadline: <strong>{formatDate(deadline.deadline)}</strong> — {deadline.sisa_hari} hari lagi.
-                                    {deadline.is_warning && <strong> Peringatan: periode verifikasi akan segera berakhir.</strong>}
-                                </span>
+                                <div className="flex items-center gap-2 bg-amber-500/30 text-amber-200 px-3.5 py-1.5 rounded-xl border border-amber-300/30">
+                                    <AlertTriangle className="w-4 h-4 text-amber-300" />
+                                    <span>Tidak ada periode verifikasi yang aktif</span>
+                                </div>
+                            )}
+
+                            {deadline && (
+                                <div className="flex items-center gap-2 bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/5">
+                                    <Calendar className="w-4 h-4 text-amber-300" />
+                                    <span>Deadline Upload: <strong className="text-white font-bold">{formatDate(deadline.deadline)}</strong> ({deadline.sisa_hari} hari lagi)</span>
+                                </div>
                             )}
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 {/* Summary Cards */}
@@ -254,6 +271,30 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                             <span className="text-emerald-600 font-semibold">{mk.approved} Approved</span>
                                             {mk.revision > 0 && <span className="text-amber-600 font-semibold">{mk.revision} Revision</span>}
                                             {mk.draft > 0 && <span className="text-gray-500 font-semibold">{mk.draft} Draft</span>}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100/60">
+                                            <div>
+                                                <p className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Mapping PLO</p>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {mk.plo && mk.plo.map((p) => (
+                                                        <span key={p.id} className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold text-[9px] border border-purple-100" title={p.deskripsi}>
+                                                            {p.kode_plo}
+                                                        </span>
+                                                    ))}
+                                                    {(!mk.plo || mk.plo.length === 0) && <span className="text-gray-400 text-[10px] font-normal">—</span>}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-extrabold uppercase text-gray-400 tracking-wider">Mapping CLO</p>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {mk.clo && mk.clo.map((c) => (
+                                                        <span key={c.id} className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[9px] border border-emerald-100" title={c.deskripsi}>
+                                                            {c.kode_clo}
+                                                        </span>
+                                                    ))}
+                                                    {(!mk.clo || mk.clo.length === 0) && <span className="text-gray-400 text-[10px] font-normal">—</span>}
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2 mt-3">
                                             <ProgressBar percent={mk.progress} />

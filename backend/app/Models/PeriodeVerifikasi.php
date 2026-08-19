@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
 use Illuminate\Database\Eloquent\Model;
 
 class PeriodeVerifikasi extends Model
 {
+    use HasUuids;
     protected $table = 'periode_verifikasi';
     protected $keyType = 'string';
     public $incrementing = false;
@@ -80,5 +83,10 @@ class PeriodeVerifikasi extends Model
     public function beritaAcara()
     {
         return $this->hasMany(BeritaAcara::class, 'periode_id');
+    }
+
+    public function kelompokVerifikasi()
+    {
+        return $this->hasMany(KelompokVerifikasi::class, 'periode_id');
     }
 }

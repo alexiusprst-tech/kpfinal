@@ -39,23 +39,29 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
     ->name('superadmin.')
     ->group(function () {
         Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/export-laporan', [SuperAdminDashboardController::class, 'exportLaporan'])->name('dashboard.export-laporan');
 
         // Dosen
+        Route::post('dosen/{dosen}/cabut-penugasan', [\App\Http\Controllers\SuperAdmin\DosenController::class, 'cabutPenugasan'])->name('dosen.cabut-penugasan');
         Route::resource('dosen', \App\Http\Controllers\SuperAdmin\DosenController::class)->except(['create', 'edit', 'show']);
 
         // Mata Kuliah
-        Route::resource('mata-kuliah', \App\Http\Controllers\SuperAdmin\MataKuliahController::class)->except(['create', 'edit', 'show']);
+        Route::resource('mata-kuliah', \App\Http\Controllers\SuperAdmin\MataKuliahController::class)->except(['create', 'edit']);
 
         // PLO
-        Route::get('plo/export',   [\App\Http\Controllers\SuperAdmin\PloController::class, 'export'])->name('plo.export');
-        Route::get('plo/template', [\App\Http\Controllers\SuperAdmin\PloController::class, 'template'])->name('plo.template');
-        Route::post('plo/import',  [\App\Http\Controllers\SuperAdmin\PloController::class, 'import'])->name('plo.import');
+        Route::get('plo/export',     [\App\Http\Controllers\SuperAdmin\PloController::class, 'export'])->name('plo.export');
+        Route::get('plo/template',   [\App\Http\Controllers\SuperAdmin\PloController::class, 'template'])->name('plo.template');
+        Route::post('plo/import',    [\App\Http\Controllers\SuperAdmin\PloController::class, 'import'])->name('plo.import');
+        Route::post('plo/preview',   [\App\Http\Controllers\SuperAdmin\PloController::class, 'preview'])->name('plo.preview');
+        Route::post('plo/confirm',   [\App\Http\Controllers\SuperAdmin\PloController::class, 'confirmImport'])->name('plo.confirm');
         Route::resource('plo', \App\Http\Controllers\SuperAdmin\PloController::class)->except(['create', 'edit', 'show']);
 
         // CLO
-        Route::get('clo/export',   [\App\Http\Controllers\SuperAdmin\CloController::class, 'export'])->name('clo.export');
-        Route::get('clo/template', [\App\Http\Controllers\SuperAdmin\CloController::class, 'template'])->name('clo.template');
-        Route::post('clo/import',  [\App\Http\Controllers\SuperAdmin\CloController::class, 'import'])->name('clo.import');
+        Route::get('clo/export',     [\App\Http\Controllers\SuperAdmin\CloController::class, 'export'])->name('clo.export');
+        Route::get('clo/template',   [\App\Http\Controllers\SuperAdmin\CloController::class, 'template'])->name('clo.template');
+        Route::post('clo/import',    [\App\Http\Controllers\SuperAdmin\CloController::class, 'import'])->name('clo.import');
+        Route::post('clo/preview',   [\App\Http\Controllers\SuperAdmin\CloController::class, 'preview'])->name('clo.preview');
+        Route::post('clo/confirm',   [\App\Http\Controllers\SuperAdmin\CloController::class, 'confirmImport'])->name('clo.confirm');
         Route::resource('clo', \App\Http\Controllers\SuperAdmin\CloController::class)->except(['create', 'edit', 'show']);
 
         // Kategori Soal
@@ -70,11 +76,10 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
         Route::resource('periode', \App\Http\Controllers\SuperAdmin\PeriodeController::class)->except(['create', 'edit', 'show']);
         Route::get('periode/{periode}', [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'show'])->name('periode.show');
 
-        // Penugasan Koordinator
-        Route::resource('penugasan-koordinator', \App\Http\Controllers\SuperAdmin\PenugasanKoordinatorController::class)->except(['create', 'edit', 'show']);
-
-        // Penugasan Verifikator
-        Route::resource('penugasan-verifikator', \App\Http\Controllers\SuperAdmin\PenugasanVerifikatorController::class)->except(['create', 'edit', 'show']);
+        // Kelompok Verifikasi (Unified Assignment)
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/activate', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'activate'])->name('kelompok-verifikasi.activate');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/deactivate', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'deactivate'])->name('kelompok-verifikasi.deactivate');
+        Route::resource('kelompok-verifikasi', \App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class);
     });
 
 // ─── Koordinator Routes ───────────────────────────────────────────────────────
@@ -98,6 +103,12 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':KOORDINATOR
         // Upload Revisi
         Route::post('revisi/{soal}', [\App\Http\Controllers\Koordinator\RevisiController::class, 'store'])->name('revisi.store');
         Route::get('revisi/{revisi}/download', [\App\Http\Controllers\Koordinator\RevisiController::class, 'download'])->name('revisi.download');
+
+        // Generator Template Lembar Soal
+        Route::get('soal-generator', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'index'])->name('soal.generator');
+        Route::get('soal-generator/course-data', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'getCourseData'])->name('soal.generator.course-data');
+        Route::post('soal-generator/export-pdf', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'exportPdf'])->name('soal.generator.export-pdf');
+        Route::post('soal-generator/export-docx', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'exportDocx'])->name('soal.generator.export-docx');
     });
 
 // ─── Verifikator Routes ───────────────────────────────────────────────────────
@@ -112,4 +123,13 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':VERIFIKATOR
         Route::post('soal/{soal}/verifikasi', [\App\Http\Controllers\Verifikator\VerifikasiController::class, 'store'])->name('verifikasi.store');
         Route::get('soal', [\App\Http\Controllers\Verifikator\SoalController::class, 'index'])->name('soal.index');
         Route::get('soal/{soal}', [\App\Http\Controllers\Verifikator\SoalController::class, 'show'])->name('soal.show');
+
+        // Berita Acara Verifikasi
+        Route::get('berita-acara', [\App\Http\Controllers\Verifikator\BeritaAcaraController::class, 'index'])->name('berita-acara.index');
+        Route::get('mata-kuliah/{mataKuliah}/berita-acara', [\App\Http\Controllers\Verifikator\BeritaAcaraController::class, 'cetak'])->name('berita-acara.cetak');
     });
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'readAll'])->name('notifications.read-all');
+});

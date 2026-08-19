@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
-import { Head, useForm, router } from '@inertiajs/react';
-import { BookOpen, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, AlertTriangle, Target, Activity, X, Filter } from 'lucide-react';
+import { Head, useForm, router, Link } from '@inertiajs/react';
+import { BookOpen, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, AlertTriangle, Target, Activity, X, Filter, Eye } from 'lucide-react';
 
 export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -132,7 +132,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                     </p>
                 </div>
 
-                <button 
+                <button
                     onClick={() => setIsCreateOpen(true)}
                     className="flex items-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1724] text-white rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer"
                 >
@@ -147,7 +147,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                     {/* Real-Time Search Input */}
                     <div className="relative w-full md:w-96">
                         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                        <input 
+                        <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -243,8 +243,8 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 <th className="p-4">Kode MK</th>
                                 <th className="p-4">Nama Mata Kuliah</th>
                                 <th className="p-4 text-center">SKS</th>
-                                <th className="p-4">Mapping PLO</th>
-                                <th className="p-4">Mapping CLO</th>
+                                <th className="p-4">Pemetaan PLO</th>
+                                <th className="p-4">Pemetaan CLO</th>
                                 <th className="p-4">Status</th>
                                 <th className="p-4 text-center">Aksi</th>
                             </tr>
@@ -254,37 +254,57 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 mataKuliahList.data.map((mk) => (
                                     <tr key={mk.id} className="hover:bg-slate-50/80 transition-colors">
                                         <td className="p-4 text-center">
-                                            <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-extrabold text-[11px] border border-blue-200">
+                                            <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-extrabold text-[11px] border border-blue-200 whitespace-nowrap inline-block">
                                                 Semester {mk.semester || 1}
                                             </span>
                                         </td>
-                                        <td className="p-4 font-bold text-[#801720]">{mk.kode_mk}</td>
+                                        <td className="p-4 font-bold text-[#801720]">
+                                            <Link href={`/superadmin/mata-kuliah/${mk.id}`} className="hover:underline">
+                                                {mk.kode_mk}
+                                            </Link>
+                                        </td>
                                         <td className="p-4">
-                                            <div className="font-bold text-slate-800">{mk.nama_mk}</div>
+                                            <Link href={`/superadmin/mata-kuliah/${mk.id}`} className="font-bold text-slate-800 hover:underline hover:text-[#801720] block">
+                                                {mk.nama_mk}
+                                            </Link>
                                             {mk.nama_mk_en && (
                                                 <div className="text-[11px] text-slate-400 italic font-medium mt-0.5">{mk.nama_mk_en}</div>
                                             )}
                                         </td>
-                                        <td className="p-4 text-center font-extrabold">{mk.sks} SKS</td>
+                                        <td className="p-4 text-center font-extrabold whitespace-nowrap">{mk.sks} SKS</td>
                                         <td className="p-4">
-                                            <div className="flex flex-wrap gap-1">
-                                                {mk.plo && mk.plo.map((p) => (
-                                                    <span key={p.id} className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold text-[10px]" title={p.deskripsi}>
-                                                        {p.kode_plo}
-                                                    </span>
-                                                ))}
-                                                {(!mk.plo || mk.plo.length === 0) && <span className="text-slate-400 text-[10px]">-</span>}
-                                            </div>
+                                            {mk.plo && mk.plo.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                                                    {mk.plo.map((p) => (
+                                                        <span
+                                                            key={p.id}
+                                                            className="inline-flex px-1.5 py-0.5 rounded bg-[#801720]/5 text-[#801720] border border-[#801720]/10 text-[10px] font-bold"
+                                                            title={p.deskripsi}
+                                                        >
+                                                            {p.kode_plo}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400 italic text-[11px]">-</span>
+                                            )}
                                         </td>
                                         <td className="p-4">
-                                            <div className="flex flex-wrap gap-1">
-                                                {mk.clo && mk.clo.map((c) => (
-                                                    <span key={c.id} className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px]" title={c.deskripsi}>
-                                                        {c.kode_clo}
-                                                    </span>
-                                                ))}
-                                                {(!mk.clo || mk.clo.length === 0) && <span className="text-slate-400 text-[10px]">-</span>}
-                                            </div>
+                                            {mk.clo && mk.clo.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                                                    {mk.clo.map((c) => (
+                                                        <span
+                                                            key={c.id}
+                                                            className="inline-flex px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-150 text-[10px] font-bold"
+                                                            title={c.deskripsi}
+                                                        >
+                                                            {c.kode_clo}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400 italic text-[11px]">-</span>
+                                            )}
                                         </td>
                                         <td className="p-4">
                                             {mk.status === 'ACTIVE' ? (
@@ -301,14 +321,21 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                         </td>
                                         <td className="p-4 text-center">
                                             <div className="flex items-center justify-center gap-2">
-                                                <button 
+                                                <Link
+                                                    href={`/superadmin/mata-kuliah/${mk.id}`}
+                                                    className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors cursor-pointer"
+                                                    title="Detail PLO & CLO"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                </Link>
+                                                <button
                                                     onClick={() => handleEditOpen(mk)}
                                                     className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                                                     title="Edit"
                                                 >
                                                     <Edit2 className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={() => setDeleteMk(mk)}
                                                     className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
                                                     title="Hapus"
@@ -343,9 +370,8 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     disabled={!link.url}
                                     onClick={() => link.url && router.get(link.url)}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                                        link.active ? 'bg-[#801720] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                                    }`}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${link.active ? 'bg-[#801720] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                                        }`}
                                 />
                             ))}
                         </div>
@@ -358,12 +384,12 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                 <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-lg font-extrabold text-[#1E293B] mb-4">Tambah Mata Kuliah</h2>
-                        
+
                         <form onSubmit={handleCreateSubmit} className="space-y-4">
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Semester</label>
-                                    <select 
+                                    <select
                                         value={createForm.data.semester}
                                         onChange={(e) => createForm.setData('semester', parseInt(e.target.value) || 1)}
                                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
@@ -375,7 +401,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Kode MK</label>
-                                    <input 
+                                    <input
                                         type="text"
                                         value={createForm.data.kode_mk}
                                         onChange={(e) => createForm.setData('kode_mk', e.target.value)}
@@ -386,7 +412,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">SKS</label>
-                                    <input 
+                                    <input
                                         type="number"
                                         min="1"
                                         max="10"
@@ -400,7 +426,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Nama Mata Kuliah (Indonesia)</label>
-                                <input 
+                                <input
                                     type="text"
                                     value={createForm.data.nama_mk}
                                     onChange={(e) => createForm.setData('nama_mk', e.target.value)}
@@ -412,7 +438,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Nama Mata Kuliah (Inggris)</label>
-                                <input 
+                                <input
                                     type="text"
                                     value={createForm.data.nama_mk_en}
                                     onChange={(e) => createForm.setData('nama_mk_en', e.target.value)}
@@ -424,25 +450,37 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                             {/* PLO Mapping */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                                    <Target className="w-3.5 h-3.5 text-purple-600" />
-                                    <span>Pilih PLO Terkait</span>
+                                    <Target className="w-3.5 h-3.5 text-purple-650" />
+                                    <span>Pilih PLO Terkait (Kurikulum)</span>
                                 </label>
-                                <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-36 overflow-y-auto">
-                                    {allPlo.map((plo) => {
-                                        const isSelected = createForm.data.plo_ids.includes(plo.id);
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={plo.id}
-                                                onClick={() => togglePlo(createForm, plo.id)}
-                                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                                    isSelected ? 'bg-purple-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                                                }`}
-                                            >
-                                                {plo.kode_plo}
-                                            </button>
-                                        );
-                                    })}
+                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-40 overflow-y-auto">
+                                    {allPlo && allPlo.length > 0 ? (
+                                        allPlo.map((plo) => {
+                                            const isSelected = createForm.data.plo_ids.includes(plo.id);
+                                            return (
+                                                <div 
+                                                    key={plo.id}
+                                                    onClick={() => togglePlo(createForm, plo.id)}
+                                                    className={`p-2 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
+                                                        isSelected ? 'border-purple-600 bg-purple-50/10' : 'border-slate-200 hover:border-purple-300 bg-white'
+                                                    }`}
+                                                >
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        readOnly
+                                                        className="mt-0.5 w-3.5 h-3.5 text-purple-650 border-slate-300 rounded focus:ring-purple-500/20 cursor-pointer accent-purple-600"
+                                                    />
+                                                    <div className="text-[11px] leading-tight">
+                                                        <span className="font-bold text-purple-700 mr-2">{plo.kode_plo}</span>
+                                                        <span className="text-slate-600 font-semibold">{plo.deskripsi}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-[10px] text-slate-400 text-center py-2">Tidak ada data PLO</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -452,35 +490,47 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     <Activity className="w-3.5 h-3.5 text-emerald-600" />
                                     <span>Pilih CLO Terkait</span>
                                 </label>
-                                <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-36 overflow-y-auto">
-                                    {allClo.map((clo) => {
-                                        const isSelected = createForm.data.clo_ids.includes(clo.id);
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={clo.id}
-                                                onClick={() => toggleClo(createForm, clo.id)}
-                                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                                    isSelected ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                                                }`}
-                                            >
-                                                {clo.kode_clo}
-                                            </button>
-                                        );
-                                    })}
+                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-40 overflow-y-auto">
+                                    {allClo && allClo.length > 0 ? (
+                                        allClo.map((clo) => {
+                                            const isSelected = createForm.data.clo_ids.includes(clo.id);
+                                            return (
+                                                <div 
+                                                    key={clo.id}
+                                                    onClick={() => toggleClo(createForm, clo.id)}
+                                                    className={`p-2 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
+                                                        isSelected ? 'border-emerald-600 bg-emerald-50/10' : 'border-slate-200 hover:border-emerald-350 bg-white'
+                                                    }`}
+                                                >
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        readOnly
+                                                        className="mt-0.5 w-3.5 h-3.5 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
+                                                    />
+                                                    <div className="text-[11px] leading-tight">
+                                                        <span className="font-bold text-emerald-700 mr-2">{clo.kode_clo}</span>
+                                                        <span className="text-slate-600 font-semibold">{clo.deskripsi}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-[10px] text-slate-400 text-center py-2">Tidak ada data CLO</p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setIsCreateOpen(false)}
                                     className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200"
                                 >
                                     Batal
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={createForm.processing}
                                     className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]"
                                 >
@@ -497,12 +547,12 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                 <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-lg font-extrabold text-[#1E293B] mb-4">Edit Mata Kuliah</h2>
-                        
+
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                             <div className="grid grid-cols-4 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Semester</label>
-                                    <select 
+                                    <select
                                         value={editForm.data.semester}
                                         onChange={(e) => editForm.setData('semester', parseInt(e.target.value) || 1)}
                                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
@@ -514,7 +564,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Kode MK</label>
-                                    <input 
+                                    <input
                                         type="text"
                                         value={editForm.data.kode_mk}
                                         onChange={(e) => editForm.setData('kode_mk', e.target.value)}
@@ -524,7 +574,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">SKS</label>
-                                    <input 
+                                    <input
                                         type="number"
                                         min="1"
                                         max="10"
@@ -536,7 +586,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
-                                    <select 
+                                    <select
                                         value={editForm.data.status}
                                         onChange={(e) => editForm.setData('status', e.target.value)}
                                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
@@ -549,7 +599,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Nama Mata Kuliah (Indonesia)</label>
-                                <input 
+                                <input
                                     type="text"
                                     value={editForm.data.nama_mk}
                                     onChange={(e) => editForm.setData('nama_mk', e.target.value)}
@@ -560,7 +610,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Nama Mata Kuliah (Inggris)</label>
-                                <input 
+                                <input
                                     type="text"
                                     value={editForm.data.nama_mk_en}
                                     onChange={(e) => editForm.setData('nama_mk_en', e.target.value)}
@@ -571,25 +621,37 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                             {/* PLO Mapping */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                                    <Target className="w-3.5 h-3.5 text-purple-600" />
-                                    <span>Pilih PLO Terkait</span>
+                                    <Target className="w-3.5 h-3.5 text-purple-650" />
+                                    <span>Pilih PLO Terkait (Kurikulum)</span>
                                 </label>
-                                <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-36 overflow-y-auto">
-                                    {allPlo.map((plo) => {
-                                        const isSelected = editForm.data.plo_ids.includes(plo.id);
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={plo.id}
-                                                onClick={() => togglePlo(editForm, plo.id)}
-                                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                                    isSelected ? 'bg-purple-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                                                }`}
-                                            >
-                                                {plo.kode_plo}
-                                            </button>
-                                        );
-                                    })}
+                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-40 overflow-y-auto">
+                                    {allPlo && allPlo.length > 0 ? (
+                                        allPlo.map((plo) => {
+                                            const isSelected = editForm.data.plo_ids.includes(plo.id);
+                                            return (
+                                                <div 
+                                                    key={plo.id}
+                                                    onClick={() => togglePlo(editForm, plo.id)}
+                                                    className={`p-2 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
+                                                        isSelected ? 'border-purple-600 bg-purple-50/10' : 'border-slate-200 hover:border-purple-300 bg-white'
+                                                    }`}
+                                                >
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        readOnly
+                                                        className="mt-0.5 w-3.5 h-3.5 text-purple-655 border-slate-300 rounded focus:ring-purple-500/20 cursor-pointer accent-purple-600"
+                                                    />
+                                                    <div className="text-[11px] leading-tight">
+                                                        <span className="font-bold text-purple-700 mr-2">{plo.kode_plo}</span>
+                                                        <span className="text-slate-600 font-semibold">{plo.deskripsi}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-[10px] text-slate-400 text-center py-2">Tidak ada data PLO</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -599,35 +661,47 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     <Activity className="w-3.5 h-3.5 text-emerald-600" />
                                     <span>Pilih CLO Terkait</span>
                                 </label>
-                                <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-36 overflow-y-auto">
-                                    {allClo.map((clo) => {
-                                        const isSelected = editForm.data.clo_ids.includes(clo.id);
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={clo.id}
-                                                onClick={() => toggleClo(editForm, clo.id)}
-                                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                                    isSelected ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                                                }`}
-                                            >
-                                                {clo.kode_clo}
-                                            </button>
-                                        );
-                                    })}
+                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-40 overflow-y-auto">
+                                    {allClo && allClo.length > 0 ? (
+                                        allClo.map((clo) => {
+                                            const isSelected = editForm.data.clo_ids.includes(clo.id);
+                                            return (
+                                                <div 
+                                                    key={clo.id}
+                                                    onClick={() => toggleClo(editForm, clo.id)}
+                                                    className={`p-2 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
+                                                        isSelected ? 'border-emerald-600 bg-emerald-50/10' : 'border-slate-200 hover:border-emerald-350 bg-white'
+                                                    }`}
+                                                >
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        readOnly
+                                                        className="mt-0.5 w-3.5 h-3.5 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
+                                                    />
+                                                    <div className="text-[11px] leading-tight">
+                                                        <span className="font-bold text-emerald-700 mr-2">{clo.kode_clo}</span>
+                                                        <span className="text-slate-600 font-semibold">{clo.deskripsi}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-[10px] text-slate-400 text-center py-2">Tidak ada data CLO</p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setEditMk(null)}
                                     className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200"
                                 >
                                     Batal
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={editForm.processing}
                                     className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]"
                                 >
@@ -656,15 +730,15 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                         </div>
 
                         <div className="flex justify-end gap-2 pt-6">
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={() => setDeleteMk(null)}
                                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
                             >
                                 Batal
                             </button>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={handleConfirmDelete}
                                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724] transition-colors shadow-md cursor-pointer"
                             >

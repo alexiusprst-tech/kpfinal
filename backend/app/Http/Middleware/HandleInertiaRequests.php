@@ -58,6 +58,15 @@ class HandleInertiaRequests extends Middleware
                 'deadline_upload' => $activePeriod->deadline_upload,
                 'status'          => $activePeriod->status,
             ] : null,
+            'notifications' => $request->user() ? [
+                'list' => \App\Models\Notification::where('user_id', $request->user()->id)
+                    ->orderBy('created_at', 'desc')
+                    ->take(10)
+                    ->get(),
+                'count' => \App\Models\Notification::where('user_id', $request->user()->id)
+                    ->where('is_read', false)
+                    ->count()
+            ] : null,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),

@@ -5,8 +5,12 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Dosen;
+use App\Models\Notification;
+use App\Models\PenugasanKoordinator;
+use App\Models\PenugasanVerifikator;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -15,15 +19,23 @@ class DosenController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Dosen::with('user')
-            ->withCount([
-                'penugasanKoordinator as active_koordinator_count' => function ($q) {
-                    $q->where('status', 'ACTIVE');
-                },
-                'penugasanVerifikator as active_verifikator_count' => function ($q) {
-                    $q->where('status', 'ACTIVE');
-                },
-            ]);
+        $query = Dosen::with([
+            'user',
+            'penugasanKoordinator' => function ($q) {
+                $q->where('status', 'ACTIVE')->with(['mataKuliah', 'periode', 'kelompok']);
+            },
+            'penugasanVerifikator' => function ($q) {
+                $q->where('status', 'ACTIVE')->with(['mataKuliah', 'periode', 'kelompok']);
+            },
+        ])
+        ->withCount([
+            'penugasanKoordinator as active_koordinator_count' => function ($q) {
+                $q->where('status', 'ACTIVE');
+            },
+            'penugasanVerifikator as active_verifikator_count' => function ($q) {
+                $q->where('status', 'ACTIVE');
+            },
+        ]);
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
@@ -144,5 +156,93 @@ class DosenController extends Controller
         );
 
         return redirect()->back()->with('success', 'Data Dosen berhasil dihapus.');
+    }
+
+    /**
+     * Revoke active assignment(s) for a lecturer (Koordinator / Verifikator / All / Specific)
+     */
+    public function cabutPenugasan(Request $request, Dosen $dosen)
+    {
+        $validated = $request->validate([
+            'type'           => ['required', 'in:ALL,KOORDINATOR,VERIFIKATOR,SPECIFIC'],
+            'penugasan_id'   => ['nullable', 'string'],
+            'penugasan_type' => ['nullable', 'in:KOORDINATOR,VERIFIKATOR'],
+        ]);
+
+        DB::transaction(function () use ($dosen, $validated, $request) {
+            $type = $validated['type'];
+            $endedKoor = 0;
+            $endedVerif = 0;
+
+            if ($type === 'ALL') {
+                $endedKoor = PenugasanKoordinator::where('dosen_id', $dosen->id)
+                    ->where('status', 'ACTIVE')
+                    ->update(['status' => 'ENDED']);
+
+                $endedVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)
+                    ->where('status', 'ACTIVE')
+                    ->update(['status' => 'ENDED']);
+            } elseif ($type === 'KOORDINATOR') {
+                $endedKoor = PenugasanKoordinator::where('dosen_id', $dosen->id)
+                    ->where('status', 'ACTIVE')
+                    ->update(['status' => 'ENDED']);
+            } elseif ($type === 'VERIFIKATOR') {
+                $endedVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)
+                    ->where('status', 'ACTIVE')
+                    ->update(['status' => 'ENDED']);
+            } elseif ($type === 'SPECIFIC' && !empty($validated['penugasan_id'])) {
+                if ($validated['penugasan_type'] === 'KOORDINATOR') {
+                    $endedKoor = PenugasanKoordinator::where('id', $validated['penugasan_id'])
+                        ->where('dosen_id', $dosen->id)
+                        ->where('status', 'ACTIVE')
+                        ->update(['status' => 'ENDED']);
+                } elseif ($validated['penugasan_type'] === 'VERIFIKATOR') {
+                    $endedVerif = PenugasanVerifikator::where('id', $validated['penugasan_id'])
+                        ->where('dosen_id', $dosen->id)
+                        ->where('status', 'ACTIVE')
+                        ->update(['status' => 'ENDED']);
+                }
+            }
+
+            // Sync user role
+            $remainingKoor = PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->count();
+            $remainingVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->count();
+
+            if ($dosen->user && $dosen->user->role !== 'SUPER_ADMIN') {
+                if ($remainingKoor > 0) {
+                    $dosen->user->update(['role' => 'KOORDINATOR']);
+                } elseif ($remainingVerif > 0) {
+                    $dosen->user->update(['role' => 'VERIFIKATOR']);
+                } else {
+                    $dosen->user->update(['role' => 'DOSEN']);
+                }
+            }
+
+            // Send notification to dosen user if exists
+            if ($dosen->user_id) {
+                Notification::create([
+                    'id'      => (string) Str::uuid(),
+                    'user_id' => $dosen->user_id,
+                    'title'   => 'Pencabutan Penugasan',
+                    'message' => "Penugasan Anda ({$type}) telah dicabut oleh Super Admin.",
+                ]);
+            }
+
+            AuditLog::record(
+                $request->user()->id,
+                'REVOKE_PENUGASAN_DOSEN',
+                'Dosen',
+                $dosen->id,
+                ['type' => $type],
+                [
+                    'ended_koordinator' => $endedKoor,
+                    'ended_verifikator' => $endedVerif,
+                    'remaining_koor'    => $remainingKoor,
+                    'remaining_verif'   => $remainingVerif,
+                ]
+            );
+        });
+
+        return redirect()->back()->with('success', "Penugasan untuk dosen {$dosen->nama_lengkap} berhasil dicabut.");
     }
 }

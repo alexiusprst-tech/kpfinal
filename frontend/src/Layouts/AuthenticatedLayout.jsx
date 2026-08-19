@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Link, usePage, router } from '@inertiajs/react';
 import {
     LayoutDashboard,
     Users,
@@ -17,6 +17,8 @@ import {
     FolderKanban,
     ChevronDown,
     LifeBuoy,
+    Bell,
+    Sparkles,
 } from 'lucide-react';
 
 // Sidebar navigation according to role & DESIGN.md.
@@ -39,8 +41,7 @@ function getNavSections(role) {
             },
             {
                 type: 'group', label: 'Penugasan', items: [
-                    { label: 'Penugasan Koordinator', href: '/superadmin/penugasan-koordinator', icon: FileCheck },
-                    { label: 'Penugasan Verifikator',  href: '/superadmin/penugasan-verifikator', icon: Shield },
+                    { label: 'Kelompok Verifikasi', href: '/superadmin/kelompok-verifikasi', icon: FolderKanban },
                 ],
             },
         ];
@@ -48,8 +49,12 @@ function getNavSections(role) {
 
     if (role === 'KOORDINATOR') {
         return [
-            { type: 'item', label: 'Dashboard',        href: '/koordinator/dashboard', icon: LayoutDashboard },
-            { type: 'item', label: 'Kelola Soal Saya', href: '/koordinator/soal',      icon: FileText },
+            { type: 'item', label: 'Dashboard', href: '/koordinator/dashboard', icon: LayoutDashboard },
+            {
+                type: 'group', label: 'Lembar Soal', items: [
+                    { label: 'Daftar Lembar Soal',    href: '/koordinator/soal',           icon: FileText },
+                ],
+            },
         ];
     }
 
@@ -57,6 +62,7 @@ function getNavSections(role) {
         return [
             { type: 'item', label: 'Dashboard',       href: '/verifikator/dashboard', icon: LayoutDashboard },
             { type: 'item', label: 'Verifikasi Soal', href: '/verifikator/soal',      icon: FileCheck },
+            { type: 'item', label: 'Berita Acara',    href: '/verifikator/berita-acara', icon: FileText },
         ];
     }
 
@@ -64,7 +70,11 @@ function getNavSections(role) {
 }
 
 function isPathActive(href) {
-    return href !== '#' && window.location.pathname === href;
+    if (href === '#' || !href) return false;
+    if (href === '/superadmin/dashboard' || href === '/koordinator/dashboard' || href === '/verifikator/dashboard') {
+        return window.location.pathname === href;
+    }
+    return window.location.pathname === href || window.location.pathname.startsWith(href + '/');
 }
 
 function NavLink({ item }) {
@@ -111,9 +121,47 @@ function NavGroup({ group }) {
 }
 
 export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
-    const { auth, activePeriod } = usePage().props;
+    const { auth, activePeriod, notifications } = usePage().props;
     const user = auth?.user;
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [showDrawer, setShowDrawer] = useState(false);
+
+    const notifList = notifications?.list || [];
+    const notifCount = notifications?.count || 0;
+
+    useEffect(() => {
+        const handleOpen = () => setShowDrawer(true);
+        window.addEventListener('open-notifications', handleOpen);
+        return () => window.removeEventListener('open-notifications', handleOpen);
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (auth?.user) {
+                router.reload({
+                    only: ['notifications'],
+                    preserveScroll: true,
+                    preserveState: true,
+                });
+            }
+        }, 15000);
+
+        return () => clearInterval(interval);
+    }, [auth?.user]);
+
+    const handleReadAll = () => {
+        router.post('/notifications/read-all', {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
+    const handleReadSingle = (id) => {
+        router.post(`/notifications/${id}/read`, {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
 
     const navSections = getNavSections(user?.role);
 
@@ -127,23 +175,37 @@ export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
                     </div>
                     <span className="font-extrabold text-sm text-[#801720] tracking-tight">Verifikasi Soal</span>
                 </div>
-                <button
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-all text-slate-700"
-                >
-                    {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowDrawer(true)}
+                        className="relative p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-all text-slate-700"
+                        title="Notifikasi"
+                    >
+                        <Bell className="w-5 h-5" />
+                        {notifCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white animate-pulse">
+                                {notifCount}
+                            </span>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-all text-slate-700"
+                    >
+                        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                </div>
             </div>
 
             {/* SIDEBAR (Wider w-72 (288px), Clean White BG with Maroon Active Items) */}
             <aside className={`
-                fixed inset-y-0 left-0 z-40 w-72 bg-white text-slate-800 flex flex-col justify-between p-6 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto border-r border-slate-200/80 shadow-lg lg:shadow-none flex-shrink-0
+                fixed inset-y-0 left-0 z-40 w-72 bg-white text-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen border-r border-slate-200/80 shadow-lg lg:shadow-none flex-shrink-0
                 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
-                <div className="flex flex-col h-full justify-between overflow-y-auto">
+                <div className="flex flex-col h-full justify-between overflow-y-auto p-6 lg:p-8 lg:pt-10">
                     <div>
                         {/* Brand Section */}
-                        <div className="flex items-center gap-3.5 px-2 py-3 mb-6 border-b border-slate-100">
+                        <div className="flex items-center gap-3.5 px-2 pb-5 mb-8 border-b border-slate-100">
                             <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm flex-shrink-0 p-2 border border-slate-200/80">
                                 <img src="/images/logo-telkom.png" alt="Telkom Logo" className="h-full w-auto object-contain" />
                             </div>
@@ -209,6 +271,102 @@ export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
             <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 {children}
             </main>
+
+            {/* NOTIFICATION DRAWER */}
+            {showDrawer && (
+                <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+                    <div className="absolute inset-0 overflow-hidden">
+                        <div 
+                            className="absolute inset-0 bg-slate-600/30 backdrop-blur-xs transition-opacity" 
+                            onClick={() => setShowDrawer(false)}
+                        />
+
+                        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                            <div className="pointer-events-auto w-screen max-w-md transform bg-white shadow-2xl transition-all duration-300 ease-in-out">
+                                <div className="flex h-full flex-col overflow-y-scroll bg-white py-6 shadow-xl">
+                                    {/* Header */}
+                                    <div className="px-6 flex items-center justify-between border-b border-slate-100 pb-4">
+                                        <div className="flex items-center gap-2">
+                                            <Bell className="w-5 h-5 text-[#801720]" />
+                                            <h2 className="text-lg font-extrabold text-slate-800" id="slide-over-title">Notifikasi</h2>
+                                            {notifCount > 0 && (
+                                                <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                                                    {notifCount} baru
+                                                </span>
+                                            )}
+                                        </div>
+                                        <button 
+                                            type="button" 
+                                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-500 transition-all cursor-pointer"
+                                            onClick={() => setShowDrawer(false)}
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+
+                                    {/* Actions */}
+                                    {notifList.length > 0 && (
+                                        <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center text-xs">
+                                            <span className="text-slate-500 font-semibold">Tampilkan {notifList.length} terbaru</span>
+                                            <button 
+                                                onClick={handleReadAll}
+                                                className="text-[#801720] hover:text-[#6a1219] font-extrabold transition-colors cursor-pointer"
+                                            >
+                                                Tandai Semua Dibaca
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Notification List */}
+                                    <div className="relative mt-2 flex-1 px-4 sm:px-6">
+                                        {notifList.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center py-20 text-center text-slate-400">
+                                                <Bell className="w-12 h-12 text-slate-200 mb-3" />
+                                                <p className="text-sm font-bold">Tidak ada notifikasi baru</p>
+                                                <p className="text-xs text-slate-400 mt-1">Anda akan menerima pemberitahuan di sini saat ada pembaruan penugasan atau verifikasi soal.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="divide-y divide-slate-100">
+                                                {notifList.map((notif) => (
+                                                    <div 
+                                                        key={notif.id} 
+                                                        className={`py-4 px-2 rounded-xl transition-colors flex items-start justify-between gap-3 ${notif.is_read ? 'hover:bg-slate-50/50' : 'bg-rose-50/40 hover:bg-rose-50/70'}`}
+                                                    >
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-1.5">
+                                                                {!notif.is_read && <span className="w-1.5 h-1.5 bg-red-600 rounded-full flex-shrink-0 animate-pulse" />}
+                                                                <p className="text-sm font-bold text-slate-800 leading-snug">{notif.title}</p>
+                                                            </div>
+                                                            <p className="text-xs text-slate-600 font-semibold mt-1 leading-relaxed">{notif.message}</p>
+                                                            <p className="text-[10px] text-slate-400 font-bold mt-2">
+                                                                {new Date(notif.created_at).toLocaleString('id-ID', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
+                                                            </p>
+                                                        </div>
+                                                        {!notif.is_read && (
+                                                            <button
+                                                                onClick={() => handleReadSingle(notif.id)}
+                                                                className="text-[10px] bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300 font-bold px-2 py-1 rounded-lg transition-all flex-shrink-0 cursor-pointer shadow-xs"
+                                                                title="Tandai dibaca"
+                                                            >
+                                                                Tandai dibaca
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

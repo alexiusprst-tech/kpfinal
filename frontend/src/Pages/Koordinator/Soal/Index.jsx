@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     FileText, Plus, Upload, Trash2, Send, X, AlertTriangle,
-    Download, RefreshCw, CheckCircle2, Eye
+    Download, RefreshCw, CheckCircle2, Eye, Sparkles
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -131,10 +131,16 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                         </h1>
                         <p className="text-sm text-gray-500 mt-0.5">Upload, submit, dan pantau status soal Anda</p>
                     </div>
-                    <button onClick={() => setShowUpload(true)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] transition-all shadow-sm">
-                        <Plus className="w-3.5 h-3.5" /> Upload Soal Baru
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <Link href="/koordinator/soal-generator"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all shadow-sm cursor-pointer select-none">
+                            <Sparkles className="w-3.5 h-3.5" /> Generator Lembar Soal
+                        </Link>
+                        <Link href="/koordinator/soal/create"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#6a1219] transition-all shadow-sm cursor-pointer select-none">
+                            <Plus className="w-3.5 h-3.5" /> Upload Soal Baru
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Status Filter Tabs */}
@@ -233,60 +239,6 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                 </div>
             </div>
 
-            {/* Upload Modal */}
-            <Modal open={showUpload} onClose={() => setShowUpload(false)} title="Upload Soal Baru">
-                <form onSubmit={handleUpload} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Mata Kuliah <span className="text-red-500">*</span></label>
-                        <select value={form.mata_kuliah_id} onChange={e => setForm(f => ({ ...f, mata_kuliah_id: e.target.value }))}
-                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none" required>
-                            {assignments.map(a => <option key={a.id} value={a.mata_kuliah_id}>{a.mata_kuliah?.nama_mk}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Periode <span className="text-red-500">*</span></label>
-                        <select value={form.periode_id} onChange={e => setForm(f => ({ ...f, periode_id: e.target.value }))}
-                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none" required>
-                            {periodeAll.map(p => <option key={p.id} value={p.id}>{p.nama}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Kategori Soal <span className="text-red-500">*</span></label>
-                        <select value={form.kategori_id} onChange={e => setForm(f => ({ ...f, kategori_id: e.target.value }))}
-                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none" required>
-                            {kategoriAll.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Judul Soal <span className="text-red-500">*</span></label>
-                        <input type="text" value={form.judul} onChange={e => setForm(f => ({ ...f, judul: e.target.value }))}
-                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none"
-                            placeholder="Contoh: Soal UTS Pemrograman Web 2024" required />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">File Soal <span className="text-red-500">*</span></label>
-                        <div className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${selectedFile ? 'border-emerald-400 bg-emerald-50' : 'border-gray-300 hover:border-[#801720]/40'}`}
-                            onClick={() => document.getElementById('soal-file').click()}>
-                            <input id="soal-file" type="file" accept=".pdf,.doc,.docx" className="hidden"
-                                onChange={e => setSelectedFile(e.target.files[0])} />
-                            {selectedFile ? (
-                                <p className="text-xs font-semibold text-emerald-700">✓ {selectedFile.name} ({formatSize(selectedFile.size)})</p>
-                            ) : (
-                                <>
-                                    <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-                                    <p className="text-xs text-gray-500">Klik untuk pilih file PDF/DOC/DOCX (maks. 20MB)</p>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex justify-end pt-2">
-                        <button type="submit" disabled={processing || !selectedFile}
-                            className="px-5 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-60">
-                            {processing ? 'Mengupload...' : 'Upload Soal'}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
 
             {/* Submit Confirm */}
             <Modal open={!!submitItem} onClose={() => setSubmitItem(null)} title="Submit Soal untuk Verifikasi">

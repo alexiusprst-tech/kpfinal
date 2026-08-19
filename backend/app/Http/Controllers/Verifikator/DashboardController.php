@@ -56,8 +56,9 @@ class DashboardController extends Controller
         $assignmentsWithStats = $assignments->map(function ($a) use ($soalList) {
             $mkSoal = $soalList->where('mata_kuliah_id', $a->mata_kuliah_id);
             return [
-                'id'          => $a->id,
-                'mata_kuliah' => $a->mataKuliah,
+                'id'             => $a->id,
+                'mata_kuliah_id' => $a->mata_kuliah_id,
+                'mata_kuliah'    => $a->mataKuliah,
                 'total'       => $mkSoal->count(),
                 'pending'     => $mkSoal->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count(),
                 'approved'    => $mkSoal->where('status', 'APPROVED')->count(),

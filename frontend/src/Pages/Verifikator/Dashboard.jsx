@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     LayoutDashboard, FileCheck, AlertTriangle, CheckCircle2,
     XCircle, Clock, ArrowRight, BookOpen, ShieldCheck, RefreshCw,
-    TrendingUp, FileText, Search, User, Filter, Check
+    TrendingUp, FileText, Search, User, Filter, Check, Printer, Bell
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -45,6 +45,8 @@ function StatCard({ label, value, icon: Icon, colorClass, borderClass, subtext }
 }
 
 export default function VerifikatorDashboard({ activePeriod, stats, pendingSoal = [], assignments = [], recentVerifikasis = [] }) {
+    const { notifications } = usePage().props;
+    const notifCount = notifications?.count || 0;
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedMk, setSelectedMk] = useState('ALL');
 
@@ -67,6 +69,26 @@ export default function VerifikatorDashboard({ activePeriod, stats, pendingSoal 
             <Head title="Dashboard Dosen Verifikator - Sistem Verifikasi Soal" />
 
             <div className="space-y-6">
+                {/* Header Row */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Dashboard Overview</h1>
+                        <p className="text-xs text-slate-500 font-semibold mt-0.5">Sistem verifikasi soal oleh dosen verifikator</p>
+                    </div>
+                    <button 
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-notifications'))}
+                        className="relative p-2.5 bg-white rounded-xl border border-gray-200 shadow-xs hover:bg-slate-50 transition-colors text-slate-700 cursor-pointer"
+                        title="Notifikasi"
+                    >
+                        <Bell className="w-5 h-5 text-slate-700" />
+                        {notifCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white animate-pulse">
+                                {notifCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
+
                 {/* Banner Hero */}
                 <div className="relative overflow-hidden bg-gradient-to-r from-[#801720] via-[#9B1B26] to-[#B82332] text-white rounded-3xl p-6 lg:p-8 shadow-xl shadow-[#801720]/15">
                     <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 pointer-events-none flex items-center justify-end pr-8">
@@ -86,6 +108,16 @@ export default function VerifikatorDashboard({ activePeriod, stats, pendingSoal 
                         <p className="text-white/80 text-sm leading-relaxed font-normal">
                             Pantau antrean verifikasi soal ujian, tinjau kesesuaian dokumen, dan berikan keputusan verifikasi untuk memastikan kualitas soal akademik Telkom University.
                         </p>
+
+                        <div className="pt-1 flex flex-wrap gap-2">
+                            <Link
+                                href="/verifikator/berita-acara"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-[#801720] hover:bg-slate-50 text-xs font-extrabold rounded-2xl shadow-lg shadow-black/10 transition-all hover:scale-[1.02] cursor-pointer"
+                            >
+                                <FileText className="w-4 h-4 text-[#801720]" />
+                                <span>Kelola Berita Acara</span>
+                            </Link>
+                        </div>
 
                         <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-medium text-white/90">
                             {activePeriod ? (
@@ -128,13 +160,10 @@ export default function VerifikatorDashboard({ activePeriod, stats, pendingSoal 
                         </div>
 
                         {/* Completion Rate Indicator */}
-                        <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-200/80">
-                            <div className="text-right">
+                        <div className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-200/80">
+                            <div className="text-left sm:text-right">
                                 <p className="text-[10px] uppercase font-extrabold text-slate-400">Penyelesaian</p>
                                 <p className="text-sm font-black text-[#801720]">{stats?.completionRate || 0}% Selesai</p>
-                            </div>
-                            <div className="w-10 h-10 rounded-xl bg-[#801720]/10 text-[#801720] flex items-center justify-center font-black text-xs">
-                                {stats?.completionRate || 0}%
                             </div>
                         </div>
                     </div>
@@ -254,6 +283,17 @@ export default function VerifikatorDashboard({ activePeriod, stats, pendingSoal 
                                             <p className="text-sm font-black text-emerald-700">{a.approved}</p>
                                         </div>
                                     </div>
+
+                                    {a.total > 0 && a.pending === 0 && (
+                                        <a
+                                            href={`/verifikator/mata-kuliah/${a.mata_kuliah_id}/berita-acara`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#6a1219] transition-all"
+                                        >
+                                            <Printer className="w-3.5 h-3.5" /> Cetak Berita Acara
+                                        </a>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -313,7 +353,7 @@ export default function VerifikatorDashboard({ activePeriod, stats, pendingSoal 
                         {/* List Pending Soal */}
                         {filteredPending.length === 0 ? (
                             <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3 animate-bounce" />
+                                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
                                 <h3 className="font-extrabold text-slate-800 text-sm">Tidak Ada Antrean Soal</h3>
                                 <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                                     {searchTerm || selectedMk !== 'ALL'

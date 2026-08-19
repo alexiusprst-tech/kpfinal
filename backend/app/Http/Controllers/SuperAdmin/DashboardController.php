@@ -50,8 +50,50 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Get last 7 days
+        $dates = [];
+        $menungguData = [];
+        $disetujuiData = [];
+        $ditolakData = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $dt = now()->subDays($i);
+            $dateStr = $dt->format('Y-m-d');
+            $label = $dt->format('d M');
+            $label = str_replace(
+                ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+                $label
+            );
+
+            $dates[] = $label;
+
+            $menungguCount = Soal::whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])
+                ->whereDate('updated_at', $dateStr)
+                ->count();
+
+            $disetujuiCount = \App\Models\Verifikasi::where('action', 'APPROVED')
+                ->whereDate('created_at', $dateStr)
+                ->count();
+
+            $ditolakCount = \App\Models\Verifikasi::where('action', 'REJECTED')
+                ->whereDate('created_at', $dateStr)
+                ->count();
+
+            $menungguData[] = $menungguCount;
+            $disetujuiData[] = $disetujuiCount;
+            $ditolakData[] = $ditolakCount;
+        }
+
+        // No fallback, show actual real database values
+
+        $allPeriods = PeriodeVerifikasi::with('tahunAjaran')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return \Inertia\Inertia::render('SuperAdmin/Dashboard', [
             'activePeriod'     => $activePeriod,
+            'allPeriods'       => $allPeriods,
             'totalDosen'       => $totalDosen,
             'totalMataKuliah'  => $totalMataKuliah,
             'totalPlo'         => $totalPlo,
@@ -61,6 +103,136 @@ class DashboardController extends Controller
             'statusCounts'     => $statusCounts,
             'recentActivities' => $recentActivities,
             'urgentSoal'       => $urgentSoal,
+            'trendData'        => [
+                'labels'    => $dates,
+                'menunggu'  => $menungguData,
+                'disetujui' => $disetujuiData,
+                'ditolak'   => $ditolakData,
+            ],
         ]);
+    }
+
+    /**
+     * Export Laporan Verifikasi Soal (PDF / Excel / CSV)
+     */
+    public function exportLaporan(Request $request)
+    {
+        $periodeId    = $request->get('periode_id');
+        $jenisLaporan = $request->get('jenis_laporan', 'rekap');
+        $format       = strtolower($request->get('format', 'pdf'));
+
+        $periode = null;
+        if ($periodeId && $periodeId !== 'ALL') {
+            $periode = PeriodeVerifikasi::with('tahunAjaran')->find($periodeId);
+        }
+
+        // Query Soal
+        $soalQuery = Soal::with(['mataKuliah', 'periode', 'kategori', 'uploadedBy.dosen']);
+        if ($periode) {
+            $soalQuery->where('periode_id', $periode->id);
+        }
+        $soalList = $soalQuery->orderBy('created_at', 'desc')->get();
+
+        $totalSoal     = $soalList->count();
+        $totalApproved = $soalList->where('status', 'APPROVED')->count();
+        $totalRevision = $soalList->where('status', 'REVISION')->count();
+        $totalRejected = $soalList->where('status', 'REJECTED')->count();
+        $totalPending  = $soalList->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED', 'DRAFT'])->count();
+        $progressPct   = $totalSoal > 0 ? round(($totalApproved / $totalSoal) * 100) : 0;
+
+        $totalDosen      = Dosen::where('status', 'ACTIVE')->count();
+        $totalMataKuliah = MataKuliah::where('status', 'ACTIVE')->count();
+        $totalPlo        = Plo::count();
+        $totalClo        = Clo::count();
+
+        $namaPeriode = $periode ? $periode->nama . ' (' . ($periode->tahunAjaran->nama ?? '-') . ')' : 'Semua Periode';
+        $tanggalCetak = now()->locale('id')->isoFormat('D MMMM Y');
+
+        if ($format === 'excel' || $format === 'csv') {
+            $filename = 'Laporan-Verifikasi-' . \Illuminate\Support\Str::slug($namaPeriode . '-' . $jenisLaporan) . '-' . date('Ymd_His') . '.csv';
+
+            $headers = [
+                'Content-Type'        => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+                'Pragma'              => 'no-cache',
+                'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires'             => '0',
+            ];
+
+            $callback = function () use ($soalList, $namaPeriode, $jenisLaporan, $totalSoal, $totalApproved, $totalPending, $totalRevision, $totalRejected) {
+                $handle = fopen('php://output', 'w');
+                // UTF-8 BOM for Excel
+                fputs($handle, "\xEF\xBB\xBF");
+
+                if ($jenisLaporan === 'rekap') {
+                    fputcsv($handle, ['LAPORAN REKAPITULASI VERIFIKASI SOAL']);
+                    fputcsv($handle, ['Periode', $namaPeriode]);
+                    fputcsv($handle, ['Tanggal Unduh', date('d/m/Y H:i')]);
+                    fputcsv($handle, []);
+                    fputcsv($handle, ['Metrik', 'Jumlah']);
+                    fputcsv($handle, ['Total Soal', $totalSoal]);
+                    fputcsv($handle, ['Disetujui (Approved)', $totalApproved]);
+                    fputcsv($handle, ['Menunggu Verifikasi (Pending)', $totalPending]);
+                    fputcsv($handle, ['Perlu Revisi (Revision)', $totalRevision]);
+                    fputcsv($handle, ['Ditolak (Rejected)', $totalRejected]);
+                    fputcsv($handle, []);
+                }
+
+                fputcsv($handle, [
+                    'No',
+                    'Kode MK',
+                    'Mata Kuliah',
+                    'Kategori Soal',
+                    'Dosen Pembuat',
+                    'Status',
+                    'Tanggal Submit',
+                    'Tanggal Diperbarui'
+                ]);
+
+                $no = 1;
+                foreach ($soalList as $s) {
+                    fputcsv($handle, [
+                        $no++,
+                        $s->mataKuliah->kode_mk ?? '-',
+                        $s->mataKuliah->nama_mk ?? '-',
+                        $s->kategori->nama ?? '-',
+                        $s->uploadedBy->dosen->nama_lengkap ?? $s->uploadedBy->name ?? '-',
+                        $s->status,
+                        $s->created_at ? $s->created_at->format('d/m/Y H:i') : '-',
+                        $s->updated_at ? $s->updated_at->format('d/m/Y H:i') : '-',
+                    ]);
+                }
+
+                fclose($handle);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        }
+
+        // PDF Generation
+        $data = [
+            'namaPeriode'     => $namaPeriode,
+            'periode'         => $periode,
+            'jenisLaporan'    => $jenisLaporan,
+            'tanggalCetak'    => $tanggalCetak,
+            'totalDosen'      => $totalDosen,
+            'totalMataKuliah' => $totalMataKuliah,
+            'totalPlo'        => $totalPlo,
+            'totalClo'        => $totalClo,
+            'totalSoal'       => $totalSoal,
+            'totalApproved'   => $totalApproved,
+            'totalRevision'   => $totalRevision,
+            'totalRejected'   => $totalRejected,
+            'totalPending'    => $totalPending,
+            'progressPct'     => $progressPct,
+            'soalList'        => $soalList,
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.laporan-dashboard', $data)
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'Laporan-Verifikasi-' . \Illuminate\Support\Str::slug($namaPeriode . '-' . $jenisLaporan) . '.pdf';
+
+        return $pdf->download($filename);
     }
 }

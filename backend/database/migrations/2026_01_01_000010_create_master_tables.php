@@ -11,7 +11,7 @@ return new class extends Migration
     {
         // ===================== DOSEN =====================
         Schema::create('dosen', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->string('kode_dosen', 50)->unique();
             $table->string('nama_lengkap', 150);
             $table->string('email', 150)->nullable();
@@ -26,7 +26,7 @@ return new class extends Migration
 
         // ===================== TAHUN AJARAN =====================
         Schema::create('tahun_ajaran', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->string('nama', 50)->unique();
             $table->smallInteger('tahun_mulai');
             $table->smallInteger('tahun_selesai');
@@ -36,7 +36,7 @@ return new class extends Migration
 
         // ===================== PERIODE VERIFIKASI =====================
         Schema::create('periode_verifikasi', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->uuid('tahun_ajaran_id');
             $table->string('nama', 100);
             $table->date('tanggal_mulai');
@@ -50,7 +50,7 @@ return new class extends Migration
 
         // ===================== MATA KULIAH =====================
         Schema::create('mata_kuliah', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->string('kode_mk', 50)->unique();
             $table->string('nama_mk', 200);
             $table->smallInteger('sks');
@@ -61,7 +61,7 @@ return new class extends Migration
 
         // ===================== PLO =====================
         Schema::create('plo', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->string('kode_plo', 50)->unique();
             $table->text('deskripsi');
             $table->timestamps();
@@ -70,7 +70,7 @@ return new class extends Migration
 
         // ===================== CLO =====================
         Schema::create('clo', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->string('kode_clo', 50)->unique();
             $table->text('deskripsi');
             $table->timestamps();
@@ -79,7 +79,7 @@ return new class extends Migration
 
         // ===================== PIVOT: MATA KULIAH - PLO =====================
         Schema::create('mata_kuliah_plo', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->id();
             $table->uuid('mata_kuliah_id');
             $table->uuid('plo_id');
             $table->timestamp('created_at')->useCurrent();
@@ -91,7 +91,7 @@ return new class extends Migration
 
         // ===================== PIVOT: MATA KULIAH - CLO =====================
         Schema::create('mata_kuliah_clo', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->id();
             $table->uuid('mata_kuliah_id');
             $table->uuid('clo_id');
             $table->timestamp('created_at')->useCurrent();
@@ -103,7 +103,7 @@ return new class extends Migration
 
         // ===================== PIVOT: CLO - PLO =====================
         Schema::create('clo_plo', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->id();
             $table->uuid('clo_id');
             $table->uuid('plo_id');
             $table->timestamp('created_at')->useCurrent();
@@ -115,7 +115,7 @@ return new class extends Migration
 
         // ===================== KATEGORI SOAL =====================
         Schema::create('kategori_soal', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->string('nama', 100)->unique();
             $table->text('deskripsi')->nullable();
             $table->string('status', 20)->default('ACTIVE');

@@ -34,11 +34,11 @@ class DemoDataSeeder extends Seeder
         // ─── CLO ───────────────────────────────────────────────────────────────
         $clos = [];
         $cloData = [
-            ['CLO01', 'Mampu memahami konsep dasar pemrograman berorientasi objek.'],
-            ['CLO02', 'Mampu mengimplementasikan algoritma dan struktur data.'],
-            ['CLO03', 'Mampu merancang basis data relasional.'],
-            ['CLO04', 'Mampu membangun aplikasi web menggunakan framework modern.'],
-            ['CLO05', 'Mampu menganalisis kebutuhan sistem informasi.'],
+            ['CLO01', 'Mampu memahami dan menjelaskan konsep dasar bidang infokom serta pengetahuan komputasi yang digunakan dalam lingkup sistem informasi.'],
+            ['CLO02', 'Mampu mengidentifikasi kebutuhan sistem informasi yang komplek dalam konteks enterprise atau masyarakat.'],
+            ['CLO03', 'Mampu menerapkan pengetahuan matematika dan statistika dalam lingkup disiplin ilmu sistem informasi.'],
+            ['CLO04', 'Mampu membuat perancangan sistem informasi untuk memenuhi kebutuhan organisasi menuju datadriven organization.'],
+            ['CLO05', 'Mampu mengevaluasi solusi berbasis sistem informasi dengan menggunakan metode yang tepat.'],
         ];
 
         foreach ($cloData as [$kode, $deskripsi]) {
@@ -58,27 +58,11 @@ class DemoDataSeeder extends Seeder
         $clos['CLO05']->plo()->attach([$plos['PLO02']->id, $plos['PLO05']->id]);
 
         // ─── Mata Kuliah ───────────────────────────────────────────────────────
-        $mkData = [
-            ['IF101', 'Algoritma dan Pemrograman',   3],
-            ['IF201', 'Struktur Data',                3],
-            ['IF301', 'Basis Data',                   3],
-            ['IF401', 'Pemrograman Web',              3],
-            ['IF501', 'Sistem Informasi',             2],
-            ['IF601', 'Rekayasa Perangkat Lunak',     3],
-        ];
-
-        foreach ($mkData as [$kode, $nama, $sks]) {
-            $mk = MataKuliah::create([
-                'id'      => (string) Str::uuid(),
-                'kode_mk' => $kode,
-                'nama_mk' => $nama,
-                'sks'     => $sks,
-                'status'  => 'ACTIVE',
-            ]);
-
+        $allMataKuliah = MataKuliah::all();
+        foreach ($allMataKuliah as $mk) {
             // Attach all PLOs and CLOs to each MK for demo
-            $mk->plo()->attach(array_column($ploData, 0, 0) ? array_values(array_map(fn($p) => $p->id, $plos)) : []);
-            $mk->clo()->attach(array_values(array_map(fn($c) => $c->id, $clos)));
+            $mk->plo()->sync(array_values(array_map(fn($p) => $p->id, $plos)));
+            $mk->clo()->sync(array_values(array_map(fn($c) => $c->id, $clos)));
         }
 
         $this->command->info('✅ Demo data (PLO, CLO, MataKuliah) seeded.');

@@ -155,14 +155,14 @@
 
                 <!-- Field Email / Kode Dosen -->
                 <div>
-                    <label for="email" class="block text-sm font-medium text-slate-700 mb-1.5">Email / Kode Dosen</label>
+                    <label for="email" class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                         </div>
-                        <input type="text" id="email" name="email" value="{{ old('email') }}" placeholder="Email (nama@telkomuniversity.ac.id) atau Kode Dosen (Contoh: QLB)" required class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#801720]/25 focus:border-[#801720] transition-all duration-200 shadow-sm">
+                        <input type="text" id="email" name="email" value="{{ old('email') }}" placeholder="example@telkomuiniversity.ac.id" required class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#801720]/25 focus:border-[#801720] transition-all duration-200 shadow-sm">
                     </div>
                 </div>
 

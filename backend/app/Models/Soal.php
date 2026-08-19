@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Soal extends Model
 {
+    use HasUuids;
     protected $table = 'soal';
     protected $keyType = 'string';
     public $incrementing = false;
@@ -92,5 +95,37 @@ class Soal extends Model
         // A plain orderByDesc still resolves to "one latest row per soal"
         // under hasOne's eager-load matching, without that aggregate.
         return $this->hasOne(Verifikasi::class, 'soal_id')->orderByDesc('created_at');
+    }
+
+    public function notifyVerifier($title, $message)
+    {
+        $verifikator = PenugasanVerifikator::where('mata_kuliah_id', $this->mata_kuliah_id)
+            ->where('periode_id', $this->periode_id)
+            ->where('status', 'ACTIVE')
+            ->first();
+
+        if ($verifikator && $verifikator->dosen && $verifikator->dosen->user_id) {
+            Notification::create([
+                'user_id' => $verifikator->dosen->user_id,
+                'title'   => $title,
+                'message' => $message,
+            ]);
+        }
+    }
+
+    public function notifyCoordinator($title, $message)
+    {
+        $koordinator = PenugasanKoordinator::where('mata_kuliah_id', $this->mata_kuliah_id)
+            ->where('periode_id', $this->periode_id)
+            ->where('status', 'ACTIVE')
+            ->first();
+
+        if ($koordinator && $koordinator->dosen && $koordinator->dosen->user_id) {
+            Notification::create([
+                'user_id' => $koordinator->dosen->user_id,
+                'title'   => $title,
+                'message' => $message,
+            ]);
+        }
     }
 }

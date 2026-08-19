@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
 use Illuminate\Database\Eloquent\Model;
 
 class PenugasanVerifikator extends Model
 {
+    use HasUuids;
     protected $table = 'penugasan_verifikator';
     protected $keyType = 'string';
     public $incrementing = false;
@@ -15,6 +18,7 @@ class PenugasanVerifikator extends Model
         'mata_kuliah_id',
         'periode_id',
         'assigned_by',
+        'kelompok_id',
         'tanggal_mulai',
         'tanggal_selesai',
         'status',
@@ -48,5 +52,10 @@ class PenugasanVerifikator extends Model
     public function assignedBy()
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function kelompok()
+    {
+        return $this->belongsTo(KelompokVerifikasi::class, 'kelompok_id');
     }
 }

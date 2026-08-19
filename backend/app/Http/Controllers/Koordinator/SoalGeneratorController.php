@@ -1,0 +1,280 @@
+<?php
+
+namespace App\Http\Controllers\Koordinator;
+
+use App\Http\Controllers\Controller;
+use App\Models\MataKuliah;
+use App\Models\PeriodeVerifikasi;
+use App\Models\PenugasanKoordinator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+class SoalGeneratorController extends Controller
+{
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        $dosen = $user->dosen;
+        $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+        $mataKuliahId = $request->query('mata_kuliah_id');
+
+        if (!$mataKuliahId) {
+            $assignments = $dosen
+                ? PenugasanKoordinator::with('mataKuliah')
+                    ->where('dosen_id', $dosen->id)
+                    ->where('status', 'ACTIVE')
+                    ->get()
+                : collect();
+
+            if ($assignments->isEmpty()) {
+                return redirect()->route('koordinator.dashboard')
+                    ->with('error', 'Anda tidak memiliki penugasan mata kuliah aktif.');
+            }
+
+            if ($assignments->count() === 1) {
+                return redirect()->route('koordinator.soal.generator', [
+                    'mata_kuliah_id' => $assignments->first()->mata_kuliah_id
+                ]);
+            }
+
+            return Inertia::render('Koordinator/Soal/GeneratorSelect', [
+                'assignments' => $assignments->map(fn ($a) => [
+                    'id' => $a->mata_kuliah_id,
+                    'kode_mk' => $a->mataKuliah?->kode_mk,
+                    'nama_mk' => $a->mataKuliah?->nama_mk,
+                ])->values(),
+                'activePeriode' => $activePeriod,
+            ]);
+        }
+
+        // Verify assignment: coordinator must be assigned to this MK.
+        $assignment = $dosen
+            ? PenugasanKoordinator::where('dosen_id', $dosen->id)
+                ->where('mata_kuliah_id', $mataKuliahId)
+                ->where('status', 'ACTIVE')
+                ->first()
+            : null;
+
+        if (!$assignment) {
+            abort(403, 'Anda tidak memiliki akses ke mata kuliah ini.');
+        }
+
+        return redirect()->route('koordinator.soal.create', [
+            'mata_kuliah_id' => $mataKuliahId,
+            'tab' => 'generator'
+        ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $request->validate([
+            'form_no' => 'required|string',
+            'nama_evaluasi' => 'required|string',
+            'kode_dosen' => 'nullable|string',
+            'kode_nama_mk' => 'required|string',
+            'tipe_ujian' => 'required|string',
+            'tanggal_evaluasi' => 'required|string',
+            'tipe_soal' => 'required|string',
+            'petunjuk_pengerjaan' => 'required|array',
+            'plo' => 'required|array',
+        ]);
+
+        $plo = $request->input('plo', []);
+        $totalWeight = 0;
+        foreach ($plo as $ploItem) {
+            $cloList = $ploItem['clo'] ?? [];
+            foreach ($cloList as $cloItem) {
+                $bobot = isset($cloItem['bobot_lo']) ? (int) str_replace('%', '', $cloItem['bobot_lo']) : 0;
+                $totalWeight += $bobot;
+            }
+        }
+
+        if ($totalWeight !== 100) {
+            abort(422, 'Total bobot LO harus tepat 100%. Saat ini: ' . $totalWeight . '%.');
+        }
+
+        $data = $request->all();
+        
+        // Pass base64 encoded logo to blade template for bulletproof rendering in Dompdf
+        $logoPath = public_path('images/logo-telkom.png');
+        $logoBase64 = '';
+        if (file_exists($logoPath)) {
+            $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $logoData = file_get_contents($logoPath);
+            $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($logoData);
+        }
+        $data['logo_base64'] = $logoBase64;
+
+        $pdf = Pdf::loadView('pdf.lembar-soal', $data);
+        $pdf->setPaper('a4', 'portrait');
+        
+        // Return stream or download
+        $filename = 'Lembar_Soal_' . Str::slug($data['kode_nama_mk']) . '.pdf';
+        return $pdf->download($filename);
+    }
+
+    public function exportDocx(Request $request)
+    {
+        $request->validate([
+            'form_no' => 'required|string',
+            'nama_evaluasi' => 'required|string',
+            'kode_dosen' => 'nullable|string',
+            'kode_nama_mk' => 'required|string',
+            'tipe_ujian' => 'required|string',
+            'tanggal_evaluasi' => 'required|string',
+            'tipe_soal' => 'required|string',
+            'petunjuk_pengerjaan' => 'required|array',
+            'plo' => 'required|array',
+        ]);
+
+        $plo = $request->input('plo', []);
+        $totalWeight = 0;
+        foreach ($plo as $ploItem) {
+            $cloList = $ploItem['clo'] ?? [];
+            foreach ($cloList as $cloItem) {
+                $bobot = isset($cloItem['bobot_lo']) ? (int) str_replace('%', '', $cloItem['bobot_lo']) : 0;
+                $totalWeight += $bobot;
+            }
+        }
+
+        if ($totalWeight !== 100) {
+            abort(422, 'Total bobot LO harus tepat 100%. Saat ini: ' . $totalWeight . '%.');
+        }
+
+        $data = $request->all();
+
+        // Pass base64 encoded logo for Word doc
+        $logoPath = public_path('images/logo-telkom.png');
+        $logoBase64 = '';
+        if (file_exists($logoPath)) {
+            $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $logoData = file_get_contents($logoPath);
+            $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($logoData);
+        }
+        $data['logo_base64'] = $logoBase64;
+        
+        // Flag for Word export to style slightly differently if needed
+        $data['is_word'] = true;
+
+        $html = view('pdf.lembar-soal', $data)->render();
+        $filename = 'Lembar_Soal_' . Str::slug($data['kode_nama_mk']) . '.doc';
+
+        return response($html)
+            ->header('Content-Type', 'application/vnd.ms-word')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Cache-Control', 'max-age=0');
+    }
+
+    public function getCourseData(Request $request)
+    {
+        $user = $request->user();
+        $dosen = $user->dosen;
+        $mataKuliahId = $request->query('mata_kuliah_id');
+
+        if (!$mataKuliahId) {
+            return response()->json(['error' => 'Mata kuliah ID diperlukan.'], 400);
+        }
+
+        $assignment = $dosen
+            ? PenugasanKoordinator::where('dosen_id', $dosen->id)
+                ->where('mata_kuliah_id', $mataKuliahId)
+                ->where('status', 'ACTIVE')
+                ->first()
+            : null;
+
+        if (!$assignment) {
+            return response()->json(['error' => 'Anda tidak memiliki akses ke mata kuliah ini.'], 403);
+        }
+
+        $mataKuliah = MataKuliah::with([
+            'plo',
+            'clo' => function ($q) {
+                $q->with('plo');
+            }
+        ])->findOrFail($mataKuliahId);
+
+        $ploData = [];
+        $allPlo = $mataKuliah->plo;
+        $allClo = $mataKuliah->clo;
+
+        $totalCloCount = $allClo->count();
+        $defaultWeight = $totalCloCount > 0 ? (int) floor(100 / $totalCloCount) : 0;
+        $remainder = $totalCloCount > 0 ? (100 % $totalCloCount) : 0;
+
+        $cloIndex = 0;
+        foreach ($allPlo as $plo) {
+            $cloList = [];
+            foreach ($allClo as $clo) {
+                if ($clo->plo->contains('id', $plo->id)) {
+                    $weight = $defaultWeight;
+                    if ($cloIndex === 0) {
+                        $weight += $remainder;
+                    }
+                    $cloList[] = [
+                        'kode' => $clo->kode_clo,
+                        'deskripsi' => $clo->deskripsi,
+                        'bobot_lo' => $weight . '%'
+                    ];
+                    $cloIndex++;
+                }
+            }
+
+            if (!empty($cloList)) {
+                $ploData[] = [
+                    'kode' => $plo->kode_plo,
+                    'deskripsi' => $plo->deskripsi,
+                    'clo' => $cloList
+                ];
+            }
+        }
+
+        $unlinkedClo = [];
+        foreach ($allClo as $clo) {
+            $linked = false;
+            foreach ($allPlo as $plo) {
+                if ($clo->plo->contains('id', $plo->id)) {
+                    $linked = true;
+                    break;
+                }
+            }
+            if (!$linked) {
+                $weight = $defaultWeight;
+                if ($cloIndex === 0) {
+                    $weight += $remainder;
+                }
+                $unlinkedClo[] = [
+                    'kode' => $clo->kode_clo,
+                    'deskripsi' => $clo->deskripsi,
+                    'bobot_lo' => $weight . '%'
+                ];
+                $cloIndex++;
+            }
+        }
+
+        if (!empty($unlinkedClo)) {
+            $ploData[] = [
+                'kode' => 'PLO-Lainnya',
+                'deskripsi' => 'Program Learning Outcomes Lainnya',
+                'clo' => $unlinkedClo
+            ];
+        }
+
+        return response()->json([
+            'form_no' => '100-S1SI-001-R1',
+            'nama_evaluasi' => 'Ujian Tengah Semester',
+            'kode_dosen' => $dosen ? $dosen->kode_dosen : '',
+            'kode_nama_mk' => $mataKuliah->kode_mk . ' / ' . $mataKuliah->nama_mk,
+            'tipe_ujian' => 'UTS',
+            'tanggal_evaluasi' => date('Y-m-d') . ' / 120 menit',
+            'tipe_soal' => 'Closed Book (120 minutes)',
+            'petunjuk_pengerjaan' => [
+                'Bacalah setiap soal dengan teliti.',
+                'Jawablah seluruh pertanyaan pada lembar jawaban yang disediakan.',
+                'Dilarang menggunakan kalkulator atau handphone selama ujian berlangsung.',
+            ],
+            'plo' => $ploData
+        ]);
+    }
+}

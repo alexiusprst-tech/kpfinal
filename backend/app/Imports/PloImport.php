@@ -3,27 +3,39 @@
 namespace App\Imports;
 
 use App\Models\Plo;
-use Illuminate\Support\Str;
-use Maatwebsite\Excel\Concerns\ToModel;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
 
-class PloImport implements ToModel, WithHeadingRow, WithValidation
+class PloImport implements ToCollection, WithHeadingRow
 {
-    public function model(array $row)
+    public function collection(Collection $rows)
     {
-        return new Plo([
-            'id'        => (string) Str::uuid(),
-            'kode_plo'  => trim($row['kode_plo']),
-            'deskripsi' => trim($row['deskripsi']),
-        ]);
-    }
+        foreach ($rows as $row) {
+            $kodePlo    = trim($row['kode_plo'] ?? '');
+            $deskripsi  = trim($row['deskripsi'] ?? '');
 
-    public function rules(): array
-    {
-        return [
-            'kode_plo'  => ['required', 'string', 'unique:plo,kode_plo'],
-            'deskripsi' => ['required', 'string'],
-        ];
+            if ($kodePlo === '' || $deskripsi === '') {
+                continue;
+            }
+
+            // Cari termasuk yang soft-deleted
+            $plo = Plo::withTrashed()->where('kode_plo', $kodePlo)->first();
+
+            if ($plo) {
+                // Restore jika soft-deleted, lalu update deskripsi
+                if ($plo->trashed()) {
+                    $plo->restore();
+                }
+                $plo->update(['deskripsi' => $deskripsi]);
+            } else {
+                Plo::create([
+                    'kode_plo'  => $kodePlo,
+                    'deskripsi' => $deskripsi,
+                ]);
+            }
+        }
     }
 }
+
+

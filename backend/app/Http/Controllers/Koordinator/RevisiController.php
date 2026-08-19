@@ -50,6 +50,11 @@ class RevisiController extends Controller
 
         AuditLog::record($user->id, 'UPLOAD_REVISI', 'Soal', $soal->id);
 
+        $soal->notifyVerifier(
+            'Revisi Soal Diunggah',
+            "Dosen Koordinator " . $user->name . " telah mengunggah revisi baru untuk soal \"" . $soal->judul . "\" mata kuliah " . ($soal->mataKuliah?->nama_mk ?? '') . "."
+        );
+
         return redirect()->back()->with('success', 'Revisi soal berhasil diunggah.');
     }
 

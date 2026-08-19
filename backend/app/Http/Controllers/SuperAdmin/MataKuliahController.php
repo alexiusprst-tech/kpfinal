@@ -133,6 +133,26 @@ class MataKuliahController extends Controller
         return redirect()->back()->with('success', 'Mata Kuliah berhasil diperbarui.');
     }
 
+    public function show(MataKuliah $mataKuliah)
+    {
+        $mataKuliah->load([
+            'plo.clo',
+            'clo.plo',
+            'penugasanKoordinator.dosen'
+        ]);
+
+        $allPlo = Plo::orderBy('kode_plo', 'asc')->get();
+        $allClo = Clo::with('plo')->orderBy('kode_clo', 'asc')->get();
+        $allMataKuliah = MataKuliah::orderBy('kode_mk', 'asc')->get(['id', 'kode_mk', 'nama_mk', 'sks', 'semester', 'status']);
+
+        return Inertia::render('SuperAdmin/MataKuliah/Show', [
+            'mataKuliah'    => $mataKuliah,
+            'allPlo'        => $allPlo,
+            'allClo'        => $allClo,
+            'allMataKuliah' => $allMataKuliah,
+        ]);
+    }
+
     public function destroy(Request $request, MataKuliah $mataKuliah)
     {
         $oldValues = $mataKuliah->toArray();

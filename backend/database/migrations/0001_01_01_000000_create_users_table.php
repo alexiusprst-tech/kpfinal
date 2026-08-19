@@ -10,28 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Enable pgcrypto for UUID generation
-        DB::statement('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
-
-        // Create ENUMs safely
-        $enums = [
-            "CREATE TYPE user_role AS ENUM ('SUPER_ADMIN', 'KOORDINATOR', 'VERIFIKATOR')",
-            "CREATE TYPE user_status AS ENUM ('ACTIVE', 'INACTIVE')",
-            "CREATE TYPE periode_status AS ENUM ('DRAFT', 'ACTIVE', 'INACTIVE', 'CLOSED')",
-            "CREATE TYPE penugasan_status AS ENUM ('ACTIVE', 'INACTIVE', 'ENDED')",
-            "CREATE TYPE soal_status AS ENUM ('DRAFT', 'SUBMITTED', 'IN_REVIEW', 'REVISION', 'RESUBMITTED', 'APPROVED', 'REJECTED')",
-            "CREATE TYPE import_type AS ENUM ('PLO', 'CLO', 'MATA_KULIAH')",
-            "CREATE TYPE import_status AS ENUM ('PROCESSING', 'SUCCESS', 'FAILED', 'PARTIAL')",
-            "CREATE TYPE verifikasi_action AS ENUM ('APPROVED', 'REVISION', 'REJECTED')",
-        ];
-
-        foreach ($enums as $sql) {
-            $typeName = explode(' ', $sql)[2];
-            DB::statement("DO $$ BEGIN CREATE TYPE {$typeName} AS ENUM (" . Str::after($sql, 'AS ENUM (') . "; EXCEPTION WHEN duplicate_object THEN null; END $$;");
-        }
-
         Schema::create('users', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->string('name', 150);
             $table->string('email', 150)->unique();
             $table->string('password', 255);
@@ -63,14 +43,5 @@ return new class extends Migration
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
-
-        DB::statement('DROP TYPE IF EXISTS verifikasi_action');
-        DB::statement('DROP TYPE IF EXISTS import_status');
-        DB::statement('DROP TYPE IF EXISTS import_type');
-        DB::statement('DROP TYPE IF EXISTS soal_status');
-        DB::statement('DROP TYPE IF EXISTS penugasan_status');
-        DB::statement('DROP TYPE IF EXISTS periode_status');
-        DB::statement('DROP TYPE IF EXISTS user_status');
-        DB::statement('DROP TYPE IF EXISTS user_role');
     }
 };

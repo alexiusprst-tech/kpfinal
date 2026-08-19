@@ -135,6 +135,10 @@ class SoalController extends Controller
         AuditLog::record($user->id, 'UPLOAD_SOAL', 'Soal', $soal->id, null, $soal->toArray());
         if ($submitNow) {
             AuditLog::record($user->id, 'SUBMIT_SOAL', 'Soal', $soal->id);
+            $soal->notifyVerifier(
+                'Soal Baru Menunggu Verifikasi',
+                "Dosen Koordinator " . $user->name . " telah mengunggah dan mengirimkan soal \"" . $soal->judul . "\" untuk mata kuliah " . ($soal->mataKuliah?->nama_mk ?? '') . "."
+            );
         }
 
         return redirect()->route('koordinator.mata-kuliah.show', $soal->mata_kuliah_id)
@@ -246,6 +250,10 @@ class SoalController extends Controller
 
         $soal->update(['status' => Soal::STATUS_SUBMITTED]);
         AuditLog::record($request->user()->id, 'SUBMIT_SOAL', 'Soal', $soal->id);
+        $soal->notifyVerifier(
+            'Soal Baru Menunggu Verifikasi',
+            "Dosen Koordinator " . $request->user()->name . " telah mengirimkan soal \"" . $soal->judul . "\" untuk mata kuliah " . ($soal->mataKuliah?->nama_mk ?? '') . "."
+        );
         return redirect()->back()->with('success', 'Soal berhasil disubmit untuk verifikasi.');
     }
 

@@ -15,7 +15,7 @@ class MataKuliahSeeder extends Seeder
     {
         $courses = [
             // Semester 1
-            [1, 'AGAMA', 'Agama', 'Religion', 2],
+            [1, 'UAKXCCB2', 'Agama', 'Religion', 2],
             [1, 'UCK1EDB1', 'Internalisasi Budaya dan Pembentukan Karakter', 'Cultural Internalization and Character Formation', 1],
             [1, 'BBK1AAB4', 'Algoritma dan Pemrograman', 'Algorithms and Programming', 4],
             [1, 'BBK1BAB3', 'Matematika Diskrit', 'Discrete Mathematics', 3],
@@ -49,32 +49,32 @@ class MataKuliahSeeder extends Seeder
             [4, 'BBK2LAB3', 'Penambangan Data', 'Data Mining', 3],
             [4, 'BBK2MAB2', 'Pengujian dan Implementasi Sistem', 'Testing and System Implementation', 2],
             [4, 'BBK2NAB3', 'Rekayasa Proses Bisnis', 'Business Process Engineering', 3],
-            [4, 'UCKXADB2', 'Bahasa Inggris', 'English', 2],
 
             // Semester 5
+            [5, 'UCKXADB2', 'Bahasa Inggris', 'English', 2],
             [5, 'BBK3AAB3', 'Arsitektur Enterprise', 'Enterprise Architecture', 3],
             [5, 'BBK3BAB3', 'Data Warehouse dan Business Intelligence', 'Data Warehouse and Business Intelligence', 3],
             [5, 'BBK3CAB3', 'Komputasi Awan', 'Cloud Computing', 3],
             [5, 'BBK3DAB3', 'Manajemen Data Enterprise', 'Enterprise Data Management', 3],
             [5, 'BBK3EAB3', 'Proyek Perangkat Lunak', 'Software Project', 3],
             [5, 'BBK3FAB3', 'Sistem Informasi Akuntansi', 'Information System for Accounting', 3],
-            [5, 'UBKXCCB2', 'Bahasa Indonesia', 'Indonesian Language', 2],
 
             // Semester 6
+            [6, 'UBKXCCB2', 'Bahasa Indonesia', 'Indonesian Language', 2],
             [6, 'BBK3GAB3', 'Bahasa Inggris II', 'English II', 3],
             [6, 'BBK3HAB3', 'Kecerdasan Artifisial dan Penerapannya', 'Artificial Intelligence and Its Application', 3],
             [6, 'BBK3IAB2', 'Kerja Praktek dan Pengabdian Masyarakat', 'Internship and Community Service', 2],
             [6, 'BBK3JAB3', 'Tata Kelola dan Manajemen Teknologi Informasi', 'Information Technology Governance and Management', 3],
-            [6, 'MK PILIHAN I', 'MK Pilihan Prodi I / MK MBKM / MK WRAP', 'Elective I', 3],
-            [6, 'MK PILIHAN II', 'MK Pilihan Prodi II / MK MBKM / MK WRAP', 'Elective II', 3],
+            [6, 'BBK3P013', 'MK Pilihan Prodi I / MK MBKM / MK WRAP', 'Elective I', 3],
+            [6, 'BBK3P023', 'MK Pilihan Prodi II / MK MBKM / MK WRAP', 'Elective II', 3],
 
             // Semester 7
             [7, 'UCKXBDB2', 'Kewirausahaan', 'Entrepreneurship', 2],
             [7, 'BBK4AAC4', 'Capstone Project', 'Capstone Project', 4],
             [7, 'BBK4BAB2', 'Metode Penelitian dan Penyusunan Karya Ilmiah', 'Research Method and Scientific Writing', 2],
-            [7, 'MK PILIHAN III', 'MK Pilihan Prodi III / MK MBKM / MK WRAP', 'Elective III', 3],
-            [7, 'MK PILIHAN IV', 'MK Pilihan Prodi IV / MK MBKM / MK WRAP', 'Elective IV', 3],
-            [7, 'MK PILIHAN V', 'MK Pilihan Prodi V / MK MBKM / MK WRAP', 'Elective V', 3],
+            [7, 'BBK4P033', 'MK Pilihan Prodi III / MK MBKM / MK WRAP', 'Elective III', 3],
+            [7, 'BBK4P043', 'MK Pilihan Prodi IV / MK MBKM / MK WRAP', 'Elective IV', 3],
+            [7, 'BBK4P053', 'MK Pilihan Prodi V / MK MBKM / MK WRAP', 'Elective V', 3],
 
             // Semester 8
             [8, 'UBKXACB2', 'Kewarganegaraan', 'Civics Education', 2],
@@ -83,11 +83,11 @@ class MataKuliahSeeder extends Seeder
             [8, 'BBK4DAA4', 'Tugas Akhir', 'Final Project', 4],
         ];
 
+        $seededCodes = [];
         foreach ($courses as [$semester, $kode, $namaIna, $namaEng, $sks]) {
             MataKuliah::updateOrCreate(
                 ['kode_mk' => $kode],
                 [
-                    'id'         => (string) Str::uuid(),
                     'nama_mk'    => $namaIna,
                     'nama_mk_en' => $namaEng,
                     'sks'        => $sks,
@@ -95,6 +95,20 @@ class MataKuliahSeeder extends Seeder
                     'status'     => 'ACTIVE',
                 ]
             );
+            $seededCodes[] = $kode;
+        }
+
+        // Delete any old MataKuliah records and their relationships that are not in the new seeded codes list
+        $mksToDelete = MataKuliah::withTrashed()->whereNotIn('kode_mk', $seededCodes)->get();
+        foreach ($mksToDelete as $mk) {
+            $mk->plo()->detach();
+            $mk->clo()->detach();
+            $mk->soal()->forceDelete();
+            $mk->penugasanKoordinator()->forceDelete();
+            $mk->penugasanVerifikator()->forceDelete();
+            $mk->beritaAcara()->forceDelete();
+            $mk->kelompokMataKuliah()->forceDelete();
+            $mk->forceDelete();
         }
 
         $this->command->info('✅ Berhasil menyemai 52 Data Mata Kuliah Kurikulum.');

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
 use Illuminate\Database\Eloquent\Model;
 
 class BeritaAcara extends Model
 {
+    use HasUuids;
     protected $table = 'berita_acara';
     protected $keyType = 'string';
     public $incrementing = false;

@@ -11,7 +11,7 @@ return new class extends Migration
     {
         // ===================== PENUGASAN KOORDINATOR =====================
         Schema::create('penugasan_koordinator', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->uuid('dosen_id');
             $table->uuid('mata_kuliah_id');
             $table->uuid('periode_id');
@@ -32,7 +32,7 @@ return new class extends Migration
 
         // ===================== PENUGASAN VERIFIKATOR =====================
         Schema::create('penugasan_verifikator', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->uuid('dosen_id');
             $table->uuid('mata_kuliah_id');
             $table->uuid('periode_id');
@@ -50,7 +50,7 @@ return new class extends Migration
 
         // ===================== SOAL =====================
         Schema::create('soal', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->uuid('mata_kuliah_id');
             $table->uuid('periode_id');
             $table->uuid('kategori_id');
@@ -71,7 +71,7 @@ return new class extends Migration
 
         // ===================== REVISI SOAL =====================
         Schema::create('revisi_soal', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->uuid('soal_id');
             $table->unsignedSmallInteger('version');
             $table->string('nama_file', 255);
@@ -90,7 +90,7 @@ return new class extends Migration
 
         // ===================== VERIFIKASI =====================
         Schema::create('verifikasi', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->uuid('soal_id');
             $table->uuid('verifikator_id');
             $table->string('action', 20); // APPROVED, REVISION, REJECTED
@@ -103,7 +103,7 @@ return new class extends Migration
 
         // ===================== BERITA ACARA =====================
         Schema::create('berita_acara', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->string('nomor', 100)->nullable();
             $table->uuid('periode_id');
             $table->uuid('mata_kuliah_id');
@@ -125,7 +125,7 @@ return new class extends Migration
 
         // ===================== IMPORT LOGS =====================
         Schema::create('import_logs', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->uuid('user_id');
             $table->string('type', 20); // PLO, CLO, MATA_KULIAH
             $table->string('file_name', 255);
@@ -141,7 +141,7 @@ return new class extends Migration
 
         // ===================== AUDIT LOGS =====================
         Schema::create('audit_logs', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->uuid('user_id')->nullable();
             $table->string('action', 100);
             $table->string('model_type', 100)->nullable();
