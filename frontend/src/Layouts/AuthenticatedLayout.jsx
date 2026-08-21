@@ -16,10 +16,11 @@ import {
     Shield,
     FolderKanban,
     ChevronDown,
-    LifeBuoy,
     Bell,
     Sparkles,
 } from 'lucide-react';
+import { showToast, showConfirm } from '@/Utils/sweetalert';
+
 
 // Sidebar navigation according to role & DESIGN.md.
 // A "group" renders as a collapsible section with an uppercase label
@@ -30,7 +31,6 @@ function getNavSections(role) {
             { type: 'item', label: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard },
             {
                 type: 'group', label: 'Master Data', items: [
-                    { label: 'Kategori Soal',      href: '/superadmin/kategori-soal', icon: FolderKanban },
                     { label: 'Tahun Ajaran',       href: '/superadmin/tahun-ajaran',  icon: Calendar },
                     { label: 'Periode Verifikasi', href: '/superadmin/periode',       icon: Clock },
                     { label: 'Mata Kuliah',        href: '/superadmin/mata-kuliah',   icon: BookOpen },
@@ -47,7 +47,7 @@ function getNavSections(role) {
         ];
     }
 
-    if (role === 'KOORDINATOR') {
+    if (role === 'KOORDINATOR' || role === 'DOSEN') {
         return [
             { type: 'item', label: 'Dashboard', href: '/koordinator/dashboard', icon: LayoutDashboard },
             {
@@ -81,7 +81,7 @@ function NavLink({ item }) {
     const Icon = item.icon;
     const active = isPathActive(item.href);
     return (
-        <a
+        <Link
             href={item.href}
             className={`
                 flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-200
@@ -93,7 +93,7 @@ function NavLink({ item }) {
         >
             <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-white' : 'text-slate-500'}`} />
             <span className="tracking-tight">{item.label}</span>
-        </a>
+        </Link>
     );
 }
 
@@ -121,7 +121,7 @@ function NavGroup({ group }) {
 }
 
 export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
-    const { auth, activePeriod, notifications } = usePage().props;
+    const { auth, activePeriod, notifications, flash } = usePage().props;
     const user = auth?.user;
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showDrawer, setShowDrawer] = useState(false);
@@ -129,8 +129,19 @@ export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
     const notifList = notifications?.list || [];
     const notifCount = notifications?.count || 0;
 
+    // Trigger SweetAlert2 toast when flash message exists
+    useEffect(() => {
+        if (!flash) return;
+        const message = flash.success || flash.error || flash.warning || flash.info;
+        if (message) {
+            const icon = flash.success ? 'success' : flash.error ? 'error' : flash.warning ? 'warning' : 'info';
+            showToast(icon, message);
+        }
+    }, [flash?.success, flash?.error, flash?.warning, flash?.info]);
+
     useEffect(() => {
         const handleOpen = () => setShowDrawer(true);
+
         window.addEventListener('open-notifications', handleOpen);
         return () => window.removeEventListener('open-notifications', handleOpen);
     }, []);
@@ -163,7 +174,23 @@ export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
         });
     };
 
+    const handleLogout = async (e) => {
+        e.preventDefault();
+        const result = await showConfirm({
+            title: 'Konfirmasi Keluar',
+            text: 'Apakah Anda yakin ingin keluar dari sistem verifikasi?',
+            icon: 'question',
+            confirmButtonText: 'Ya, Keluar',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#801720',
+        });
+        if (result.isConfirmed) {
+            window.location.href = '/logout';
+        }
+    };
+
     const navSections = getNavSections(user?.role);
+
 
     return (
         <div className="min-h-screen bg-[#F0F3F8] flex flex-col lg:flex-row font-sans">
@@ -225,16 +252,8 @@ export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
                         </nav>
                     </div>
 
-                    {/* Footer: Help, User & Period Card */}
+                    {/* Footer: User & Period Card */}
                     <div className="pt-5 border-t border-slate-100 space-y-3 mt-6">
-                        <a
-                            href="#"
-                            className="flex items-center gap-3.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all"
-                        >
-                            <LifeBuoy className="w-4.5 h-4.5 flex-shrink-0 text-slate-400" />
-                            Pusat Bantuan
-                        </a>
-
                         {/* Active Period Indicator */}
                         <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/80 text-xs">
                             <div className="text-[10px] uppercase font-extrabold text-slate-400 mb-1 tracking-wider">Periode Aktif</div>
@@ -255,13 +274,15 @@ export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
                                     <p className="text-xs text-slate-500 truncate font-semibold">{user?.role}</p>
                                 </div>
                             </div>
-                            <a
-                                href="/logout"
-                                className="p-2 rounded-xl bg-slate-100 hover:bg-red-600 hover:text-white text-slate-500 transition-all flex-shrink-0 shadow-xs"
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="p-2 rounded-xl bg-slate-100 hover:bg-red-600 hover:text-white text-slate-500 transition-all flex-shrink-0 shadow-xs cursor-pointer"
                                 title="Keluar"
                             >
                                 <LogOut className="w-4 h-4" />
-                            </a>
+                            </button>
+
                         </div>
                     </div>
                 </div>

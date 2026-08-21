@@ -24,8 +24,9 @@ class CloController extends Controller
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('kode_clo', 'ilike', "%{$request->search}%")
-                  ->orWhere('deskripsi', 'ilike', "%{$request->search}%");
+                $term = "%{$request->search}%";
+                $q->whereRaw('LOWER(kode_clo) LIKE ?', [strtolower($term)])
+                  ->orWhereRaw('LOWER(deskripsi) LIKE ?', [strtolower($term)]);
             });
         }
 

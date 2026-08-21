@@ -12,6 +12,7 @@ use App\Models\PeriodeVerifikasi;
 use App\Models\Soal;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -130,66 +131,72 @@ class BeritaAcaraController extends Controller
 
         $clos = $mataKuliah->clo()->with('plo')->get();
 
-        $existing = BeritaAcara::where('periode_id', $activePeriod->id)
-            ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('dibuat_oleh', $user->id)
-            ->first();
+        return DB::transaction(function () use ($user, $dosen, $activePeriod, $mataKuliah, $soalList, $clos, $koordinatorDosen, $jumlahApproved, $jumlahRevision, $jumlahRejected) {
+            // Lock period to prevent race condition during serial number generation
+            $lockedPeriod = PeriodeVerifikasi::where('id', $activePeriod->id)->lockForUpdate()->first();
 
-        $nomor = $existing?->nomor ?? $this->generateNomor($activePeriod, $mataKuliah);
+            $existing = BeritaAcara::where('periode_id', $lockedPeriod->id)
+                ->where('mata_kuliah_id', $mataKuliah->id)
+                ->where('dibuat_oleh', $user->id)
+                ->lockForUpdate()
+                ->first();
 
-        $tanggal = now();
+            $nomor = $existing?->nomor ?? $this->generateNomor($lockedPeriod, $mataKuliah);
 
-        $data = [
-            'nomor'            => $nomor,
-            'tanggal'          => $tanggal,
-            'tanggalIndonesia' => $this->formatTanggalIndonesia($tanggal),
-            'periode'          => $activePeriod,
-            'mataKuliah'       => $mataKuliah,
-            'evaluatorNama'    => $user->name,
-            'evaluatorKode'    => $dosen->kode_dosen ?? '-',
-            'programStudi'     => 'S1 Sistem Informasi',
-            'koordinatorNama'  => $koordinatorDosen->nama_lengkap,
-            'kaProdi'          => 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.',
-            'soalList'         => $soalList,
-            'clos'             => $clos,
-            'jumlahSoal'       => $soalList->count(),
-            'jumlahApproved'   => $jumlahApproved,
-            'jumlahRevision'   => $jumlahRevision,
-            'jumlahRejected'   => $jumlahRejected,
-        ];
+            $tanggal = now();
 
-        $pdf = Pdf::loadView('pdf.berita-acara', $data)->setPaper('a4', 'portrait');
-
-        $relativePath = 'berita-acara/' . Str::uuid() . '.pdf';
-        Storage::disk('private')->put($relativePath, $pdf->output());
-
-        $beritaAcara = BeritaAcara::updateOrCreate(
-            [
-                'periode_id'     => $activePeriod->id,
-                'mata_kuliah_id' => $mataKuliah->id,
-                'dibuat_oleh'    => $user->id,
-            ],
-            [
+            $data = [
                 'nomor'            => $nomor,
-                'koordinator_id'   => $koordinatorDosen->id,
-                'jumlah_soal'      => $soalList->count(),
-                'jumlah_approved'  => $jumlahApproved,
-                'jumlah_revision'  => $jumlahRevision,
-                'jumlah_rejected'  => $jumlahRejected,
-                'file_path'        => $relativePath,
                 'tanggal'          => $tanggal,
-            ]
-        );
+                'tanggalIndonesia' => $this->formatTanggalIndonesia($tanggal),
+                'periode'          => $lockedPeriod,
+                'mataKuliah'       => $mataKuliah,
+                'evaluatorNama'    => $user->name,
+                'evaluatorKode'    => $dosen->kode_dosen ?? '-',
+                'programStudi'     => config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi')),
+                'koordinatorNama'  => $koordinatorDosen->nama_lengkap,
+                'kaProdi'          => config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
+                'soalList'         => $soalList,
+                'clos'             => $clos,
+                'jumlahSoal'       => $soalList->count(),
+                'jumlahApproved'   => $jumlahApproved,
+                'jumlahRevision'   => $jumlahRevision,
+                'jumlahRejected'   => $jumlahRejected,
+            ];
 
-        AuditLog::record($user->id, 'BERITA_ACARA_CREATED', 'BeritaAcara', $beritaAcara->id, null, [
-            'nomor'          => $nomor,
-            'mata_kuliah_id' => $mataKuliah->id,
-            'periode_id'     => $activePeriod->id,
-        ]);
+            $pdf = Pdf::loadView('pdf.berita-acara', $data)->setPaper('a4', 'portrait');
 
-        $filename = 'Berita-Acara-' . Str::slug($mataKuliah->kode_mk . '-' . $mataKuliah->nama_mk) . '.pdf';
+            $relativePath = 'berita-acara/' . Str::uuid() . '.pdf';
+            Storage::disk('private')->put($relativePath, $pdf->output());
 
-        return $pdf->download($filename);
+            $beritaAcara = BeritaAcara::updateOrCreate(
+                [
+                    'periode_id'     => $lockedPeriod->id,
+                    'mata_kuliah_id' => $mataKuliah->id,
+                    'dibuat_oleh'    => $user->id,
+                ],
+                [
+                    'nomor'            => $nomor,
+                    'koordinator_id'   => $koordinatorDosen->id,
+                    'jumlah_soal'      => $soalList->count(),
+                    'jumlah_approved'  => $jumlahApproved,
+                    'jumlah_revision'  => $jumlahRevision,
+                    'jumlah_rejected'  => $jumlahRejected,
+                    'file_path'        => $relativePath,
+                    'tanggal'          => $tanggal,
+                ]
+            );
+
+            AuditLog::record($user->id, 'BERITA_ACARA_CREATED', 'BeritaAcara', $beritaAcara->id, null, [
+                'nomor'          => $nomor,
+                'mata_kuliah_id' => $mataKuliah->id,
+                'periode_id'     => $lockedPeriod->id,
+            ]);
+
+            $filename = 'Berita-Acara-' . Str::slug($mataKuliah->kode_mk . '-' . $mataKuliah->nama_mk) . '.pdf';
+
+            return $pdf->download($filename);
+        });
     }
 
     private function generateNomor(PeriodeVerifikasi $periode, MataKuliah $mataKuliah): string

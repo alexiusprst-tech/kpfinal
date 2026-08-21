@@ -15,6 +15,7 @@ use App\Models\PenugasanKoordinator;
 use App\Models\PenugasanVerifikator;
 use App\Models\PeriodeVerifikasi;
 use App\Models\Soal;
+use App\Models\Verifikasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -149,10 +150,7 @@ class KelompokVerifikasiController extends Controller
             return back()->withErrors(['periode_id' => 'Periode yang sudah CLOSED tidak dapat digunakan untuk penugasan baru.'])->withInput();
         }
 
-        // Validate separation of duties & ensure no coordinator/verifier overlap across entire group
-        $allGroupCoordinators = [];
-        $allGroupVerifikators = [];
-
+        // Validate separation of duties (Dosen cannot be both Koordinator and Verifikator on the SAME mata kuliah)
         foreach ($validated['mata_kuliah'] as $mk) {
             $kList = $mk['koordinator_ids'] ?? (isset($mk['koordinator_id']) ? [$mk['koordinator_id']] : []);
             $vList = $mk['verifikator_ids'] ?? $validated['verifikator'] ?? [];
@@ -169,7 +167,7 @@ class KelompokVerifikasiController extends Controller
                 return back()->withErrors(['mata_kuliah' => 'Jumlah verifikator untuk setiap mata kuliah maksimal 5 dosen.'])->withInput();
             }
 
-            // Check overlap on the same course
+            // Check self-verification overlap on the SAME course
             $courseOverlap = array_intersect($kList, $vList);
             if (!empty($courseOverlap)) {
                 $dosenObj = Dosen::find(reset($courseOverlap));
@@ -180,26 +178,6 @@ class KelompokVerifikasiController extends Controller
                     'mata_kuliah' => "Dosen {$dosenName} tidak dapat dipilih sebagai Koordinator sekaligus Verifikator pada mata kuliah {$mkName}."
                 ])->withInput();
             }
-
-            // Check overlap with already assigned roles in the group
-            $koorWithVerif = array_intersect($kList, $allGroupVerifikators);
-            if (!empty($koorWithVerif)) {
-                $dosenObj = Dosen::find(reset($koorWithVerif));
-                return back()->withErrors([
-                    'mata_kuliah' => "Dosen {$dosenObj->nama_lengkap} sudah ditugaskan sebagai Verifikator pada kelompok ini."
-                ])->withInput();
-            }
-
-            $verifWithKoor = array_intersect($vList, $allGroupCoordinators);
-            if (!empty($verifWithKoor)) {
-                $dosenObj = Dosen::find(reset($verifWithKoor));
-                return back()->withErrors([
-                    'mata_kuliah' => "Dosen {$dosenObj->nama_lengkap} sudah ditugaskan sebagai Koordinator pada kelompok ini."
-                ])->withInput();
-            }
-
-            $allGroupCoordinators = array_merge($allGroupCoordinators, $kList);
-            $allGroupVerifikators = array_merge($allGroupVerifikators, $vList);
         }
 
         $kelompok = DB::transaction(function () use ($validated, $request) {
@@ -346,11 +324,16 @@ class KelompokVerifikasiController extends Controller
             $dosen = $kv->dosen;
             $mk = $kv->mataKuliah;
 
-            $verifiedCount = Soal::where('verified_by', $kv->dosen_id)
-                ->where('periode_id', $periodeId)
-                ->count();
+            $verifiedCount = ($dosen && $dosen->user_id)
+                ? Verifikasi::where('verifikator_id', $dosen->user_id)
+                    ->whereHas('soal', function ($q) use ($periodeId, $kv) {
+                        $q->where('periode_id', $periodeId)
+                          ->when($kv->mata_kuliah_id, fn($mkQ, $mkId) => $mkQ->where('mata_kuliah_id', $mkId));
+                    })
+                    ->count()
+                : 0;
 
-            $pendingCount = Soal::where('status', 'SUBMITTED')
+            $pendingCount = Soal::whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])
                 ->where('periode_id', $periodeId)
                 ->when($kv->mata_kuliah_id, function ($q, $mkId) {
                     $q->where('mata_kuliah_id', $mkId);
@@ -471,10 +454,7 @@ class KelompokVerifikasiController extends Controller
             'verifikator.max'                       => 'Jumlah verifikator maksimal 5 dosen.',
         ]);
 
-        // Validate separation of duties & ensure no coordinator/verifier overlap across entire group
-        $allGroupCoordinators = [];
-        $allGroupVerifikators = [];
-
+        // Validate separation of duties (Dosen cannot be both Koordinator and Verifikator on the SAME mata kuliah)
         foreach ($validated['mata_kuliah'] as $mk) {
             $kList = $mk['koordinator_ids'] ?? (isset($mk['koordinator_id']) ? [$mk['koordinator_id']] : []);
             $vList = $mk['verifikator_ids'] ?? $validated['verifikator'] ?? [];
@@ -491,7 +471,7 @@ class KelompokVerifikasiController extends Controller
                 return back()->withErrors(['mata_kuliah' => 'Jumlah verifikator untuk setiap mata kuliah maksimal 5 dosen.'])->withInput();
             }
 
-            // Check overlap on the same course
+            // Check self-verification overlap on the SAME course
             $courseOverlap = array_intersect($kList, $vList);
             if (!empty($courseOverlap)) {
                 $dosenObj = Dosen::find(reset($courseOverlap));
@@ -502,26 +482,6 @@ class KelompokVerifikasiController extends Controller
                     'mata_kuliah' => "Dosen {$dosenName} tidak dapat dipilih sebagai Koordinator sekaligus Verifikator pada mata kuliah {$mkName}."
                 ])->withInput();
             }
-
-            // Check overlap with already assigned roles in the group
-            $koorWithVerif = array_intersect($kList, $allGroupVerifikators);
-            if (!empty($koorWithVerif)) {
-                $dosenObj = Dosen::find(reset($koorWithVerif));
-                return back()->withErrors([
-                    'mata_kuliah' => "Dosen {$dosenObj->nama_lengkap} sudah ditugaskan sebagai Verifikator pada kelompok ini."
-                ])->withInput();
-            }
-
-            $verifWithKoor = array_intersect($vList, $allGroupCoordinators);
-            if (!empty($verifWithKoor)) {
-                $dosenObj = Dosen::find(reset($verifWithKoor));
-                return back()->withErrors([
-                    'mata_kuliah' => "Dosen {$dosenObj->nama_lengkap} sudah ditugaskan sebagai Koordinator pada kelompok ini."
-                ])->withInput();
-            }
-
-            $allGroupCoordinators = array_merge($allGroupCoordinators, $kList);
-            $allGroupVerifikators = array_merge($allGroupVerifikators, $vList);
         }
 
         DB::transaction(function () use ($validated, $request, $kelompokVerifikasi) {
@@ -708,6 +668,12 @@ class KelompokVerifikasiController extends Controller
             // Fallback for legacy kelompok_mata_kuliah.koordinator_id
             $kmks = KelompokMataKuliah::where('kelompok_id', $kelompok->id)->whereNotNull('koordinator_id')->with('koordinator.user', 'mataKuliah')->get();
             foreach ($kmks as $kmk) {
+                PenugasanKoordinator::where('dosen_id', $kmk->koordinator_id)
+                    ->where('mata_kuliah_id', $kmk->mata_kuliah_id)
+                    ->where('periode_id', $periodeId)
+                    ->where('status', 'ACTIVE')
+                    ->update(['status' => 'ENDED']);
+
                 PenugasanKoordinator::create([
                     'id'             => (string) Str::uuid(),
                     'dosen_id'       => $kmk->koordinator_id,
@@ -724,6 +690,12 @@ class KelompokVerifikasiController extends Controller
             }
         } else {
             foreach ($koordinators as $k) {
+                PenugasanKoordinator::where('dosen_id', $k->dosen_id)
+                    ->where('mata_kuliah_id', $k->mata_kuliah_id)
+                    ->where('periode_id', $periodeId)
+                    ->where('status', 'ACTIVE')
+                    ->update(['status' => 'ENDED']);
+
                 PenugasanKoordinator::create([
                     'id'             => (string) Str::uuid(),
                     'dosen_id'       => $k->dosen_id,
@@ -754,6 +726,12 @@ class KelompokVerifikasiController extends Controller
 
         $verifikators = KelompokVerifikator::where('kelompok_id', $kelompok->id)->with('dosen.user', 'mataKuliah')->get();
         foreach ($verifikators as $kv) {
+            PenugasanVerifikator::where('dosen_id', $kv->dosen_id)
+                ->where('mata_kuliah_id', $kv->mata_kuliah_id)
+                ->where('periode_id', $periodeId)
+                ->where('status', 'ACTIVE')
+                ->update(['status' => 'ENDED']);
+
             PenugasanVerifikator::create([
                 'id'             => (string) Str::uuid(),
                 'dosen_id'       => $kv->dosen_id,
@@ -765,7 +743,12 @@ class KelompokVerifikasiController extends Controller
             ]);
 
             if ($kv->dosen && $kv->dosen->user && $kv->dosen->user->role !== 'SUPER_ADMIN') {
-                if ($kv->dosen->user->role !== 'KOORDINATOR') {
+                $hasActiveKoor = PenugasanKoordinator::where('dosen_id', $kv->dosen_id)
+                    ->where('periode_id', $periodeId)
+                    ->where('status', 'ACTIVE')
+                    ->exists();
+
+                if (!$hasActiveKoor) {
                     $kv->dosen->user->update(['role' => 'VERIFIKATOR']);
                 }
             }

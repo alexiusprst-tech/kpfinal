@@ -7,20 +7,13 @@ import {
     Users, Shield, BookOpen, RotateCcw, PowerOff, Check, GraduationCap
 } from 'lucide-react';
 
-function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error && !flash?.info)) return null;
-    const isSuccess = Boolean(flash.success);
-    const isInfo = Boolean(flash.info);
-    const bg = isSuccess ? 'bg-emerald-600' : isInfo ? 'bg-blue-600' : 'bg-red-600';
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-2xl shadow-xl text-white text-sm max-w-md ${bg}`}>
-            <span className="flex-1 font-medium">{flash.success || flash.info || flash.error}</span>
-            <button onClick={() => setVisible(false)} className="p-1 hover:opacity-75"><X className="w-4 h-4" /></button>
-        </div>
-    );
+function Toast({ flash }) {
+    return <FlashAlert type="toast" flash={flash} />;
 }
+
 
 const STATUS_CONFIG = {
     DRAFT:    { label: 'Draft',     bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200/60', dot: 'bg-amber-500' },
@@ -102,26 +95,45 @@ export default function KelompokVerifikasiIndex({
         router.get('/superadmin/kelompok-verifikasi', {}, { replace: true });
     };
 
-    const handleConfirmAction = () => {
-        if (!actionItem || !actionType) return;
-        setProcessing(true);
+    const handleAction = async (item, type) => {
+        if (!item || !type) return;
 
-        if (actionType === 'activate') {
-            router.post(`/superadmin/kelompok-verifikasi/${actionItem.id}/activate`, {}, {
-                onFinish: () => { setProcessing(false); setActionItem(null); setActionType(null); },
-                preserveScroll: true,
+        if (type === 'activate') {
+            const result = await showConfirm({
+                title: 'Aktifkan Kelompok Verifikasi?',
+                text: `Aktifkan kelompok verifikasi "${item.nama}"? Dosen yang ditugaskan akan dapat mengakses modul verifikasi.`,
+                icon: 'question',
+                confirmButtonText: 'Ya, Aktifkan',
+                confirmButtonColor: '#059669',
             });
-        } else if (actionType === 'deactivate') {
-            router.post(`/superadmin/kelompok-verifikasi/${actionItem.id}/deactivate`, {}, {
-                onFinish: () => { setProcessing(false); setActionItem(null); setActionType(null); },
-                preserveScroll: true,
+            if (result.isConfirmed) {
+                router.post(`/superadmin/kelompok-verifikasi/${item.id}/activate`, {}, { preserveScroll: true });
+            }
+        } else if (type === 'deactivate') {
+            const result = await showConfirm({
+                title: 'Nonaktifkan Kelompok?',
+                text: `Nonaktifkan kelompok "${item.nama}"? Akses verifikasi untuk dosen di kelompok ini akan dinonaktifkan sementara.`,
+                icon: 'warning',
+                confirmButtonText: 'Ya, Nonaktifkan',
+                confirmButtonColor: '#801720',
             });
-        } else if (actionType === 'delete') {
-            router.delete(`/superadmin/kelompok-verifikasi/${actionItem.id}`, {
-                onFinish: () => { setProcessing(false); setActionItem(null); setActionType(null); },
+            if (result.isConfirmed) {
+                router.post(`/superadmin/kelompok-verifikasi/${item.id}/deactivate`, {}, { preserveScroll: true });
+            }
+        } else if (type === 'delete') {
+            const result = await showConfirm({
+                title: 'Hapus Kelompok Verifikasi?',
+                text: `Apakah Anda yakin ingin menghapus kelompok "${item.nama}"?`,
+                icon: 'warning',
+                confirmButtonText: 'Ya, Hapus Data',
+                confirmButtonColor: '#CD202E',
             });
+            if (result.isConfirmed) {
+                router.delete(`/superadmin/kelompok-verifikasi/${item.id}`);
+            }
         }
     };
+
 
     return (
         <AuthenticatedLayout title="Kelompok Verifikasi">
@@ -287,7 +299,7 @@ export default function KelompokVerifikasiIndex({
                                     <th className="py-3.5 px-4 min-w-[160px]">Periode</th>
                                     <th className="py-3.5 px-4 min-w-[170px]">Mata Kuliah</th>
                                     <th className="py-3.5 px-4 min-w-[150px]">Koordinator MK</th>
-                                    <th className="py-3.5 px-4 min-w-[130px]">Verifikator</th>
+                                    <th className="py-3.5 px-4 min-w-[140px]">Verifikator</th>
                                     <th className="py-3.5 px-4 text-center">Status</th>
                                     <th className="py-3.5 px-4 text-gray-400">Dibuat Pada</th>
                                     <th className="py-3.5 px-4 text-right">Aksi</th>
@@ -318,13 +330,13 @@ export default function KelompokVerifikasiIndex({
                                                     </Link>
                                                     {item.keterangan && (
                                                         <p className="text-[11px] text-gray-400 line-clamp-1 mt-0.5 font-normal">
-                                                            {item.keterangan}
+                                                             {item.keterangan}
                                                         </p>
                                                     )}
                                                 </td>
 
                                                 {/* Periode */}
-                                                <td className="py-3.5 px-4">
+                                                <td className="py-3.5 px-4 whitespace-nowrap">
                                                     <span className="font-bold text-gray-800 block">
                                                         {item.periode?.nama || '—'}
                                                     </span>
@@ -334,31 +346,31 @@ export default function KelompokVerifikasiIndex({
                                                 </td>
 
                                                 {/* Mata Kuliah */}
-                                                <td className="py-3.5 px-4">
+                                                <td className="py-3.5 px-4 whitespace-nowrap">
                                                     {mkCount === 0 ? (
                                                         <span className="text-gray-400 italic">Belum ada MK</span>
                                                     ) : mkCount === 1 ? (
-                                                        <span className="font-semibold text-gray-800">
+                                                        <span className="font-semibold text-gray-800 truncate max-w-[200px] block">
                                                             {firstMk.mata_kuliah?.kode_mk} - {firstMk.mata_kuliah?.nama_mk}
                                                         </span>
                                                     ) : (
                                                         <div className="flex items-center gap-1.5">
-                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-800 font-bold rounded-lg text-[11px]">
-                                                                <BookOpen className="w-3.5 h-3.5 text-slate-500" />
-                                                                {mkCount} Mata Kuliah
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-800 font-bold rounded-lg text-[11px] whitespace-nowrap">
+                                                                <BookOpen className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                                                <span>{mkCount} Mata Kuliah</span>
                                                             </span>
                                                         </div>
                                                     )}
                                                 </td>
 
                                                 {/* Koordinator MK */}
-                                                <td className="py-3.5 px-4">
+                                                <td className="py-3.5 px-4 whitespace-nowrap">
                                                     {mkCount === 0 ? (
                                                         <span className="text-gray-400">—</span>
                                                     ) : koordinatorCount > 1 ? (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-[#801720] font-bold rounded-lg text-[11px] border border-red-100">
-                                                            <GraduationCap className="w-3 h-3 text-[#801720]" />
-                                                            {koordinatorCount} Koordinator
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#801720] font-bold rounded-lg text-[11px] border border-red-100 whitespace-nowrap">
+                                                            <GraduationCap className="w-3.5 h-3.5 text-[#801720] shrink-0" />
+                                                            <span>{koordinatorCount} Koordinator</span>
                                                         </span>
                                                     ) : firstKoordinator ? (
                                                         <div>
@@ -370,14 +382,14 @@ export default function KelompokVerifikasiIndex({
                                                             </span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-[11px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-gray-600 bg-gray-100 rounded-lg whitespace-nowrap">
                                                             {mkCount} Koordinator
                                                         </span>
                                                     )}
                                                 </td>
 
                                                 {/* Verifikator */}
-                                                <td className="py-3.5 px-4">
+                                                <td className="py-3.5 px-4 whitespace-nowrap">
                                                     {verifikatorCount === 0 ? (
                                                         <span className="text-gray-400 italic">0 Orang</span>
                                                     ) : verifikatorCount === 1 ? (
@@ -390,15 +402,15 @@ export default function KelompokVerifikasiIndex({
                                                             </span>
                                                         </div>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-[11px] border border-blue-100">
-                                                            <Shield className="w-3 h-3 text-blue-500" />
-                                                            {verifikatorCount} Verifikator
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg text-[11px] border border-blue-100 whitespace-nowrap">
+                                                            <Shield className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                                            <span>{verifikatorCount} Verifikator</span>
                                                         </span>
                                                     )}
                                                 </td>
 
                                                 {/* Status */}
-                                                <td className="py-3.5 px-4 text-center">
+                                                <td className="py-3.5 px-4 text-center whitespace-nowrap">
                                                     <StatusBadge status={item.status} />
                                                 </td>
 
@@ -428,14 +440,14 @@ export default function KelompokVerifikasiIndex({
                                                                     <Pencil className="w-4 h-4" />
                                                                 </Link>
                                                                 <button
-                                                                    onClick={() => { setActionItem(item); setActionType('activate'); }}
+                                                                    onClick={() => handleAction(item, 'activate')}
                                                                     className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors cursor-pointer"
                                                                     title="Aktifkan Kelompok"
                                                                 >
                                                                     <Play className="w-4 h-4" />
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => { setActionItem(item); setActionType('delete'); }}
+                                                                    onClick={() => handleAction(item, 'delete')}
                                                                     className="p-1.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
                                                                     title="Hapus Draft"
                                                                 >
@@ -454,7 +466,7 @@ export default function KelompokVerifikasiIndex({
                                                                     <Pencil className="w-4 h-4" />
                                                                 </Link>
                                                                 <button
-                                                                    onClick={() => { setActionItem(item); setActionType('deactivate'); }}
+                                                                    onClick={() => handleAction(item, 'deactivate')}
                                                                     className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-xl transition-colors cursor-pointer"
                                                                     title="Nonaktifkan Kelompok"
                                                                 >
@@ -473,7 +485,7 @@ export default function KelompokVerifikasiIndex({
                                                                     <Pencil className="w-4 h-4" />
                                                                 </Link>
                                                                 <button
-                                                                    onClick={() => { setActionItem(item); setActionType('activate'); }}
+                                                                    onClick={() => handleAction(item, 'activate')}
                                                                     className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors cursor-pointer"
                                                                     title="Aktifkan Kembali"
                                                                 >
@@ -481,6 +493,7 @@ export default function KelompokVerifikasiIndex({
                                                                 </button>
                                                             </>
                                                         )}
+
                                                     </div>
                                                 </td>
                                             </tr>

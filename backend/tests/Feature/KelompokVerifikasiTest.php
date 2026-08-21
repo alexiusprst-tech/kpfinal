@@ -78,11 +78,21 @@ class KelompokVerifikasiTest extends TestCase
             'status'      => 'ACTIVE',
         ]);
 
+        $dosen3User = User::create([
+            'id'       => (string) Str::uuid(),
+            'name'     => 'Dr. Dosen Tiga',
+            'email'    => 'dosen3@test.com',
+            'password' => bcrypt('password'),
+            'role'     => 'DOSEN',
+            'status'   => 'ACTIVE',
+        ]);
+
         $this->dosen3 = Dosen::create([
             'id'          => (string) Str::uuid(),
             'kode_dosen'  => 'DSN3',
             'nama_lengkap'=> 'Dr. Dosen Tiga',
             'email'       => 'dosen3@test.com',
+            'user_id'     => $dosen3User->id,
             'status'      => 'ACTIVE',
         ]);
 
@@ -453,22 +463,22 @@ class KelompokVerifikasiTest extends TestCase
         $response->assertSessionHasErrors(['mata_kuliah.0.koordinator_ids']);
     }
 
-    public function test_validation_rejects_cross_course_role_conflicts_in_group(): void
+    public function test_dosen_can_be_coordinator_and_verifikator_across_multiple_courses(): void
     {
         $payload = [
-            'nama'        => 'Kelompok Cross Course Conflict',
+            'nama'        => 'Kelompok Multi MK Assignment',
             'periode_id'  => $this->periode->id,
-            'status'      => 'DRAFT',
+            'status'      => 'ACTIVE',
             'mata_kuliah' => [
                 [
                     'mata_kuliah_id'  => $this->mk1->id,
                     'koordinator_ids' => [$this->dosen1->id],
-                    'verifikator_ids' => [$this->dosen2->id],
+                    'verifikator_ids' => [$this->dosen2->id, $this->dosen3->id],
                 ],
                 [
                     'mata_kuliah_id'  => $this->mk2->id,
-                    'koordinator_ids' => [$this->dosen2->id], // dosen2 already assigned as verifikator in mk1
-                    'verifikator_ids' => [$this->dosen3->id],
+                    'koordinator_ids' => [$this->dosen1->id, $this->dosen3->id], // dosen1 & dosen3 coordinating MK2
+                    'verifikator_ids' => [$this->dosen2->id],                    // dosen2 verifying MK2 as well
                 ],
             ],
         ];
@@ -476,6 +486,51 @@ class KelompokVerifikasiTest extends TestCase
         $response = $this->actingAs($this->superAdmin)
             ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
 
-        $response->assertSessionHasErrors(['mata_kuliah']);
+        $response->assertSessionHasNoErrors();
+
+        $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Multi MK Assignment')->first();
+        $this->assertNotNull($kelompok);
+
+        // Check dosen1 is Koordinator for both MK1 and MK2
+        $this->assertDatabaseHas('penugasan_koordinator', [
+            'kelompok_id'    => $kelompok->id,
+            'dosen_id'       => $this->dosen1->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'status'         => 'ACTIVE',
+        ]);
+        $this->assertDatabaseHas('penugasan_koordinator', [
+            'kelompok_id'    => $kelompok->id,
+            'dosen_id'       => $this->dosen1->id,
+            'mata_kuliah_id' => $this->mk2->id,
+            'status'         => 'ACTIVE',
+        ]);
+
+        // Check dosen2 is Verifikator for both MK1 and MK2
+        $this->assertDatabaseHas('penugasan_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'dosen_id'       => $this->dosen2->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'status'         => 'ACTIVE',
+        ]);
+        $this->assertDatabaseHas('penugasan_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'dosen_id'       => $this->dosen2->id,
+            'mata_kuliah_id' => $this->mk2->id,
+            'status'         => 'ACTIVE',
+        ]);
+
+        // Check dosen3 is Verifikator for MK1 and Koordinator for MK2
+        $this->assertDatabaseHas('penugasan_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'dosen_id'       => $this->dosen3->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'status'         => 'ACTIVE',
+        ]);
+        $this->assertDatabaseHas('penugasan_koordinator', [
+            'kelompok_id'    => $kelompok->id,
+            'dosen_id'       => $this->dosen3->id,
+            'mata_kuliah_id' => $this->mk2->id,
+            'status'         => 'ACTIVE',
+        ]);
     }
 }

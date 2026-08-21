@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('status', 20)->default('ACTIVE');
             $table->timestamps();
 
-            // Only one active coordinator per MK+Periode
-            $table->unique(['mata_kuliah_id', 'periode_id', 'status']);
+            // Unique active coordinator assignment per dosen, MK, and Periode
+            $table->unique(['dosen_id', 'mata_kuliah_id', 'periode_id', 'status']);
 
             $table->foreign('dosen_id')->references('id')->on('dosen')->onDelete('restrict');
             $table->foreign('mata_kuliah_id')->references('id')->on('mata_kuliah')->onDelete('restrict');

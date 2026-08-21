@@ -19,9 +19,10 @@ class MataKuliahController extends Controller
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('nama_mk', 'ilike', "%{$request->search}%")
-                  ->orWhere('nama_mk_en', 'ilike', "%{$request->search}%")
-                  ->orWhere('kode_mk', 'ilike', "%{$request->search}%");
+                $term = "%{$request->search}%";
+                $q->whereRaw('LOWER(nama_mk) LIKE ?', [strtolower($term)])
+                  ->orWhereRaw('LOWER(nama_mk_en) LIKE ?', [strtolower($term)])
+                  ->orWhereRaw('LOWER(kode_mk) LIKE ?', [strtolower($term)]);
             });
         }
 
@@ -130,7 +131,7 @@ class MataKuliahController extends Controller
             $mataKuliah->toArray()
         );
 
-        return redirect()->back()->with('success', 'Mata Kuliah berhasil diperbarui.');
+        return redirect()->route('superadmin.mata-kuliah.index')->with('success', 'Pemetaan PLO & CLO Mata Kuliah berhasil diperbarui.');
     }
 
     public function show(MataKuliah $mataKuliah)

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 import axios from 'axios';
+
 import {
     Plus, Pencil, Trash2, Search, Download, Upload,
     AlertTriangle, X, Activity, FileSpreadsheet, Eye,
@@ -47,17 +49,11 @@ function Stepper({ steps, activeStep }) {
     );
 }
 
+import FlashAlert from '@/Components/FlashAlert';
+
 // ─── Toast ─────────────────────────────────────────────────────────────────────
 function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error)) return null;
-    const isSuccess = !!flash.success;
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm animate-in slide-in-from-right ${isSuccess ? 'bg-emerald-600' : 'bg-red-600'}`}>
-            <span className="flex-1">{flash.success || flash.error}</span>
-            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
-        </div>
-    );
+    return <FlashAlert type="toast" flash={flash} />;
 }
 
 // ─── CLO Form (tambah/edit manual) ───────────────────────────────────────────
@@ -266,7 +262,11 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
         if (!file) return;
         const ext = file.name.split('.').pop().toLowerCase();
         if (!['xlsx', 'xls', 'csv'].includes(ext)) {
-            alert('Format file tidak didukung. Gunakan .xlsx, .xls, atau .csv');
+            showAlert({
+                title: 'Format File Tidak Didukung',
+                text: 'Format file tidak didukung. Silakan gunakan .xlsx, .xls, atau .csv',
+                icon: 'error',
+            });
             return;
         }
         setSelectedFile(file);
@@ -290,11 +290,19 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
                 setPreviewStats({ total: data.totalRows, valid: data.validRows, error: data.errorRows });
                 setActiveStep(3);
             } else {
-                alert(data.message || 'Gagal memproses file.');
+                showAlert({
+                    title: 'Gagal Memproses File',
+                    text: data.message || 'Terjadi kesalahan saat memproses file import CLO.',
+                    icon: 'error',
+                });
             }
         } catch (err) {
             const msg = err.response?.data?.message || err.message || 'Terjadi kesalahan saat menghubungi server.';
-            alert(msg);
+            showAlert({
+                title: 'Terjadi Kesalahan',
+                text: msg,
+                icon: 'error',
+            });
         } finally {
             setIsPreviewing(false);
         }
@@ -318,7 +326,11 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
     const handleConfirmImport = () => {
         const validRows = previewRows.filter(r => r.is_valid);
         if (validRows.length === 0) {
-            alert('Tidak ada data yang valid untuk disimpan.');
+            showAlert({
+                title: 'Tidak Ada Data Valid',
+                text: 'Tidak ada data yang valid untuk disimpan.',
+                icon: 'warning',
+            });
             return;
         }
         setIsConfirming(true);
@@ -327,6 +339,7 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
             onFinish: () => setIsConfirming(false),
         });
     };
+
 
     // ─── Grouped preview for mapping tree ─────────────────────────────────────
     const getMappingTree = () => {

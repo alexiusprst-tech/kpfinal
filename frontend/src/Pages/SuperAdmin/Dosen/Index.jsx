@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
-import { Head, useForm, router } from '@inertiajs/react';
+import FlashAlert from '../../../Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
+
 import { 
     Users, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, 
     UserCheck, FileCheck, ShieldAlert, AlertTriangle, X, Filter,
@@ -8,6 +11,7 @@ import {
 } from 'lucide-react';
 
 export default function Index({ dosenList, filters }) {
+    const { flash } = usePage().props;
     const [search, setSearch] = useState(filters.search || '');
     const [kategori, setKategori] = useState(filters.kategori || '');
     const [status, setStatus] = useState(filters.status || '');
@@ -90,14 +94,24 @@ export default function Index({ dosenList, filters }) {
         });
     };
 
-    const handleConfirmDelete = () => {
-        if (!deleteDosen) return;
-        router.delete(`/superadmin/dosen/${deleteDosen.id}`, {
-            onSuccess: () => {
-                setDeleteDosen(null);
-            },
+    const handleConfirmDelete = async (dosen = deleteDosen) => {
+        if (!dosen) return;
+        const result = await showConfirm({
+            title: 'Hapus Data Dosen?',
+            text: `Apakah Anda yakin ingin menghapus data dosen "${dosen?.nama_lengkap}" (${dosen?.kode_dosen})? Semua riwayat penugasan juga akan terhapus.`,
+            icon: 'warning',
+            confirmButtonText: 'Ya, Hapus Data',
+            confirmButtonColor: '#CD202E',
         });
+        if (result.isConfirmed) {
+            router.delete(`/superadmin/dosen/${dosen.id}`, {
+                onSuccess: () => {
+                    setDeleteDosen(null);
+                },
+            });
+        }
     };
+
 
     const handleRevokeAssignment = (type, penugasanId = null, penugasanType = null) => {
         if (!revokeDosen) return;
@@ -143,6 +157,9 @@ export default function Index({ dosenList, filters }) {
                     <span>Tambah Dosen</span>
                 </button>
             </div>
+
+            {/* Flash Messages */}
+            <FlashAlert flash={flash} />
 
             {/* Filter & Real-Time Search Bar */}
             <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/70 shadow-sm mb-6 space-y-3">
@@ -328,12 +345,13 @@ export default function Index({ dosenList, filters }) {
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
                                                     <button 
-                                                        onClick={() => setDeleteDosen(dosen)}
+                                                        onClick={() => handleConfirmDelete(dosen)}
                                                         className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
                                                         title="Hapus"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
+
                                                 </div>
                                             </td>
                                         </tr>

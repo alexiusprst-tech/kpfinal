@@ -11,11 +11,8 @@ class KategoriSoalSeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['nama' => 'UTS',      'deskripsi' => 'Ujian Tengah Semester'],
-            ['nama' => 'UAS',      'deskripsi' => 'Ujian Akhir Semester'],
-            ['nama' => 'Kuis',     'deskripsi' => 'Kuis Harian'],
-            ['nama' => 'Praktikum','deskripsi' => 'Soal Praktikum'],
-            ['nama' => 'Susulan',  'deskripsi' => 'Ujian Susulan'],
+            ['nama' => 'UTS', 'deskripsi' => 'Ujian Tengah Semester (UTS)'],
+            ['nama' => 'UAS', 'deskripsi' => 'Ujian Akhir Semester (UAS)'],
         ];
 
         foreach ($categories as $cat) {

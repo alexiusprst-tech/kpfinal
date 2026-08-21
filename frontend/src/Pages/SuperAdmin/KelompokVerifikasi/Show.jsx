@@ -7,20 +7,13 @@ import {
     RotateCcw, Shield, Sparkles, Trash2, Users, X, AlertCircle, TrendingUp
 } from 'lucide-react';
 
-function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error && !flash?.info)) return null;
-    const isSuccess = Boolean(flash.success);
-    const isInfo = Boolean(flash.info);
-    const bg = isSuccess ? 'bg-emerald-600' : isInfo ? 'bg-blue-600' : 'bg-red-600';
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-2xl shadow-xl text-white text-sm max-w-md ${bg}`}>
-            <span className="flex-1 font-medium">{flash.success || flash.info || flash.error}</span>
-            <button onClick={() => setVisible(false)} className="p-1 hover:opacity-75"><X className="w-4 h-4" /></button>
-        </div>
-    );
+function Toast({ flash }) {
+    return <FlashAlert type="toast" flash={flash} />;
 }
+
 
 const STATUS_CONFIG = {
     DRAFT:    { label: 'Draft',     bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200/60', dot: 'bg-amber-500' },
@@ -47,26 +40,45 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
     const [actionType, setActionType] = useState(null); // 'activate', 'deactivate', 'delete'
     const [processing, setProcessing] = useState(false);
 
-    const handleConfirmAction = () => {
-        if (!actionType) return;
-        setProcessing(true);
+    const handleAction = async (type) => {
+        if (!type) return;
 
-        if (actionType === 'activate') {
-            router.post(`/superadmin/kelompok-verifikasi/${kelompok.id}/activate`, {}, {
-                onFinish: () => { setProcessing(false); setActionType(null); },
-                preserveScroll: true,
+        if (type === 'activate') {
+            const result = await showConfirm({
+                title: 'Aktifkan Kelompok Verifikasi?',
+                text: `Aktifkan kelompok verifikasi "${kelompok.nama}"? Dosen yang ditugaskan akan dapat mengakses modul verifikasi.`,
+                icon: 'question',
+                confirmButtonText: 'Ya, Aktifkan',
+                confirmButtonColor: '#059669',
             });
-        } else if (actionType === 'deactivate') {
-            router.post(`/superadmin/kelompok-verifikasi/${kelompok.id}/deactivate`, {}, {
-                onFinish: () => { setProcessing(false); setActionType(null); },
-                preserveScroll: true,
+            if (result.isConfirmed) {
+                router.post(`/superadmin/kelompok-verifikasi/${kelompok.id}/activate`, {}, { preserveScroll: true });
+            }
+        } else if (type === 'deactivate') {
+            const result = await showConfirm({
+                title: 'Nonaktifkan Kelompok?',
+                text: `Nonaktifkan kelompok "${kelompok.nama}"? Akses verifikasi untuk dosen di kelompok ini akan dinonaktifkan sementara.`,
+                icon: 'warning',
+                confirmButtonText: 'Ya, Nonaktifkan',
+                confirmButtonColor: '#801720',
             });
-        } else if (actionType === 'delete') {
-            router.delete(`/superadmin/kelompok-verifikasi/${kelompok.id}`, {
-                onFinish: () => { setProcessing(false); setActionType(null); },
+            if (result.isConfirmed) {
+                router.post(`/superadmin/kelompok-verifikasi/${kelompok.id}/deactivate`, {}, { preserveScroll: true });
+            }
+        } else if (type === 'delete') {
+            const result = await showConfirm({
+                title: 'Hapus Kelompok Verifikasi?',
+                text: `Apakah Anda yakin ingin menghapus kelompok "${kelompok.nama}"?`,
+                icon: 'warning',
+                confirmButtonText: 'Ya, Hapus Data',
+                confirmButtonColor: '#CD202E',
             });
+            if (result.isConfirmed) {
+                router.delete(`/superadmin/kelompok-verifikasi/${kelompok.id}`);
+            }
         }
     };
+
 
     return (
         <AuthenticatedLayout title={kelompok.nama}>
@@ -106,13 +118,13 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                     <Pencil className="w-3.5 h-3.5" /> Edit Kelompok
                                 </Link>
                                 <button
-                                    onClick={() => setActionType('activate')}
+                                    onClick={() => handleAction('activate')}
                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
                                 >
                                     <Play className="w-3.5 h-3.5" /> Aktifkan Kelompok
                                 </button>
                                 <button
-                                    onClick={() => setActionType('delete')}
+                                    onClick={() => handleAction('delete')}
                                     className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-red-200 cursor-pointer"
                                     title="Hapus Kelompok"
                                 >
@@ -130,7 +142,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                     <Pencil className="w-3.5 h-3.5" /> Edit Penugasan
                                 </Link>
                                 <button
-                                    onClick={() => setActionType('deactivate')}
+                                    onClick={() => handleAction('deactivate')}
                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-md shadow-amber-600/20 transition-all cursor-pointer"
                                 >
                                     <PowerOff className="w-3.5 h-3.5" /> Nonaktifkan
@@ -147,13 +159,13 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                     <Pencil className="w-3.5 h-3.5" /> Edit Kelompok
                                 </Link>
                                 <button
-                                    onClick={() => setActionType('activate')}
+                                    onClick={() => handleAction('activate')}
                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
                                 >
                                     <Play className="w-3.5 h-3.5" /> Aktifkan Kembali
                                 </button>
                                 <button
-                                    onClick={() => setActionType('delete')}
+                                    onClick={() => handleAction('delete')}
                                     className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-red-200 cursor-pointer"
                                     title="Hapus"
                                 >
@@ -161,6 +173,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                 </button>
                             </>
                         )}
+
 
                         {kelompok.status === 'CLOSED' && (
                             <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl">

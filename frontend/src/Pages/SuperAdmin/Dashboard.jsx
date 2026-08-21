@@ -88,16 +88,13 @@ export default function Dashboard({
     // Modal state for Generate Laporan
     const [showReportModal, setShowReportModal] = useState(false);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState(activePeriod?.id || 'ALL');
-    const [selectedJenis, setSelectedJenis] = useState('rekap');
-    const [selectedFormat, setSelectedFormat] = useState('pdf');
     const [isExporting, setIsExporting] = useState(false);
 
     const handleDownloadReport = () => {
         setIsExporting(true);
         const params = new URLSearchParams({
             periode_id: selectedPeriodeId,
-            jenis_laporan: selectedJenis,
-            format: selectedFormat,
+            format: 'pdf',
         });
 
         // Trigger download
@@ -503,101 +500,14 @@ export default function Dashboard({
                                 </div>
                             </div>
 
-                            {/* 2. Pilih Jenis Laporan */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                    <Layers className="w-3.5 h-3.5 text-[#801720]" />
-                                    <span>Pilih Jenis Laporan</span>
-                                </label>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                    {/* Card 1: Rekapitulasi */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedJenis('rekap')}
-                                        className={`p-3.5 rounded-xl border text-left transition-all relative cursor-pointer ${
-                                            selectedJenis === 'rekap'
-                                                ? 'border-[#801720] bg-red-50/40 ring-2 ring-[#801720]/20 shadow-sm'
-                                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-xs font-extrabold text-[#1E293B]">Rekap Eksekutif</span>
-                                            {selectedJenis === 'rekap' && (
-                                                <span className="w-4 h-4 rounded-full bg-[#801720] text-white flex items-center justify-center text-[10px]">
-                                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                                            Ringkasan statistik, persentase progress, & total dosen/MK.
-                                        </p>
-                                    </button>
-
-                                    {/* Card 2: Detail Soal */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedJenis('detail_soal')}
-                                        className={`p-3.5 rounded-xl border text-left transition-all relative cursor-pointer ${
-                                            selectedJenis === 'detail_soal'
-                                                ? 'border-[#801720] bg-red-50/40 ring-2 ring-[#801720]/20 shadow-sm'
-                                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-xs font-extrabold text-[#1E293B]">Detail Bank Soal</span>
-                                            {selectedJenis === 'detail_soal' && (
-                                                <span className="w-4 h-4 rounded-full bg-[#801720] text-white flex items-center justify-center text-[10px]">
-                                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                                            Daftar berkas soal per mata kuliah beserta status verifikasinya.
-                                        </p>
-                                    </button>
-
-                                    {/* Card 3: Kinerja */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedJenis('kinerja')}
-                                        className={`p-3.5 rounded-xl border text-left transition-all relative cursor-pointer ${
-                                            selectedJenis === 'kinerja'
-                                                ? 'border-[#801720] bg-red-50/40 ring-2 ring-[#801720]/20 shadow-sm'
-                                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-xs font-extrabold text-[#1E293B]">Kinerja Verifikasi</span>
-                                            {selectedJenis === 'kinerja' && (
-                                                <span className="w-4 h-4 rounded-full bg-[#801720] text-white flex items-center justify-center text-[10px]">
-                                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                                            Laporan evaluasi verifikator & penyelesaian revisi.
-                                        </p>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* 3. Pilih Format File */}
+                            {/* 2. Format Dokumen */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <FileDown className="w-3.5 h-3.5 text-[#801720]" />
                                     <span>Format Dokumen</span>
                                 </label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {/* PDF Option */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedFormat('pdf')}
-                                        className={`p-3.5 rounded-xl border flex items-center gap-3 transition-all cursor-pointer ${
-                                            selectedFormat === 'pdf'
-                                                ? 'border-red-500 bg-red-50/50 ring-2 ring-red-500/20 shadow-sm'
-                                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                        }`}
-                                    >
+                                <div className="p-4 rounded-xl border border-red-500 bg-red-50/50 ring-2 ring-red-500/20 shadow-xs flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center flex-shrink-0">
                                             <FileText className="w-5 h-5" />
                                         </div>
@@ -606,31 +516,12 @@ export default function Dashboard({
                                                 <span>PDF Document</span>
                                                 <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-200/70 text-red-800">.pdf</span>
                                             </div>
-                                            <p className="text-[10px] text-slate-500 font-medium mt-0.5">Format resmi cetak & arsip</p>
+                                            <p className="text-[11px] text-slate-500 font-medium mt-0.5">Format resmi cetak & arsip laporan verifikasi soal</p>
                                         </div>
-                                    </button>
-
-                                    {/* Excel Option */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedFormat('excel')}
-                                        className={`p-3.5 rounded-xl border flex items-center gap-3 transition-all cursor-pointer ${
-                                            selectedFormat === 'excel'
-                                                ? 'border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20 shadow-sm'
-                                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
-                                            <FileSpreadsheet className="w-5 h-5" />
-                                        </div>
-                                        <div className="text-left">
-                                            <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
-                                                <span>Excel / CSV</span>
-                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-200/70 text-emerald-800">.csv</span>
-                                            </div>
-                                            <p className="text-[10px] text-slate-500 font-medium mt-0.5">Tabel data olah lanjutan</p>
-                                        </div>
-                                    </button>
+                                    </div>
+                                    <span className="w-5 h-5 rounded-full bg-[#801720] text-white flex items-center justify-center text-[10px] flex-shrink-0 shadow-xs">
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                    </span>
                                 </div>
                             </div>
                         </div>

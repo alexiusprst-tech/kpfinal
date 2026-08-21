@@ -1,0 +1,1 @@
+import{_ as e}from"./AuthenticatedLayout-Dl3ERZJW.js";var t=e(`move-down`,[[`path`,{d:`M8 18L12 22L16 18`,key:`cskvfv`}],[`path`,{d:`M12 2V22`,key:`r89rzk`}]]),n=e(`move-up`,[[`path`,{d:`M8 6L12 2L16 6`,key:`1yvkyx`}],[`path`,{d:`M12 2V22`,key:`r89rzk`}]]);export{t as n,n as t};

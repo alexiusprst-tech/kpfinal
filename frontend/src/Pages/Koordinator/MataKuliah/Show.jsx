@@ -5,6 +5,13 @@ import {
     ArrowLeft, BookOpen, Target, FileText, Users, Activity as ActivityIcon,
     Download, GraduationCap, FilePlus2, Eye, Pencil, Send, X, AlertTriangle, Sparkles
 } from 'lucide-react';
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+
+function Toast({ flash }) {
+    return <FlashAlert type="toast" flash={flash} />;
+}
+
 
 const STATUS_CONFIG = {
     DRAFT:       { label: 'Draft',        color: 'bg-gray-100 text-gray-600',       dot: 'bg-gray-400' },
@@ -35,16 +42,6 @@ function ProgressBar({ percent, colorClass = 'bg-emerald-500' }) {
     );
 }
 
-function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error)) return null;
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm ${flash.success ? 'bg-emerald-600' : 'bg-red-600'}`}>
-            <span className="flex-1">{flash.success || flash.error}</span>
-            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
-        </div>
-    );
-}
 
 function relativeTime(dateStr) {
     if (!dateStr) return '-';
@@ -106,13 +103,23 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
     const [tab, setTab] = useState('soal');
     const [confirmSoal, setConfirmSoal] = useState(null);
 
-    const handleSubmit = () => {
-        if (!confirmSoal) return;
-        router.post(`/koordinator/soal/${confirmSoal.id}/submit`, {}, {
-            preserveScroll: true,
-            onFinish: () => setConfirmSoal(null),
+    const handleSubmit = async (soal = confirmSoal) => {
+        if (!soal) return;
+        const result = await showConfirm({
+            title: 'Submit Soal untuk Verifikasi?',
+            text: `Submit "${soal.judul}"? Soal akan dikirim ke verifikator untuk diperiksa.`,
+            icon: 'question',
+            confirmButtonText: 'Ya, Submit Soal',
+            confirmButtonColor: '#059669',
         });
+        if (result.isConfirmed) {
+            router.post(`/koordinator/soal/${soal.id}/submit`, {}, {
+                preserveScroll: true,
+                onFinish: () => setConfirmSoal(null),
+            });
+        }
     };
+
 
     return (
         <AuthenticatedLayout title={mataKuliah.nama_mk}>
@@ -234,8 +241,9 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                                     <td className="px-4 py-3 text-xs text-gray-400">{relativeTime(soal.created_at)}</td>
                                                     <td className="px-4 py-3 text-xs text-gray-400">{relativeTime(soal.updated_at)}</td>
                                                     <td className="px-4 py-3">
-                                                        <SoalActions soal={soal} onSubmit={setConfirmSoal} />
+                                                        <SoalActions soal={soal} onSubmit={handleSubmit} />
                                                     </td>
+
                                                 </tr>
                                             ))}
                                         </tbody>

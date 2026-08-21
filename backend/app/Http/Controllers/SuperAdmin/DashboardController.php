@@ -31,7 +31,7 @@ class DashboardController extends Controller
 
         // 4 Status Cards
         $statusCounts = [
-            'SUBMITTED' => Soal::where('status', 'SUBMITTED')->orWhere('status', 'IN_REVIEW')->count(),
+            'SUBMITTED' => Soal::whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count(),
             'REVISION'  => Soal::where('status', 'REVISION')->count(),
             'APPROVED'  => Soal::where('status', 'APPROVED')->count(),
             'REJECTED'  => Soal::where('status', 'REJECTED')->count(),
@@ -50,7 +50,22 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // Get last 7 days
+        // Get last 7 days metrics via bulk aggregation (2 queries instead of 21)
+        $startDate = now()->subDays(6)->startOfDay();
+
+        $menungguAgg = Soal::whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])
+            ->where('updated_at', '>=', $startDate)
+            ->selectRaw("DATE(updated_at) as log_date, count(*) as total")
+            ->groupBy('log_date')
+            ->pluck('total', 'log_date');
+
+        $verifAgg = \App\Models\Verifikasi::where('created_at', '>=', $startDate)
+            ->whereIn('action', ['APPROVED', 'REJECTED'])
+            ->selectRaw("DATE(created_at) as log_date, action, count(*) as total")
+            ->groupBy('log_date', 'action')
+            ->get()
+            ->groupBy('log_date');
+
         $dates = [];
         $menungguData = [];
         $disetujuiData = [];
@@ -68,17 +83,11 @@ class DashboardController extends Controller
 
             $dates[] = $label;
 
-            $menungguCount = Soal::whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])
-                ->whereDate('updated_at', $dateStr)
-                ->count();
-
-            $disetujuiCount = \App\Models\Verifikasi::where('action', 'APPROVED')
-                ->whereDate('created_at', $dateStr)
-                ->count();
-
-            $ditolakCount = \App\Models\Verifikasi::where('action', 'REJECTED')
-                ->whereDate('created_at', $dateStr)
-                ->count();
+            $menungguCount = (int) ($menungguAgg[$dateStr] ?? 0);
+            
+            $dayVerif = $verifAgg->get($dateStr, collect());
+            $disetujuiCount = (int) ($dayVerif->where('action', 'APPROVED')->first()->total ?? 0);
+            $ditolakCount   = (int) ($dayVerif->where('action', 'REJECTED')->first()->total ?? 0);
 
             $menungguData[] = $menungguCount;
             $disetujuiData[] = $disetujuiCount;

@@ -53,7 +53,7 @@ class Soal extends Model
 
     public function canBeVerified(): bool
     {
-        return in_array($this->status, [self::STATUS_IN_REVIEW]);
+        return in_array($this->status, [self::STATUS_SUBMITTED, self::STATUS_IN_REVIEW, self::STATUS_RESUBMITTED]);
     }
 
     // ─── Relationships ─────────────────────────────────────────────────────────

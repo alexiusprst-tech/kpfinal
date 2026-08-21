@@ -39,9 +39,10 @@ class DosenController extends Controller
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('nama_lengkap', 'ilike', "%{$request->search}%")
-                  ->orWhere('kode_dosen', 'ilike', "%{$request->search}%")
-                  ->orWhere('email', 'ilike', "%{$request->search}%");
+                $term = "%{$request->search}%";
+                $q->whereRaw('LOWER(nama_lengkap) LIKE ?', [strtolower($term)])
+                  ->orWhereRaw('LOWER(kode_dosen) LIKE ?', [strtolower($term)])
+                  ->orWhereRaw('LOWER(email) LIKE ?', [strtolower($term)]);
             });
         }
 

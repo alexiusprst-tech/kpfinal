@@ -37,18 +37,39 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+        $user = $request->user();
+
+        if ($user && $user->role !== 'SUPER_ADMIN') {
+            $dosen = $user->dosen;
+            if ($dosen) {
+                $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+                $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+
+                if ($request->is('verifikator*') && $hasActiveVerif) {
+                    $user->role = 'VERIFIKATOR';
+                } elseif ($request->is('koordinator*') && $hasActiveKoor) {
+                    $user->role = 'KOORDINATOR';
+                } elseif ($hasActiveVerif && !$hasActiveKoor && $user->role !== 'VERIFIKATOR') {
+                    $user->update(['role' => 'VERIFIKATOR']);
+                    $user->role = 'VERIFIKATOR';
+                } elseif ($hasActiveKoor && !$hasActiveVerif && $user->role !== 'KOORDINATOR') {
+                    $user->update(['role' => 'KOORDINATOR']);
+                    $user->role = 'KOORDINATOR';
+                }
+            }
+        }
 
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user() ? [
-                    'id'    => $request->user()->id,
-                    'name'  => $request->user()->name,
-                    'email' => $request->user()->email,
-                    'role'  => $request->user()->role,
-                    'dosen' => $request->user()->dosen ? [
-                        'id'          => $request->user()->dosen->id,
-                        'kode_dosen'  => $request->user()->dosen->kode_dosen,
-                        'nama_lengkap'=> $request->user()->dosen->nama_lengkap,
+                'user' => $user ? [
+                    'id'    => $user->id,
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                    'role'  => $user->role,
+                    'dosen' => $user->dosen ? [
+                        'id'          => $user->dosen->id,
+                        'kode_dosen'  => $user->dosen->kode_dosen,
+                        'nama_lengkap'=> $user->dosen->nama_lengkap,
                     ] : null,
                 ] : null,
             ],

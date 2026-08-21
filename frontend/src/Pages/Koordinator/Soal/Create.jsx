@@ -16,18 +16,15 @@ function formatSize(bytes) {
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
 
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+
 function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error)) return null;
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm ${flash.success ? 'bg-emerald-600' : 'bg-red-600'}`}>
-            <span className="flex-1">{flash.success || flash.error}</span>
-            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
-        </div>
-    );
+    return <FlashAlert type="toast" flash={flash} />;
 }
 
-export default function SoalCreate({ assignments, kategoriAll, activePeriode, selectedMataKuliahId, uploadOpen }) {
+
+export default function SoalCreate({ assignments, kategoriAll, defaultKategori, activePeriode, selectedMataKuliahId, uploadOpen }) {
     const { flash } = usePage().props;
     const [activeTab, setActiveTab] = useState(() => {
         const params = new URLSearchParams(window.location.search);
@@ -37,15 +34,38 @@ export default function SoalCreate({ assignments, kategoriAll, activePeriode, se
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef(null);
 
+    // Determine the fixed category based on the active period (UTS during UTS period, UAS during UAS period)
+    const isUasPeriod = Boolean(
+        activePeriode?.nama?.toLowerCase().includes('uas') ||
+        activePeriode?.nama?.toLowerCase().includes('akhir')
+    );
+
+    const fixedCategory = defaultKategori || (() => {
+        if (!kategoriAll || kategoriAll.length === 0) return null;
+        if (isUasPeriod) {
+            return kategoriAll.find(k => k.nama.toLowerCase().includes('uas') || (k.deskripsi && k.deskripsi.toLowerCase().includes('akhir'))) || kategoriAll[0];
+        }
+        return kategoriAll.find(k => k.nama.toLowerCase().includes('uts') || (k.deskripsi && k.deskripsi.toLowerCase().includes('tengah'))) || kategoriAll[0];
+    })();
+
     // Form data for the file uploader
     const { data, setData, post, processing, errors } = useForm({
         mata_kuliah_id: selectedMataKuliahId || (assignments[0]?.id ?? ''),
         periode_id: activePeriode?.id || '',
-        kategori_id: '',
+        kategori_id: fixedCategory?.id || '',
         judul: '',
         file: null,
         submit_now: true,
     });
+
+    useEffect(() => {
+        if (fixedCategory?.id && data.kategori_id !== fixedCategory.id) {
+            setData('kategori_id', fixedCategory.id);
+        }
+        if (activePeriode?.id && data.periode_id !== activePeriode.id) {
+            setData('periode_id', activePeriode.id);
+        }
+    }, [fixedCategory?.id, activePeriode?.id]);
 
     const selectedMk = assignments.find(a => a.id === data.mata_kuliah_id);
 
@@ -232,7 +252,7 @@ export default function SoalCreate({ assignments, kategoriAll, activePeriode, se
                 plo: [...prev.plo, JSON.parse(JSON.stringify(nextPlo))]
             }));
         } else {
-            alert("Semua PLO dari mata kuliah ini sudah ditambahkan.");
+            showToast('info', 'Semua PLO dari mata kuliah ini sudah ditambahkan.');
         }
     };
 
@@ -264,9 +284,10 @@ export default function SoalCreate({ assignments, kategoriAll, activePeriode, se
                 return { ...prev, plo: plos };
             });
         } else {
-            alert("Semua CLO untuk PLO ini sudah ditambahkan.");
+            showToast('info', 'Semua CLO untuk PLO ini sudah ditambahkan.');
         }
     };
+
 
     const removeClo = (ploIdx, cloIdx) => {
         setGeneratorData(prev => {
@@ -418,90 +439,100 @@ export default function SoalCreate({ assignments, kategoriAll, activePeriode, se
                             
                             {/* Mata Kuliah Field */}
                             <div>
-                                <label className="text-[13px] font-bold text-slate-700 block">
+                                <label className="text-[13px] font-bold text-slate-700 block mb-1.5">
                                     Mata Kuliah <span className="text-red-500">*</span>
                                 </label>
-                                <div className="relative">
-                                    <select
-                                        value={data.mata_kuliah_id}
-                                        onChange={e => setData('mata_kuliah_id', e.target.value)}
-                                        className="mt-1.5 w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20 transition-all cursor-pointer appearance-none font-medium"
-                                        style={{
-                                            backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                                            backgroundPosition: 'right 0.85rem center',
-                                            backgroundSize: '1.25rem',
-                                            backgroundRepeat: 'no-repeat',
-                                            paddingRight: '2.5rem'
-                                        }}
-                                    >
-                                        {assignments.map(a => (
-                                            <option key={a.id} value={a.id}>{a.nama_mk}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                {assignments.length > 1 ? (
+                                    <div className="relative">
+                                        <select
+                                            value={data.mata_kuliah_id}
+                                            onChange={e => setData('mata_kuliah_id', e.target.value)}
+                                            className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20 transition-all cursor-pointer appearance-none font-medium"
+                                            style={{
+                                                backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                                                backgroundPosition: 'right 0.85rem center',
+                                                backgroundSize: '1.25rem',
+                                                backgroundRepeat: 'no-repeat',
+                                                paddingRight: '2.5rem'
+                                            }}
+                                        >
+                                            {assignments.map(a => (
+                                                <option key={a.id} value={a.id}>{a.kode_mk ? `${a.kode_mk} - ` : ''}{a.nama_mk}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between border border-slate-200 bg-slate-50/80 rounded-xl px-3.5 py-2.5">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className="text-xs font-bold text-slate-800 truncate">
+                                                {assignments[0]?.nama_mk || 'Tidak ada mata kuliah'}
+                                            </span>
+                                            {assignments[0]?.kode_mk && (
+                                                <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-200/80 text-slate-700 rounded-md">
+                                                    {assignments[0].kode_mk}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-[11px] font-semibold text-slate-400">Koordinator MK</span>
+                                    </div>
+                                )}
                                 {errors.mata_kuliah_id && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.mata_kuliah_id}</p>}
                             </div>
 
-                            {/* Periode Field (Disabled select container) */}
+                            {/* Periode Field (Fixed real-time following academic calendar) */}
                             <div>
-                                <label className="text-[13px] font-bold text-slate-700 block">
+                                <label className="text-[13px] font-bold text-slate-700 block mb-1.5">
                                     Periode <span className="text-red-500">*</span>
                                 </label>
-                                <div className="relative">
-                                    <select
-                                        value={data.periode_id}
-                                        disabled
-                                        className="mt-1.5 w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-400 bg-slate-50/50 focus:outline-none appearance-none font-medium cursor-not-allowed"
-                                        style={{
-                                            backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                                            backgroundPosition: 'right 0.85rem center',
-                                            backgroundSize: '1.25rem',
-                                            backgroundRepeat: 'no-repeat',
-                                            paddingRight: '2.5rem'
-                                        }}
-                                    >
-                                        <option value={activePeriode?.id}>{activePeriode?.nama || '-'}</option>
-                                    </select>
+                                <div className="flex items-center justify-between border border-slate-200 bg-slate-50/80 rounded-xl px-3.5 py-2.5">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-xs font-semibold text-slate-800 truncate">
+                                            {activePeriode?.nama || 'Tidak ada periode aktif'}
+                                        </span>
+                                        {activePeriode?.status === 'ACTIVE' && (
+                                            <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded-md">
+                                                Aktif
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="text-[11px] font-semibold text-slate-400">Kalender Akademik</span>
                                 </div>
                                 {errors.periode_id && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.periode_id}</p>}
                             </div>
 
-                            {/* Kategori Soal Field */}
+                            {/* Kategori Soal Field (Fixed following active period: UTS / UAS) */}
                             <div>
-                                <label className="text-[13px] font-bold text-slate-700 block">
+                                <label className="text-[13px] font-bold text-slate-700 block mb-1.5">
                                     Kategori Soal <span className="text-red-500">*</span>
                                 </label>
-                                <div className="relative">
-                                    <select
-                                        value={data.kategori_id}
-                                        onChange={e => setData('kategori_id', e.target.value)}
-                                        className="mt-1.5 w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20 transition-all cursor-pointer appearance-none font-medium"
-                                        style={{
-                                            backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                                            backgroundPosition: 'right 0.85rem center',
-                                            backgroundSize: '1.25rem',
-                                            backgroundRepeat: 'no-repeat',
-                                            paddingRight: '2.5rem'
-                                        }}
-                                    >
-                                        <option value="">Pilih kategori...</option>
-                                        {kategoriAll.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
-                                    </select>
+                                <div className="flex items-center justify-between border border-slate-200 bg-slate-50/80 rounded-xl px-3.5 py-2.5">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-xs font-bold text-slate-800">
+                                            {isUasPeriod ? 'Ujian Akhir Semester (UAS)' : 'Ujian Tengah Semester (UTS)'}
+                                        </span>
+                                    </div>
+                                    <span className="px-2 py-0.5 text-[10px] font-bold bg-[#801720]/10 text-[#801720] rounded-md flex-shrink-0">
+                                        Sesuai Periode ({isUasPeriod ? 'UAS' : 'UTS'})
+                                    </span>
                                 </div>
                                 {errors.kategori_id && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.kategori_id}</p>}
                             </div>
 
                             {/* Judul Soal Field */}
                             <div>
-                                <label className="text-[13px] font-bold text-slate-700 block">
+                                <label className="text-[13px] font-bold text-slate-700 block mb-1.5">
                                     Judul Soal <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={data.judul}
                                     onChange={e => setData('judul', e.target.value)}
-                                    placeholder="Contoh: Soal UTS Pemrograman Web 2024"
-                                    className="mt-1.5 w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 transition-all font-medium"
+                                    placeholder={
+                                        activePeriode?.nama?.toLowerCase().includes('uas')
+                                            ? `Contoh: Soal UAS ${selectedMk?.nama_mk || 'Mata Kuliah'}`
+                                            : `Contoh: Soal UTS ${selectedMk?.nama_mk || 'Mata Kuliah'}`
+                                    }
+                                    className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 transition-all font-medium"
                                 />
                                 {errors.judul && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.judul}</p>}
                             </div>
@@ -595,47 +626,54 @@ export default function SoalCreate({ assignments, kategoriAll, activePeriode, se
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                             <div className="sm:col-span-2">
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Mata Kuliah</label>
-                                                <select
-                                                    value={data.mata_kuliah_id}
-                                                    onChange={e => setData('mata_kuliah_id', e.target.value)}
-                                                    className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20 bg-white font-medium cursor-pointer"
-                                                >
-                                                    {assignments.map(a => (
-                                                        <option key={a.id} value={a.id}>{a.nama_mk}</option>
-                                                    ))}
-                                                </select>
+                                                {assignments.length > 1 ? (
+                                                    <select
+                                                        value={data.mata_kuliah_id}
+                                                        onChange={e => setData('mata_kuliah_id', e.target.value)}
+                                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20 bg-white font-medium cursor-pointer"
+                                                    >
+                                                        {assignments.map(a => (
+                                                            <option key={a.id} value={a.id}>{a.kode_mk ? `${a.kode_mk} - ` : ''}{a.nama_mk}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <div className="mt-1 flex items-center justify-between border border-gray-100 bg-gray-50 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
+                                                        <span>{assignments[0]?.nama_mk || '-'}</span>
+                                                        {assignments[0]?.kode_mk && (
+                                                            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gray-200 text-gray-700 rounded">
+                                                                {assignments[0].kode_mk}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="sm:col-span-2">
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nama Evaluasi</label>
-                                                <input
-                                                    type="text"
-                                                    value={generatorData.nama_evaluasi}
-                                                    onChange={e => handleHeaderChange('nama_evaluasi', e.target.value)}
-                                                    placeholder="Contoh: UTS / UAS"
-                                                    className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20 font-medium"
-                                                />
+                                                <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
+                                                    <span>{generatorData.nama_evaluasi || (activePeriode?.nama?.toLowerCase().includes('uas') ? 'Ujian Akhir Semester (UAS)' : 'Ujian Tengah Semester (UTS)')}</span>
+                                                    <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#801720]/10 text-[#801720] rounded flex-shrink-0">
+                                                        Sesuai Periode ({activePeriode?.nama?.toLowerCase().includes('uas') ? 'UAS' : 'UTS'})
+                                                    </span>
+                                                </div>
                                             </div>
 
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kode Dosen</label>
-                                                <input
-                                                    type="text"
-                                                    value={generatorData.kode_dosen}
-                                                    onChange={e => handleHeaderChange('kode_dosen', e.target.value)}
-                                                    className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20 font-medium"
-                                                />
+                                                <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
+                                                    <span>{generatorData.kode_dosen || '-'}</span>
+                                                    <span className="text-[9px] font-bold text-gray-400">Paten</span>
+                                                </div>
                                             </div>
 
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tipe Ujian</label>
-                                                <input
-                                                    type="text"
-                                                    value={generatorData.tipe_ujian}
-                                                    onChange={e => handleHeaderChange('tipe_ujian', e.target.value)}
-                                                    placeholder="Contoh: UTS"
-                                                    className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20 font-medium"
-                                                />
+                                                <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
+                                                    <span>{generatorData.tipe_ujian || (activePeriode?.nama?.toLowerCase().includes('uas') ? 'UAS' : 'UTS')}</span>
+                                                    <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#801720]/10 text-[#801720] rounded flex-shrink-0">
+                                                        {generatorData.tipe_ujian || (activePeriode?.nama?.toLowerCase().includes('uas') ? 'UAS' : 'UTS')}
+                                                    </span>
+                                                </div>
                                             </div>
 
                                             <div>

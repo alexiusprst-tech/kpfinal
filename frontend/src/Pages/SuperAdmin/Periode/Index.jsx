@@ -8,16 +8,13 @@ import {
     CheckCircle, Square,
 } from 'lucide-react';
 
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+
 function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error)) return null;
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm ${flash.success ? 'bg-emerald-600' : 'bg-red-600'}`}>
-            <span className="flex-1">{flash.success || flash.error}</span>
-            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
-        </div>
-    );
+    return <FlashAlert type="toast" flash={flash} />;
 }
+
 
 function Modal({ open, onClose, title, children }) {
     if (!open) return null;
@@ -188,13 +185,51 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
         router.put(`/superadmin/periode/${editItem.id}`, form, { onFinish: () => { setProcessing(false); setEditItem(null); } });
     };
 
-    const handleDelete = () => {
-        setProcessing(true);
-        router.delete(`/superadmin/periode/${deleteItem.id}`, { onFinish: () => { setProcessing(false); setDeleteItem(null); } });
+    const handleDelete = async (item = deleteItem) => {
+        if (!item) return;
+        setOpenMenuId(null);
+        const result = await showConfirm({
+            title: 'Hapus Periode Verifikasi?',
+            text: `Apakah Anda yakin ingin menghapus periode "${item?.nama}"? Tindakan ini bersifat permanen.`,
+            icon: 'warning',
+            confirmButtonText: 'Ya, Hapus Periode',
+            confirmButtonColor: '#CD202E',
+        });
+        if (result.isConfirmed) {
+            router.delete(`/superadmin/periode/${item.id}`, {
+                onFinish: () => { setDeleteItem(null); },
+            });
+        }
     };
 
-    const activate = (item) => { router.post(`/superadmin/periode/${item.id}/activate`, {}, { preserveScroll: true }); setOpenMenuId(null); };
-    const close = (item) => { router.post(`/superadmin/periode/${item.id}/close`, {}, { preserveScroll: true }); setOpenMenuId(null); };
+    const activate = async (item) => {
+        setOpenMenuId(null);
+        const result = await showConfirm({
+            title: 'Aktifkan Periode Verifikasi?',
+            text: `Aktifkan periode "${item.nama}"? Periode aktif lain pada tahun ajaran ini akan dinonaktifkan secara otomatis.`,
+            icon: 'question',
+            confirmButtonText: 'Ya, Aktifkan',
+            confirmButtonColor: '#059669',
+        });
+        if (result.isConfirmed) {
+            router.post(`/superadmin/periode/${item.id}/activate`, {}, { preserveScroll: true });
+        }
+    };
+
+    const close = async (item) => {
+        setOpenMenuId(null);
+        const result = await showConfirm({
+            title: 'Tutup / Nonaktifkan Periode?',
+            text: `Nonaktifkan periode "${item.nama}"? Verifikasi soal untuk periode ini tidak akan dapat diubah lagi.`,
+            icon: 'warning',
+            confirmButtonText: 'Ya, Nonaktifkan',
+            confirmButtonColor: '#801720',
+        });
+        if (result.isConfirmed) {
+            router.post(`/superadmin/periode/${item.id}/close`, {}, { preserveScroll: true });
+        }
+    };
+
 
     const openEdit = (item) => {
         setForm({
@@ -328,9 +363,10 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
                                                                              <button onClick={() => openEdit(item)} className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer">
                                                                                  <Pencil className="w-3.5 h-3.5" /> Edit
                                                                              </button>
-                                                                            <button onClick={() => { setDeleteItem(item); setOpenMenuId(null); }} className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-red-500 hover:bg-red-50">
+                                                                            <button onClick={() => handleDelete(item)} className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 cursor-pointer">
                                                                                 <Trash2 className="w-3.5 h-3.5" /> Hapus
                                                                             </button>
+
                                                                         </>
                                                                     )}
                                                                 </div>

@@ -3,7 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     FileCheck, Download, ArrowLeft, CheckCircle2, RefreshCw,
-    XCircle, FileText, Clock, User, Calendar, X
+    XCircle, FileText, Clock, User, Calendar, X, Eye
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -26,15 +26,11 @@ function StatusBadge({ status }) {
     );
 }
 
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+
 function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error)) return null;
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm ${flash.success ? 'bg-emerald-600' : 'bg-red-600'}`}>
-            <span className="flex-1">{flash.success || flash.error}</span>
-            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
-        </div>
-    );
+    return <FlashAlert type="toast" flash={flash} />;
 }
 
 export default function VerifikatorSoalShow({ soal }) {
@@ -45,20 +41,42 @@ export default function VerifikatorSoalShow({ soal }) {
 
     const canVerify = ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'].includes(soal.status);
 
-    const handleVerifikasi = (e) => {
+    const handleVerifikasi = async (e) => {
         e.preventDefault();
         if (!action) return;
 
         if (action === 'REVISION' && !catatan.trim()) {
-            alert('Harap berikan catatan detail mengenai bagian yang perlu direvisi.');
+            showAlert({
+                title: 'Catatan Wajib Diisi',
+                text: 'Harap berikan catatan detail mengenai bagian yang perlu direvisi.',
+                icon: 'warning',
+            });
             return;
         }
+
+        const actionLabels = {
+            APPROVED: 'menyetujui (Approve)',
+            REVISION: 'meminta revisi untuk',
+            REJECTED: 'menolak (Reject)',
+        };
+
+        const result = await showConfirm({
+            title: 'Konfirmasi Verifikasi',
+            text: `Apakah Anda yakin ingin ${actionLabels[action] || action} soal ini?`,
+            icon: action === 'APPROVED' ? 'question' : 'warning',
+            confirmButtonText: 'Ya, Kirim Verifikasi',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: action === 'APPROVED' ? '#059669' : '#801720',
+        });
+
+        if (!result.isConfirmed) return;
 
         setProcessing(true);
         router.post(`/verifikator/soal/${soal.id}/verifikasi`, { action, catatan }, {
             onFinish: () => setProcessing(false)
         });
     };
+
 
     const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
     const formatSize = (b) => b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
@@ -91,18 +109,38 @@ export default function VerifikatorSoalShow({ soal }) {
                             <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-[#801720]" /> File Soal
                             </h2>
-                            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
-                                    <FileText className="w-5 h-5 text-red-600" />
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-200/80">
+                                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                    <div className="w-11 h-11 rounded-2xl bg-red-100/80 border border-red-200/60 flex items-center justify-center flex-shrink-0 shadow-xs">
+                                        <FileText className="w-5 h-5 text-red-600" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold text-gray-800 break-all leading-snug">{soal.nama_file}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-red-100 text-red-700">PDF/DOC</span>
+                                            <span className="text-xs font-medium text-gray-400">{formatSize(soal.file_size)}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-semibold text-gray-800">{soal.nama_file}</p>
-                                    <p className="text-xs text-gray-400">{formatSize(soal.file_size)}</p>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <a
+                                        href={`/verifikator/soal/${soal.id}/preview`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs"
+                                        title="Buka pratinjau naskah soal di tab baru"
+                                    >
+                                        <Eye className="w-3.5 h-3.5 text-gray-500" /> Lihat
+                                    </a>
+                                    <a
+                                        href={`/verifikator/soal/${soal.id}/download`}
+                                        download={soal.nama_file}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#801720]/25 transition-all hover:scale-[1.02] active:scale-95"
+                                        title="Unduh berkas naskah soal"
+                                    >
+                                        <Download className="w-3.5 h-3.5" /> Download
+                                    </a>
                                 </div>
-                                <a href={`/verifikator/soal/${soal.id}/download`}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#801720] text-white rounded-lg text-xs font-semibold hover:bg-[#6a1219]">
-                                    <Download className="w-3.5 h-3.5" /> Download
-                                </a>
                             </div>
                         </div>
 
@@ -114,19 +152,36 @@ export default function VerifikatorSoalShow({ soal }) {
                                 </h2>
                                 <div className="space-y-3">
                                     {soal.revisi.map(rev => (
-                                        <div key={rev.id} className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                            <div className="w-7 h-7 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0 text-xs font-bold text-amber-800">
-                                                v{rev.version}
+                                        <div key={rev.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <div className="w-8 h-8 rounded-xl bg-amber-200 flex items-center justify-center flex-shrink-0 text-xs font-extrabold text-amber-800 shadow-xs">
+                                                    v{rev.version}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-bold text-gray-800 break-all">{rev.nama_file}</p>
+                                                    {rev.catatan && <p className="text-[11px] text-gray-600 mt-0.5">{rev.catatan}</p>}
+                                                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">{formatDate(rev.uploaded_at)}</p>
+                                                </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <p className="text-xs font-semibold text-gray-800">{rev.nama_file}</p>
-                                                {rev.catatan && <p className="text-[10px] text-gray-500">{rev.catatan}</p>}
-                                                <p className="text-[10px] text-gray-400">{formatDate(rev.uploaded_at)}</p>
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <a
+                                                    href={`/verifikator/revisi/${rev.id}/preview`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-amber-200 hover:bg-amber-100/50 text-amber-800 rounded-lg text-xs font-bold transition-all shadow-xs"
+                                                    title="Lihat naskah revisi"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5 text-amber-700" /> Lihat
+                                                </a>
+                                                <a
+                                                    href={`/verifikator/revisi/${rev.id}/download`}
+                                                    download={rev.nama_file}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs"
+                                                    title="Unduh naskah revisi"
+                                                >
+                                                    <Download className="w-3.5 h-3.5" /> Unduh
+                                                </a>
                                             </div>
-                                            <a href={`/koordinator/revisi/${rev.id}/download`}
-                                                className="p-1.5 hover:bg-amber-200 text-amber-700 rounded-lg">
-                                                <Download className="w-3.5 h-3.5" />
-                                            </a>
                                         </div>
                                     ))}
                                 </div>

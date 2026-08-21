@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 import SearchableSelect from '@/Components/SearchableSelect';
+
 import {
     ArrowLeft, Check, CheckCircle2, Clock, FolderKanban, Info,
     Plus, Search, Shield, Trash2, Users, BookOpen, Calendar,
@@ -100,7 +102,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                 };
             } else {
                 if (currentList.length >= 3) {
-                    alert('Maksimal 3 dosen koordinator untuk setiap mata kuliah.');
+                    showToast('warning', 'Maksimal 3 dosen koordinator untuk setiap mata kuliah.');
                     return prev;
                 }
                 return {
@@ -123,7 +125,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                 };
             } else {
                 if (currentList.length >= 5) {
-                    alert('Maksimal 5 dosen verifikator untuk setiap mata kuliah.');
+                    showToast('warning', 'Maksimal 5 dosen verifikator untuk setiap mata kuliah.');
                     return prev;
                 }
                 return {
@@ -131,6 +133,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                     [mkId]: [...currentList, dosenId],
                 };
             }
+
         });
     };
 
@@ -168,20 +171,22 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
         setTimeout(() => setCopyNotification(''), 3000);
     };
 
-    // Group-wide assignments calculation
-    const allAssignedCoordinators = Object.entries(mkCoordinatorMap).flatMap(([_, list]) => list || []);
-    const allAssignedVerifikators = Object.entries(mkVerifikatorMap).flatMap(([_, list]) => list || []);
-
     // Dynamic options for Koordinator dropdown
     const getKoordinatorOptionsForMk = (currentMkId) => {
         const thisMkCoors = mkCoordinatorMap[currentMkId] || [];
+        const thisMkVerifs = mkVerifikatorMap[currentMkId] || [];
+
         return dosenAll.map((d) => {
             const isThisMkKoor = thisMkCoors.includes(d.id);
-            const isOtherMkKoor = allAssignedCoordinators.includes(d.id) && !isThisMkKoor;
-            const isVerifAnywhere = allAssignedVerifikators.includes(d.id);
+            const isThisMkVerif = thisMkVerifs.includes(d.id);
 
-            const isDisabled = isThisMkKoor || isOtherMkKoor || isVerifAnywhere;
-            const badge = (isThisMkKoor || isOtherMkKoor) ? 'Koor' : (isVerifAnywhere ? 'Verifikator' : null);
+            const isDisabled = isThisMkKoor || isThisMkVerif;
+            let badge = null;
+            if (isThisMkKoor) {
+                badge = 'Dipilih';
+            } else if (isThisMkVerif) {
+                badge = 'Verifikator MK ini';
+            }
 
             return {
                 value: d.id,
@@ -194,14 +199,20 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
 
     // Dynamic options for Verifikator dropdown
     const getVerifikatorOptionsForMk = (currentMkId) => {
+        const thisMkCoors = mkCoordinatorMap[currentMkId] || [];
         const thisMkVerifs = mkVerifikatorMap[currentMkId] || [];
-        return dosenAll.map((d) => {
-            const isThisMkVerif = thisMkVerifs.includes(d.id);
-            const isOtherMkVerif = allAssignedVerifikators.includes(d.id) && !isThisMkVerif;
-            const isKoorAnywhere = allAssignedCoordinators.includes(d.id);
 
-            const isDisabled = isThisMkVerif || isOtherMkVerif || isKoorAnywhere;
-            const badge = isKoorAnywhere ? 'Koor' : ((isThisMkVerif || isOtherMkVerif) ? 'Verifikator' : null);
+        return dosenAll.map((d) => {
+            const isThisMkKoor = thisMkCoors.includes(d.id);
+            const isThisMkVerif = thisMkVerifs.includes(d.id);
+
+            const isDisabled = isThisMkVerif || isThisMkKoor;
+            let badge = null;
+            if (isThisMkVerif) {
+                badge = 'Dipilih';
+            } else if (isThisMkKoor) {
+                badge = 'Koor MK ini';
+            }
 
             return {
                 value: d.id,
@@ -212,11 +223,15 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (selectedMkIds.length === 0) {
-            alert('Pilih minimal satu mata kuliah target.');
+            showAlert({
+                title: 'Mata Kuliah Belum Dipilih',
+                text: 'Silakan pilih minimal satu mata kuliah target verifikasi.',
+                icon: 'warning',
+            });
             return;
         }
 
@@ -226,22 +241,39 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
             const verifs = mkVerifikatorMap[mkId] || [];
 
             if (koors.length === 0) {
-                alert(`Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} belum memiliki koordinator.`);
+                showAlert({
+                    title: 'Koordinator Belum Ditentukan',
+                    text: `Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} belum memiliki dosen koordinator.`,
+                    icon: 'warning',
+                });
                 return;
             }
             if (koors.length > 3) {
-                alert(`Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} memiliki lebih dari 3 koordinator.`);
+                showAlert({
+                    title: 'Koordinator Melebihi Batas',
+                    text: `Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} memiliki lebih dari 3 koordinator.`,
+                    icon: 'warning',
+                });
                 return;
             }
             if (verifs.length === 0) {
-                alert(`Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} belum memiliki tim verifikator.`);
+                showAlert({
+                    title: 'Verifikator Belum Ditentukan',
+                    text: `Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} belum memiliki tim dosen verifikator.`,
+                    icon: 'warning',
+                });
                 return;
             }
             if (verifs.length > 5) {
-                alert(`Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} memiliki lebih dari 5 verifikator.`);
+                showAlert({
+                    title: 'Verifikator Melebihi Batas',
+                    text: `Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} memiliki lebih dari 5 verifikator.`,
+                    icon: 'warning',
+                });
                 return;
             }
         }
+
 
         const payload = {
             nama: namaKelompok,

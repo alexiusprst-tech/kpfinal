@@ -40,12 +40,20 @@ class SoalController extends Controller
 
     public function show(Request $request, Soal $soal)
     {
-        $soal->load(['mataKuliah', 'periode', 'kategori', 'uploadedBy', 'verifikasi.verifikator', 'revisi.uploadedBy']);
+        $user  = $request->user();
+        $dosen = $user->dosen;
 
-        // Mark as IN_REVIEW when verifikator opens it
-        if ($soal->status === Soal::STATUS_SUBMITTED || $soal->status === Soal::STATUS_RESUBMITTED) {
-            $soal->update(['status' => Soal::STATUS_IN_REVIEW]);
+        $isAssigned = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
+            ->where('periode_id', $soal->periode_id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+
+        if (!$isAssigned) {
+            abort(403, 'Anda tidak memiliki akses verifikasi untuk mata kuliah ini.');
         }
+
+        $soal->load(['mataKuliah', 'periode', 'kategori', 'uploadedBy', 'verifikasi.verifikator', 'revisi.uploadedBy']);
 
         return Inertia::render('Verifikator/Soal/Show', [
             'soal' => $soal,
@@ -54,9 +62,52 @@ class SoalController extends Controller
 
     public function download(Request $request, Soal $soal)
     {
-        if (!Storage::disk('private')->exists($soal->file_path)) {
+        $user  = $request->user();
+        $dosen = $user->dosen;
+
+        $isAssigned = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
+            ->where('periode_id', $soal->periode_id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+
+        if (!$isAssigned && !$user->isSuperAdmin()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengunduh naskah soal mata kuliah ini.');
+        }
+
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('private');
+
+        if (!$disk->exists($soal->file_path)) {
             abort(404, 'File tidak ditemukan.');
         }
-        return Storage::disk('private')->download($soal->file_path, $soal->nama_file);
+        return $disk->download($soal->file_path, $soal->nama_file);
+    }
+
+    public function preview(Request $request, Soal $soal)
+    {
+        $user  = $request->user();
+        $dosen = $user->dosen;
+
+        $isAssigned = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
+            ->where('periode_id', $soal->periode_id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+
+        if (!$isAssigned && !$user->isSuperAdmin()) {
+            abort(403, 'Anda tidak memiliki akses untuk melihat naskah soal mata kuliah ini.');
+        }
+
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('private');
+
+        if (!$disk->exists($soal->file_path)) {
+            abort(404, 'File tidak ditemukan.');
+        }
+
+        return $disk->response($soal->file_path, $soal->nama_file, [
+            'Content-Disposition' => 'inline; filename="' . $soal->nama_file . '"',
+        ]);
     }
 }

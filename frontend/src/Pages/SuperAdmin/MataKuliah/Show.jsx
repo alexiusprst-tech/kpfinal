@@ -76,7 +76,6 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
             plo_ids: selectedPloIds,
             clo_ids: selectedCloIds
         }, {
-            preserveScroll: true,
             onFinish: () => setIsSaving(false)
         });
     };
@@ -127,13 +126,16 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                         Kelola pemetaan Capaian Pembelajaran Lulusan (PLO) dan Capaian Pembelajaran Mata Kuliah (CLO) untuk setiap mata kuliah.
                     </p>
                 </div>
-                <button
-                    onClick={() => window.open('#', '_blank')}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-bold text-slate-700 shadow-xs transition-all cursor-pointer"
+                <a
+                    href="/docs/buku-kurikulum-2024.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 shadow-xs transition-all cursor-pointer"
+                    title="Buka Buku Kurikulum 2024 (Panduan Pemetaan)"
                 >
-                    <Info className="w-4 h-4 text-[#801720]" />
+                    <BookOpen className="w-4 h-4 text-[#801720]" />
                     <span>Panduan Pemetaan</span>
-                </button>
+                </a>
             </div>
 
             {/* Top Selector Card */}

@@ -5,6 +5,10 @@ import {
     FileText, Plus, Upload, Trash2, Send, X, AlertTriangle,
     Download, RefreshCw, CheckCircle2, Eye, Sparkles
 } from 'lucide-react';
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+
+
 
 const STATUS_CONFIG = {
     DRAFT:       { label: 'Draft',        color: 'bg-gray-100 text-gray-600',      dot: 'bg-gray-400' },
@@ -26,16 +30,6 @@ function StatusBadge({ status }) {
     );
 }
 
-function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error)) return null;
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm animate-in slide-in-from-right ${flash.success ? 'bg-emerald-600' : 'bg-red-600'}`}>
-            <span className="flex-1">{flash.success || flash.error}</span>
-            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
-        </div>
-    );
-}
 
 function Modal({ open, onClose, title, children }) {
     if (!open) return null;
@@ -93,15 +87,38 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
         router.post('/koordinator/soal', fd, { onFinish: () => { setProcessing(false); setShowUpload(false); setSelectedFile(null); } });
     };
 
-    const handleSubmit = () => {
-        setProcessing(true);
-        router.post(`/koordinator/soal/${submitItem.id}/submit`, {}, { onFinish: () => { setProcessing(false); setSubmitItem(null); } });
+    const handleSubmit = async (item = submitItem) => {
+        if (!item) return;
+        const result = await showConfirm({
+            title: 'Submit Soal untuk Verifikasi?',
+            text: `Submit "${item.judul}"? Soal akan dikirim ke verifikator. Setelah disubmit, file tidak dapat diubah sampai mendapat feedback.`,
+            icon: 'question',
+            confirmButtonText: 'Ya, Submit Soal',
+            confirmButtonColor: '#059669',
+        });
+        if (result.isConfirmed) {
+            router.post(`/koordinator/soal/${item.id}/submit`, {}, {
+                onFinish: () => { setSubmitItem(null); },
+            });
+        }
     };
 
-    const handleDelete = () => {
-        setProcessing(true);
-        router.delete(`/koordinator/soal/${deleteItem.id}`, { onFinish: () => { setProcessing(false); setDeleteItem(null); } });
+    const handleDelete = async (item = deleteItem) => {
+        if (!item) return;
+        const result = await showConfirm({
+            title: 'Hapus Draft Soal?',
+            text: `Apakah Anda yakin ingin menghapus draft soal "${item?.judul}"?`,
+            icon: 'warning',
+            confirmButtonText: 'Ya, Hapus',
+            confirmButtonColor: '#CD202E',
+        });
+        if (result.isConfirmed) {
+            router.delete(`/koordinator/soal/${item.id}`, {
+                onFinish: () => { setDeleteItem(null); },
+            });
+        }
     };
+
 
     const handleRevisi = (e) => {
         e.preventDefault();
@@ -200,22 +217,23 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                                                 </a>
                                                 {/* Submit (if DRAFT) */}
                                                 {soal.status === 'DRAFT' && (
-                                                    <button onClick={() => setSubmitItem(soal)} className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg" title="Submit untuk Verifikasi">
+                                                    <button onClick={() => handleSubmit(soal)} className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer" title="Submit untuk Verifikasi">
                                                         <Send className="w-3.5 h-3.5" />
                                                     </button>
                                                 )}
                                                 {/* Upload Revisi (if REVISION) */}
                                                 {soal.status === 'REVISION' && (
-                                                    <button onClick={() => setShowRevisi(soal)} className="p-1.5 hover:bg-amber-50 text-amber-600 rounded-lg" title="Upload Revisi">
+                                                    <button onClick={() => setShowRevisi(soal)} className="p-1.5 hover:bg-amber-50 text-amber-600 rounded-lg cursor-pointer" title="Upload Revisi">
                                                         <RefreshCw className="w-3.5 h-3.5" />
                                                     </button>
                                                 )}
                                                 {/* Delete (if DRAFT) */}
                                                 {soal.status === 'DRAFT' && (
-                                                    <button onClick={() => setDeleteItem(soal)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg" title="Hapus">
+                                                    <button onClick={() => handleDelete(soal)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg cursor-pointer" title="Hapus">
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
                                                 )}
+
                                             </div>
                                         </td>
                                     </tr>

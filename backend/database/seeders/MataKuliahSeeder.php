@@ -98,18 +98,8 @@ class MataKuliahSeeder extends Seeder
             $seededCodes[] = $kode;
         }
 
-        // Delete any old MataKuliah records and their relationships that are not in the new seeded codes list
-        $mksToDelete = MataKuliah::withTrashed()->whereNotIn('kode_mk', $seededCodes)->get();
-        foreach ($mksToDelete as $mk) {
-            $mk->plo()->detach();
-            $mk->clo()->detach();
-            $mk->soal()->forceDelete();
-            $mk->penugasanKoordinator()->forceDelete();
-            $mk->penugasanVerifikator()->forceDelete();
-            $mk->beritaAcara()->forceDelete();
-            $mk->kelompokMataKuliah()->forceDelete();
-            $mk->forceDelete();
-        }
+        // Safely deactivate any old MataKuliah records not in the current curriculum list
+        MataKuliah::whereNotIn('kode_mk', $seededCodes)->update(['status' => 'INACTIVE']);
 
         $this->command->info('✅ Berhasil menyemai 52 Data Mata Kuliah Kurikulum.');
     }

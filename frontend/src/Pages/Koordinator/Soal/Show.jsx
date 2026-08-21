@@ -3,8 +3,16 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     ArrowLeft, FileText, Download, Pencil, Send, AlertTriangle, CheckCircle2,
-    XCircle, Clock, History, X, User,
+    XCircle, Clock, History, X, User, Eye,
 } from 'lucide-react';
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+
+function Toast({ flash }) {
+    return <FlashAlert type="toast" flash={flash} />;
+}
+
+
 
 const STATUS_CONFIG = {
     DRAFT:       { label: 'Draft',        color: 'bg-gray-100 text-gray-600',       dot: 'bg-gray-400' },
@@ -32,16 +40,6 @@ function StatusBadge({ status }) {
     );
 }
 
-function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error)) return null;
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm ${flash.success ? 'bg-emerald-600' : 'bg-red-600'}`}>
-            <span className="flex-1">{flash.success || flash.error}</span>
-            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
-        </div>
-    );
-}
 
 function formatDateTime(dateStr) {
     if (!dateStr) return '-';
@@ -58,11 +56,19 @@ export default function SoalShow({ soal }) {
     const { flash } = usePage().props;
     const [confirmSubmit, setConfirmSubmit] = useState(false);
 
-    const latestRevisionNote = soal.verifikasi?.find(v => v.action === 'REVISION');
-
-    const handleSubmit = () => {
-        router.post(`/koordinator/soal/${soal.id}/submit`, {}, { preserveScroll: true, onFinish: () => setConfirmSubmit(false) });
+    const handleSubmit = async () => {
+        const result = await showConfirm({
+            title: 'Submit Soal untuk Verifikasi?',
+            text: `Submit "${soal.judul}"? Soal akan dikirim ke verifikator untuk diperiksa.`,
+            icon: 'question',
+            confirmButtonText: 'Ya, Submit Soal',
+            confirmButtonColor: '#059669',
+        });
+        if (result.isConfirmed) {
+            router.post(`/koordinator/soal/${soal.id}/submit`, {}, { preserveScroll: true });
+        }
     };
+
 
     return (
         <AuthenticatedLayout title={soal.judul}>
@@ -87,16 +93,38 @@ export default function SoalShow({ soal }) {
                         <StatusBadge status={soal.status} />
                     </div>
 
-                    <div className="flex items-center gap-3 mt-5 p-4 bg-gray-50 rounded-xl">
-                        <FileText className="w-8 h-8 text-[#801720] flex-shrink-0" />
-                        <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-gray-800 truncate">{soal.nama_file}</p>
-                            <p className="text-xs text-gray-400">{formatSize(soal.file_size)} · Diunggah {formatDateTime(soal.created_at)}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-5 p-4 bg-gray-50 rounded-2xl border border-gray-200/80">
+                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                            <div className="w-11 h-11 rounded-2xl bg-red-100/80 border border-red-200/60 flex items-center justify-center flex-shrink-0 shadow-xs">
+                                <FileText className="w-5 h-5 text-red-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-gray-800 break-all leading-snug">{soal.nama_file}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-red-100 text-red-700">PDF/DOC</span>
+                                    <span className="text-xs font-medium text-gray-400">{formatSize(soal.file_size)} · Diunggah {formatDateTime(soal.created_at)}</span>
+                                </div>
+                            </div>
                         </div>
-                        <a href={`/koordinator/soal/download/${soal.id}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-100">
-                            <Download className="w-3.5 h-3.5" /> Unduh
-                        </a>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <a
+                                href={`/koordinator/soal/${soal.id}/preview`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs"
+                                title="Buka pratinjau naskah soal di tab baru"
+                            >
+                                <Eye className="w-3.5 h-3.5 text-gray-500" /> Lihat
+                            </a>
+                            <a
+                                href={`/koordinator/soal/download/${soal.id}`}
+                                download={soal.nama_file}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#801720]/25 transition-all hover:scale-[1.02] active:scale-95"
+                                title="Unduh berkas naskah soal"
+                            >
+                                <Download className="w-3.5 h-3.5" /> Download
+                            </a>
+                        </div>
                     </div>
 
                     {soal.status === 'DRAFT' && (
@@ -105,10 +133,11 @@ export default function SoalShow({ soal }) {
                                 className="flex-1 text-center inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50">
                                 <Pencil className="w-4 h-4" /> Edit
                             </Link>
-                            <button onClick={() => setConfirmSubmit(true)}
-                                className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#801720] text-white text-sm font-semibold hover:bg-[#6a1219]">
+                            <button onClick={handleSubmit}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#801720] text-white text-sm font-semibold hover:bg-[#6a1219] cursor-pointer">
                                 <Send className="w-4 h-4" /> Submit
                             </button>
+
                         </div>
                     )}
 
@@ -172,19 +201,38 @@ export default function SoalShow({ soal }) {
                         </h2>
                         <div className="space-y-2">
                             {soal.revisi.map(r => (
-                                <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                                    <FileText className="w-6 h-6 text-gray-400 flex-shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold text-gray-800">Versi {r.version} — {r.nama_file}</p>
-                                        <p className="text-[10px] text-gray-400">
-                                            Diunggah oleh {r.uploaded_by?.name} · {formatDateTime(r.uploaded_at)}
-                                        </p>
-                                        {r.catatan && <p className="text-xs text-gray-500 mt-1">Catatan: {r.catatan}</p>}
+                                <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-8 h-8 rounded-xl bg-amber-200 flex items-center justify-center flex-shrink-0 text-xs font-extrabold text-amber-800 shadow-xs">
+                                            v{r.version}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-bold text-gray-800 break-all">{r.nama_file}</p>
+                                            <p className="text-[10px] text-gray-400 font-medium">
+                                                Diunggah oleh {r.uploaded_by?.name} · {formatDateTime(r.uploaded_at)}
+                                            </p>
+                                            {r.catatan && <p className="text-xs text-gray-600 mt-1">Catatan: {r.catatan}</p>}
+                                        </div>
                                     </div>
-                                    <a href={`/koordinator/revisi/${r.id}/download`}
-                                        className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-600 flex-shrink-0" title="Unduh">
-                                        <Download className="w-3.5 h-3.5" />
-                                    </a>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <a
+                                            href={`/koordinator/revisi/${r.id}/preview`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-amber-200 hover:bg-amber-100/50 text-amber-800 rounded-lg text-xs font-bold transition-all shadow-xs"
+                                            title="Lihat naskah revisi"
+                                        >
+                                            <Eye className="w-3.5 h-3.5 text-amber-700" /> Lihat
+                                        </a>
+                                        <a
+                                            href={`/koordinator/revisi/${r.id}/download`}
+                                            download={r.nama_file}
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs"
+                                            title="Unduh naskah revisi"
+                                        >
+                                            <Download className="w-3.5 h-3.5" /> Unduh
+                                        </a>
+                                    </div>
                                 </div>
                             ))}
                         </div>

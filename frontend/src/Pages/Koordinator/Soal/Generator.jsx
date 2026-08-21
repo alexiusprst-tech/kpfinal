@@ -6,6 +6,8 @@ import {
     ArrowLeft, Plus, Trash2, FileText, Download,
     CheckCircle2, AlertTriangle, Sparkles, MoveUp, MoveDown
 } from 'lucide-react';
+import { showToast, showAlert } from '@/Utils/sweetalert';
+
 
 export default function SoalGenerator({ mataKuliah, activePeriode, initialData }) {
     const [formData, setFormData] = useState(initialData);
@@ -167,15 +169,23 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
+            showToast('success', `Dokumen soal berhasil diekspor (${type.toUpperCase()})`);
         })
         .catch(err => {
             console.error(err);
-            setExportError('Gagal melakukan ekspor dokumen. Pastikan semua data terisi dengan format benar.');
+            const msg = 'Gagal melakukan ekspor dokumen. Pastikan semua data terisi dengan format benar.';
+            setExportError(msg);
+            showAlert({
+                icon: 'error',
+                title: 'Ekspor Gagal',
+                text: msg,
+            });
         })
         .finally(() => {
             setIsExporting(false);
         });
     };
+
 
     // Helper to keep track of visual question area indexes sequentially
     let previewQuestionIndex = 1;
@@ -239,34 +249,30 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
 
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nama Evaluasi</label>
-                                    <input
-                                        type="text"
-                                        value={formData.nama_evaluasi}
-                                        onChange={e => handleHeaderChange('nama_evaluasi', e.target.value)}
-                                        placeholder="Contoh: UTS / UAS"
-                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
-                                    />
+                                    <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
+                                        <span>{formData.nama_evaluasi || 'Ujian Tengah Semester (UTS)'}</span>
+                                        <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#801720]/10 text-[#801720] rounded flex-shrink-0">
+                                            Sesuai Periode
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kode Dosen</label>
-                                    <input
-                                        type="text"
-                                        value={formData.kode_dosen}
-                                        onChange={e => handleHeaderChange('kode_dosen', e.target.value)}
-                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
-                                    />
+                                    <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
+                                        <span>{formData.kode_dosen || '-'}</span>
+                                        <span className="text-[9px] font-bold text-gray-400">Paten</span>
+                                    </div>
                                 </div>
 
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tipe Ujian</label>
-                                    <input
-                                        type="text"
-                                        value={formData.tipe_ujian}
-                                        onChange={e => handleHeaderChange('tipe_ujian', e.target.value)}
-                                        placeholder="Contoh: UTS"
-                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
-                                    />
+                                    <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
+                                        <span>{formData.tipe_ujian || 'UTS'}</span>
+                                        <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#801720]/10 text-[#801720] rounded flex-shrink-0">
+                                            {formData.tipe_ujian || 'UTS'}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div>

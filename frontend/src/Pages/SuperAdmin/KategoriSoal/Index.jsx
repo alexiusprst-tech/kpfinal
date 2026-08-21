@@ -10,17 +10,13 @@ import { Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+
 function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error)) return null;
-    const isSuccess = !!flash.success;
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm ${isSuccess ? 'bg-emerald-600' : 'bg-red-600'}`}>
-            <span className="flex-1">{flash.success || flash.error}</span>
-            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
-        </div>
-    );
+    return <FlashAlert type="toast" flash={flash} />;
 }
+
 
 function Modal({ open, onClose, title, children }) {
     if (!open) return null;
@@ -148,18 +144,40 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
         });
     };
 
-    const handleDelete = () => {
-        setProcessing(true);
-        router.delete(`/superadmin/kategori-soal/${deleteItem.id}`, {
-            onFinish: () => { setProcessing(false); setDeleteItem(null); }
+    const handleDelete = async (item = deleteItem) => {
+        if (!item) return;
+        const result = await showConfirm({
+            title: 'Hapus Kategori Soal?',
+            text: `Apakah Anda yakin ingin menghapus kategori soal "${item?.nama}"?`,
+            icon: 'warning',
+            confirmButtonText: 'Ya, Hapus Data',
+            confirmButtonColor: '#CD202E',
         });
+        if (result.isConfirmed) {
+            router.delete(`/superadmin/kategori-soal/${item.id}`, {
+                onFinish: () => { setDeleteItem(null); },
+            });
+        }
     };
 
-    const toggleStatus = (kategori) => {
-        router.put(`/superadmin/kategori-soal/${kategori.id}`, {
-            nama: kategori.nama, deskripsi: kategori.deskripsi, status: kategori.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
-        }, { preserveScroll: true });
+    const toggleStatus = async (kategori) => {
+        const isActivating = kategori.status !== 'ACTIVE';
+        const result = await showConfirm({
+            title: isActivating ? 'Aktifkan Kategori Soal?' : 'Nonaktifkan Kategori Soal?',
+            text: isActivating
+                ? `Aktifkan kategori "${kategori.nama}"? Kategori ini akan dapat dipilih saat pembuatan soal.`
+                : `Nonaktifkan kategori "${kategori.nama}"?`,
+            icon: 'question',
+            confirmButtonText: isActivating ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan',
+            confirmButtonColor: isActivating ? '#059669' : '#801720',
+        });
+        if (result.isConfirmed) {
+            router.put(`/superadmin/kategori-soal/${kategori.id}`, {
+                nama: kategori.nama, deskripsi: kategori.deskripsi, status: kategori.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+            }, { preserveScroll: true });
+        }
     };
+
 
     const openEdit = (item) => {
         setForm({ nama: item.nama, deskripsi: item.deskripsi || '', status: item.status });
@@ -263,7 +281,8 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                                                     <div className="flex items-center justify-end gap-1">
                                                         <Link href={`/superadmin/kategori-soal/${item.id}`} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"><Eye className="w-3.5 h-3.5" /></Link>
                                                         <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
-                                                        <button onClick={() => setDeleteItem(item)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                        <button onClick={() => handleDelete(item)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg cursor-pointer" title="Hapus"><Trash2 className="w-3.5 h-3.5" /></button>
+
                                                     </div>
                                                 </td>
                                             </tr>

@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
-import { Head, useForm, router, Link } from '@inertiajs/react';
+import { Head, useForm, router, Link, usePage } from '@inertiajs/react';
 import { BookOpen, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, AlertTriangle, Target, Activity, X, Filter, Eye } from 'lucide-react';
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+
+function Toast({ flash }) {
+    return <FlashAlert type="toast" flash={flash} />;
+}
+
+
 
 export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
+    const { flash } = usePage().props;
     const [search, setSearch] = useState(filters.search || '');
     const [semester, setSemester] = useState(filters.semester || '');
     const [status, setStatus] = useState(filters.status || '');
@@ -92,14 +101,24 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
 
     const [deleteMk, setDeleteMk] = useState(null);
 
-    const handleConfirmDelete = () => {
-        if (!deleteMk) return;
-        router.delete(`/superadmin/mata-kuliah/${deleteMk.id}`, {
-            onSuccess: () => {
-                setDeleteMk(null);
-            },
+    const handleConfirmDelete = async (mk = deleteMk) => {
+        if (!mk) return;
+        const result = await showConfirm({
+            title: 'Hapus Mata Kuliah?',
+            text: `Apakah Anda yakin ingin menghapus mata kuliah "${mk.kode_mk} - ${mk.nama_mk}"?`,
+            icon: 'warning',
+            confirmButtonText: 'Ya, Hapus Data',
+            confirmButtonColor: '#CD202E',
         });
+        if (result.isConfirmed) {
+            router.delete(`/superadmin/mata-kuliah/${mk.id}`, {
+                onSuccess: () => {
+                    setDeleteMk(null);
+                },
+            });
+        }
     };
+
 
     const togglePlo = (form, ploId) => {
         const current = form.data.plo_ids;
@@ -122,6 +141,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
     return (
         <AuthenticatedLayout title="Manajemen Mata Kuliah">
             <Head title="Master Data Mata Kuliah" />
+            <Toast flash={flash} />
 
             {/* Header Title & Action Button */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -132,13 +152,25 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                     </p>
                 </div>
 
-                <button
-                    onClick={() => setIsCreateOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1724] text-white rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span>Tambah Mata Kuliah</span>
-                </button>
+                <div className="flex items-center gap-2.5">
+                    <a
+                        href="/docs/buku-kurikulum-2024.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                        title="Buka Buku Kurikulum 2024 (Panduan Pemetaan PLO & CLO)"
+                    >
+                        <BookOpen className="w-4 h-4 text-[#801720]" />
+                        <span>Buku Kurikulum</span>
+                    </a>
+                    <button
+                        onClick={() => setIsCreateOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1724] text-white rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Tambah Mata Kuliah</span>
+                    </button>
+                </div>
             </div>
 
             {/* Filter & Real-Time Search Bar */}
@@ -336,12 +368,13 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                                     <Edit2 className="w-3.5 h-3.5" />
                                                 </button>
                                                 <button
-                                                    onClick={() => setDeleteMk(mk)}
+                                                    onClick={() => handleConfirmDelete(mk)}
                                                     className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
                                                     title="Hapus"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
+
                                             </div>
                                         </td>
                                     </tr>

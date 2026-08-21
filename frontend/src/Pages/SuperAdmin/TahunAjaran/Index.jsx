@@ -7,16 +7,13 @@ import {
     BarChart3, Clock,
 } from 'lucide-react';
 
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+
 function Toast({ flash }) {
-    const [visible, setVisible] = useState(true);
-    if (!visible || (!flash?.success && !flash?.error)) return null;
-    return (
-        <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 p-4 rounded-xl shadow-xl text-white text-sm max-w-sm ${flash.success ? 'bg-emerald-600' : 'bg-red-600'}`}>
-            <span className="flex-1">{flash.success || flash.error}</span>
-            <button onClick={() => setVisible(false)}><X className="w-4 h-4" /></button>
-        </div>
-    );
+    return <FlashAlert type="toast" flash={flash} />;
 }
+
 
 function Modal({ open, onClose, title, children }) {
     if (!open) return null;
@@ -167,17 +164,41 @@ export default function TahunAjaranIndex({ list, stats, filters, selectedTahunAj
         router.put(`/superadmin/tahun-ajaran/${editItem.id}`, form, { onFinish: () => { setProcessing(false); setEditItem(null); } });
     };
 
-    const handleDelete = () => {
-        setProcessing(true);
-        router.delete(`/superadmin/tahun-ajaran/${deleteItem.id}`, { onFinish: () => { setProcessing(false); setDeleteItem(null); } });
+    const handleDelete = async (item = deleteItem) => {
+        if (!item) return;
+        const result = await showConfirm({
+            title: 'Hapus Tahun Ajaran?',
+            text: `Apakah Anda yakin ingin menghapus tahun ajaran "${item?.nama}"? Data periode terkait juga akan terhapus.`,
+            icon: 'warning',
+            confirmButtonText: 'Ya, Hapus Data',
+            confirmButtonColor: '#CD202E',
+        });
+        if (result.isConfirmed) {
+            router.delete(`/superadmin/tahun-ajaran/${item.id}`, {
+                onFinish: () => { setDeleteItem(null); },
+            });
+        }
     };
 
-    const toggleStatus = (item) => {
-        router.put(`/superadmin/tahun-ajaran/${item.id}`, {
-            nama: item.nama, tahun_mulai: item.tahun_mulai, tahun_selesai: item.tahun_selesai,
-            status: item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
-        }, { preserveScroll: true });
+    const toggleStatus = async (item) => {
+        const isActivating = item.status !== 'ACTIVE';
+        const result = await showConfirm({
+            title: isActivating ? 'Aktifkan Tahun Ajaran?' : 'Nonaktifkan Tahun Ajaran?',
+            text: isActivating 
+                ? `Aktifkan tahun ajaran "${item.nama}" sebagai tahun ajaran aktif?` 
+                : `Nonaktifkan tahun ajaran "${item.nama}"?`,
+            icon: 'question',
+            confirmButtonText: isActivating ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan',
+            confirmButtonColor: isActivating ? '#059669' : '#801720',
+        });
+        if (result.isConfirmed) {
+            router.put(`/superadmin/tahun-ajaran/${item.id}`, {
+                nama: item.nama, tahun_mulai: item.tahun_mulai, tahun_selesai: item.tahun_selesai,
+                status: item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+            }, { preserveScroll: true });
+        }
     };
+
 
     const openEdit = (item) => {
         setForm({ nama: item.nama, tahun_mulai: item.tahun_mulai, tahun_selesai: item.tahun_selesai, status: item.status });
@@ -281,7 +302,8 @@ export default function TahunAjaranIndex({ list, stats, filters, selectedTahunAj
                                                     <div className="flex items-center justify-end gap-1">
                                                         <Link href={`/superadmin/tahun-ajaran/${item.id}`} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"><Eye className="w-3.5 h-3.5" /></Link>
                                                         <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
-                                                        <button onClick={() => setDeleteItem(item)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                        <button onClick={() => handleDelete(item)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg cursor-pointer" title="Hapus"><Trash2 className="w-3.5 h-3.5" /></button>
+
                                                     </div>
                                                 </td>
                                             </tr>

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
+import FlashAlert from '../../../Components/FlashAlert';
+import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 import { Head, router, usePage } from '@inertiajs/react';
+
 import axios from 'axios';
 import {
     Target, Plus, Search, Edit2, Trash2, Download, Upload,
@@ -150,10 +153,13 @@ export default function PloIndex({ ploList, filters }) {
 
     const handleFileDrop = (file) => {
         if (!file) return;
-        const allowed = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv'];
         const ext = file.name.split('.').pop().toLowerCase();
         if (!['xlsx', 'xls', 'csv'].includes(ext)) {
-            alert('Format file tidak didukung. Gunakan .xlsx, .xls, atau .csv');
+            showAlert({
+                title: 'Format File Tidak Didukung',
+                text: 'Format file tidak didukung. Silakan gunakan .xlsx, .xls, atau .csv',
+                icon: 'error',
+            });
             return;
         }
         setSelectedFile(file);
@@ -177,20 +183,35 @@ export default function PloIndex({ ploList, filters }) {
                 setPreviewStats({ total: data.totalRows, valid: data.validRows, error: data.errorRows });
                 setActiveStep(3);
             } else {
-                alert(data.message || 'Gagal memproses file.');
+                showAlert({
+                    title: 'Gagal Memproses File',
+                    text: data.message || 'Terjadi kegagalan saat memproses file import.',
+                    icon: 'error',
+                });
             }
         } catch (err) {
             const msg = err.response?.data?.message || err.message || 'Terjadi kesalahan saat menghubungi server.';
-            alert(msg);
+            showAlert({
+                title: 'Terjadi Kesalahan',
+                text: msg,
+                icon: 'error',
+            });
         } finally {
             setIsPreviewing(false);
         }
     };
 
-    const proceedToEdit = () => {
+    const proceedToEdit = async () => {
         const hasErrors = previewRows.some(r => !r.is_valid);
         if (hasErrors) {
-            if (!window.confirm(`Ada ${previewStats?.error} baris yang tidak valid. Lanjut ke step edit untuk diperbaiki?`)) return;
+            const result = await showConfirm({
+                title: 'Data Belum Valid',
+                text: `Ada ${previewStats?.error || 0} baris yang tidak valid. Lanjut ke step edit untuk diperbaiki?`,
+                icon: 'warning',
+                confirmButtonText: 'Ya, Lanjut Edit',
+                cancelButtonText: 'Batal',
+            });
+            if (!result.isConfirmed) return;
         }
         setActiveStep(4);
     };
@@ -225,7 +246,11 @@ export default function PloIndex({ ploList, filters }) {
     const handleConfirmImport = () => {
         const validRows = previewRows.filter(r => r.is_valid);
         if (validRows.length === 0) {
-            alert('Tidak ada data yang valid untuk disimpan.');
+            showAlert({
+                title: 'Tidak Ada Data Valid',
+                text: 'Tidak ada data yang valid untuk disimpan ke database.',
+                icon: 'warning',
+            });
             return;
         }
         setIsConfirming(true);
@@ -234,6 +259,7 @@ export default function PloIndex({ ploList, filters }) {
             onFinish: () => setIsConfirming(false),
         });
     };
+
 
     // ─── Render ────────────────────────────────────────────────────────────────
     return (
@@ -271,18 +297,7 @@ export default function PloIndex({ ploList, filters }) {
             </div>
 
             {/* Flash Messages */}
-            {flash?.success && (
-                <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>{flash.success}</span>
-                </div>
-            )}
-            {flash?.error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-xs font-bold flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                    <span>{flash.error}</span>
-                </div>
-            )}
+            <FlashAlert flash={flash} />
 
             {/* Search */}
             <form onSubmit={handleSearch} className="flex gap-2 mb-6">

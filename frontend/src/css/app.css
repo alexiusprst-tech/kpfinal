@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@source "../../../backend/resources/views";
 
 @theme {
     --font-sans: 'Plus Jakarta Sans', sans-serif;
@@ -28,3 +29,223 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
+
+/* SweetAlert2 Modern & Compact Theme Styling */
+.swal2-container {
+    z-index: 99999 !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+.swal2-container:not(.swal2-top-end):not(.swal2-top-start):not(.swal2-bottom-end):not(.swal2-bottom-start) {
+    padding: 1rem !important;
+}
+
+.swal2-container .swal2-backdrop-show {
+    backdrop-filter: blur(2px);
+}
+
+/* ==========================================================================
+   1. TOAST NOTIFICATION STYLING (Top-End)
+   ========================================================================== */
+.swal2-toast.swal2-custom-toast {
+    display: flex !important;
+    align-items: center !important;
+    flex-direction: row !important;
+    border-radius: 0.875rem !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04) !important;
+    padding: 0.75rem 1.15rem !important;
+    overflow: hidden !important;
+    position: relative !important;
+}
+
+/* Success Toast: Layout Hijau Muda & Progress Time Ijo Tua */
+.swal2-toast.swal2-toast-success {
+    background-color: #F0FDF4 !important; /* Hijau muda */
+    border: 1px solid #BBF7D0 !important; /* Border hijau muda lembut */
+}
+.swal2-toast.swal2-toast-success .swal2-custom-toast-title,
+.swal2-toast.swal2-toast-success .swal2-title {
+    color: #14532D !important; /* Teks hijau tua */
+}
+.swal2-toast.swal2-toast-success .swal2-timer-progress-bar,
+.swal2-custom-progress-success {
+    background-color: #15803D !important; /* Time progress bar: Ijo tua */
+    height: 3.5px !important;
+}
+
+/* Error Toast */
+.swal2-toast.swal2-toast-error {
+    background-color: #FEF2F2 !important;
+    border: 1px solid #FECACA !important;
+}
+.swal2-toast.swal2-toast-error .swal2-custom-toast-title,
+.swal2-toast.swal2-toast-error .swal2-title {
+    color: #7F1D1D !important;
+}
+.swal2-toast.swal2-toast-error .swal2-timer-progress-bar,
+.swal2-custom-progress-error {
+    background-color: #DC2626 !important;
+    height: 3.5px !important;
+}
+
+/* Warning Toast */
+.swal2-toast.swal2-toast-warning {
+    background-color: #FFFBEB !important;
+    border: 1px solid #FDE68A !important;
+}
+.swal2-toast.swal2-toast-warning .swal2-custom-toast-title,
+.swal2-toast.swal2-toast-warning .swal2-title {
+    color: #78350F !important;
+}
+.swal2-toast.swal2-toast-warning .swal2-timer-progress-bar,
+.swal2-custom-progress-warning {
+    background-color: #D97706 !important;
+    height: 3.5px !important;
+}
+
+/* Info Toast */
+.swal2-toast.swal2-toast-info {
+    background-color: #EFF6FF !important;
+    border: 1px solid #BFDBFE !important;
+}
+.swal2-toast.swal2-toast-info .swal2-custom-toast-title,
+.swal2-toast.swal2-toast-info .swal2-title {
+    color: #1E3A8A !important;
+}
+.swal2-toast.swal2-toast-info .swal2-timer-progress-bar,
+.swal2-custom-progress-info {
+    background-color: #2563EB !important;
+    height: 3.5px !important;
+}
+
+.swal2-custom-toast-title,
+.swal2-toast .swal2-title {
+    font-size: 0.84rem !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.35 !important;
+    text-align: left !important;
+}
+
+.swal2-custom-toast-icon,
+.swal2-toast .swal2-icon {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    margin: 0 0.65rem 0 0 !important;
+    border: none !important;
+    background: transparent !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.swal2-toast .swal2-icon .swal2-icon-content {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.swal2-toast .swal2-icon.swal2-success .swal2-success-ring,
+.swal2-toast .swal2-icon.swal2-success [class^='swal2-success-line'],
+.swal2-toast .swal2-icon.swal2-success [class^='swal2-success-circular-line'],
+.swal2-toast .swal2-icon.swal2-success .swal2-success-fix,
+.swal2-toast .swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+    display: none !important;
+}
+
+
+
+
+/* ==========================================================================
+   2. MODAL DIALOG STYLING (Alert & Confirmation Popups)
+   ========================================================================== */
+.swal2-popup:not(.swal2-toast) {
+    border-radius: 1.25rem !important;
+    padding: 1.5rem 1.25rem 1.25rem 1.25rem !important;
+    box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    max-width: 23rem !important;
+    width: 90% !important;
+}
+
+.swal2-popup:not(.swal2-toast) .swal2-icon {
+    width: 3.25rem !important;
+    height: 3.25rem !important;
+    margin: 0.25rem auto 0.75rem auto !important;
+    border-width: 3px !important;
+}
+
+.swal2-popup:not(.swal2-toast) .swal2-icon .swal2-icon-content {
+    font-size: 2rem !important;
+    line-height: 3.25rem !important;
+}
+
+.swal2-popup:not(.swal2-toast) .swal2-icon.swal2-warning {
+    border-color: #f59e0b !important;
+    color: #f59e0b !important;
+}
+
+.swal2-popup:not(.swal2-toast) .swal2-icon.swal2-question {
+    border-color: #3b82f6 !important;
+    color: #3b82f6 !important;
+}
+
+.swal2-popup:not(.swal2-toast) .swal2-icon.swal2-success {
+    border-color: #10b981 !important;
+    color: #10b981 !important;
+}
+
+.swal2-popup:not(.swal2-toast) .swal2-icon.swal2-error {
+    border-color: #ef4444 !important;
+    color: #ef4444 !important;
+}
+
+.swal2-popup:not(.swal2-toast) .swal2-title {
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 0 0.4rem 0 !important;
+    line-height: 1.35 !important;
+}
+
+.swal2-popup:not(.swal2-toast) .swal2-html-container {
+    font-size: 0.8125rem !important;
+    color: #64748b !important;
+    line-height: 1.45 !important;
+    margin: 0 0 1rem 0 !important;
+    padding: 0 0.5rem !important;
+}
+
+.swal2-popup:not(.swal2-toast) .swal2-actions {
+    margin: 0.5rem 0 0 0 !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+.swal2-custom-confirm-btn,
+.swal2-custom-cancel-btn {
+    border-radius: 0.75rem !important;
+    font-weight: 700 !important;
+    padding: 0.55rem 1.1rem !important;
+    font-size: 0.8125rem !important;
+    margin: 0 !important;
+    min-height: 2.35rem !important;
+    transition: all 0.15s ease-in-out !important;
+    cursor: pointer !important;
+}
+
+.swal2-custom-confirm-btn:hover {
+    filter: brightness(0.92);
+}
+
+.swal2-custom-cancel-btn:hover {
+    filter: brightness(0.92);
+}
+
+
+

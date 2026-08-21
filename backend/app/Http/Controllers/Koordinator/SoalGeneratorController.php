@@ -96,7 +96,22 @@ class SoalGeneratorController extends Controller
         }
 
         $data = $request->all();
-        
+        $user = $request->user();
+        $dosen = $user->dosen;
+        $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+        $isUas = false;
+        if ($activePeriod) {
+            $periodText = mb_strtolower(($activePeriod->nama ?? '') . ' ' . ($activePeriod->catatan ?? ''));
+            if ((str_contains($periodText, 'uas') || str_contains($periodText, 'akhir semester')) && !str_contains($periodText, 'uts')) {
+                $isUas = true;
+            }
+        }
+        $data['nama_evaluasi'] = $isUas ? 'Ujian Akhir Semester' : 'Ujian Tengah Semester';
+        $data['tipe_ujian'] = $isUas ? 'UAS' : 'UTS';
+        if ($dosen && $dosen->kode_dosen) {
+            $data['kode_dosen'] = $dosen->kode_dosen;
+        }
+
         // Pass base64 encoded logo to blade template for bulletproof rendering in Dompdf
         $logoPath = public_path('images/logo-telkom.png');
         $logoBase64 = '';
@@ -144,6 +159,21 @@ class SoalGeneratorController extends Controller
         }
 
         $data = $request->all();
+        $user = $request->user();
+        $dosen = $user->dosen;
+        $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+        $isUas = false;
+        if ($activePeriod) {
+            $periodText = mb_strtolower(($activePeriod->nama ?? '') . ' ' . ($activePeriod->catatan ?? ''));
+            if ((str_contains($periodText, 'uas') || str_contains($periodText, 'akhir semester')) && !str_contains($periodText, 'uts')) {
+                $isUas = true;
+            }
+        }
+        $data['nama_evaluasi'] = $isUas ? 'Ujian Akhir Semester' : 'Ujian Tengah Semester';
+        $data['tipe_ujian'] = $isUas ? 'UAS' : 'UTS';
+        if ($dosen && $dosen->kode_dosen) {
+            $data['kode_dosen'] = $dosen->kode_dosen;
+        }
 
         // Pass base64 encoded logo for Word doc
         $logoPath = public_path('images/logo-telkom.png');
@@ -261,12 +291,21 @@ class SoalGeneratorController extends Controller
             ];
         }
 
+        $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+        $isUas = false;
+        if ($activePeriod) {
+            $periodText = mb_strtolower(($activePeriod->nama ?? '') . ' ' . ($activePeriod->catatan ?? ''));
+            if ((str_contains($periodText, 'uas') || str_contains($periodText, 'akhir semester')) && !str_contains($periodText, 'uts')) {
+                $isUas = true;
+            }
+        }
+
         return response()->json([
             'form_no' => '100-S1SI-001-R1',
-            'nama_evaluasi' => 'Ujian Tengah Semester',
+            'nama_evaluasi' => $isUas ? 'Ujian Akhir Semester' : 'Ujian Tengah Semester',
             'kode_dosen' => $dosen ? $dosen->kode_dosen : '',
             'kode_nama_mk' => $mataKuliah->kode_mk . ' / ' . $mataKuliah->nama_mk,
-            'tipe_ujian' => 'UTS',
+            'tipe_ujian' => $isUas ? 'UAS' : 'UTS',
             'tanggal_evaluasi' => date('Y-m-d') . ' / 120 menit',
             'tipe_soal' => 'Closed Book (120 minutes)',
             'petunjuk_pengerjaan' => [

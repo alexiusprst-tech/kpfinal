@@ -71,13 +71,17 @@ class SoalController extends Controller
             abort(403, 'Anda tidak memiliki akses ke mata kuliah ini.');
         }
 
+        $categories = $this->getKategoriForPeriode($activePeriod);
+        $defaultKategori = $categories->first();
+
         return Inertia::render('Koordinator/Soal/Create', [
             'assignments' => $assignments->map(fn ($a) => [
                 'id'      => $a->mata_kuliah_id,
                 'kode_mk' => $a->mataKuliah?->kode_mk,
                 'nama_mk' => $a->mataKuliah?->nama_mk,
             ])->values(),
-            'kategoriAll'          => KategoriSoal::where('status', 'ACTIVE')->get(['id', 'nama']),
+            'kategoriAll'          => $categories,
+            'defaultKategori'      => $defaultKategori,
             'activePeriode'        => $activePeriod,
             'selectedMataKuliahId' => $selectedMkId,
             'uploadOpen'           => $activePeriod?->isUploadOpen() ?? false,
@@ -94,7 +98,11 @@ class SoalController extends Controller
             'periode_id'     => ['required', 'exists:periode_verifikasi,id'],
             'kategori_id'    => ['required', 'exists:kategori_soal,id'],
             'judul'          => ['required', 'string', 'max:255'],
-            'file'           => ['required', 'file', 'mimes:pdf,doc,docx', 'max:20480'],
+            'file'           => ['required', 'file', 'mimes:pdf,doc,docx', 'min:1', 'max:20480'],
+        ], [
+            'file.min'       => 'Ukuran berkas naskah soal minimal 1 KB.',
+            'file.mimes'     => 'Format berkas harus berupa PDF, DOC, atau DOCX.',
+            'file.max'       => 'Ukuran berkas maksimal 20 MB.',
         ]);
 
         // Validate assignment: koordinator must actually be assigned to this MK for this periode.
@@ -195,7 +203,7 @@ class SoalController extends Controller
 
         return Inertia::render('Koordinator/Soal/Edit', [
             'soal'        => $soal,
-            'kategoriAll' => KategoriSoal::where('status', 'ACTIVE')->get(['id', 'nama']),
+            'kategoriAll' => $this->getKategoriForPeriode($soal->periode ?? PeriodeVerifikasi::where('status', 'ACTIVE')->first()),
         ]);
     }
 
@@ -213,7 +221,11 @@ class SoalController extends Controller
         $request->validate([
             'judul'       => ['required', 'string', 'max:255'],
             'kategori_id' => ['required', 'exists:kategori_soal,id'],
-            'file'        => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:20480'],
+            'file'        => ['nullable', 'file', 'mimes:pdf,doc,docx', 'min:1', 'max:20480'],
+        ], [
+            'file.min'   => 'Ukuran berkas naskah soal minimal 1 KB.',
+            'file.mimes' => 'Format berkas harus berupa PDF, DOC, atau DOCX.',
+            'file.max'   => 'Ukuran berkas maksimal 20 MB.',
         ]);
 
         $data = [
@@ -259,15 +271,54 @@ class SoalController extends Controller
 
     public function download(Request $request, Soal $soal)
     {
-        if ($soal->uploaded_by !== $request->user()->id) {
+        $user = $request->user();
+        $dosen = $user->dosen;
+        $isOwner = $soal->uploaded_by === $user->id;
+        $isAssigned = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
+            ->where('periode_id', $soal->periode_id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+
+        if (!$isOwner && !$isAssigned && !$user->isSuperAdmin()) {
             abort(403, 'Anda tidak memiliki akses ke soal ini.');
         }
 
-        if (!Storage::disk('private')->exists($soal->file_path)) {
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('private');
+
+        if (!$disk->exists($soal->file_path)) {
             abort(404, 'File tidak ditemukan.');
         }
 
-        return Storage::disk('private')->download($soal->file_path, $soal->nama_file);
+        return $disk->download($soal->file_path, $soal->nama_file);
+    }
+
+    public function preview(Request $request, Soal $soal)
+    {
+        $user = $request->user();
+        $dosen = $user->dosen;
+        $isOwner = $soal->uploaded_by === $user->id;
+        $isAssigned = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
+            ->where('periode_id', $soal->periode_id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+
+        if (!$isOwner && !$isAssigned && !$user->isSuperAdmin()) {
+            abort(403, 'Anda tidak memiliki akses ke soal ini.');
+        }
+
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('private');
+
+        if (!$disk->exists($soal->file_path)) {
+            abort(404, 'File tidak ditemukan.');
+        }
+
+        return $disk->response($soal->file_path, $soal->nama_file, [
+            'Content-Disposition' => 'inline; filename="' . $soal->nama_file . '"',
+        ]);
     }
 
     public function destroy(Request $request, Soal $soal)
@@ -281,5 +332,55 @@ class SoalController extends Controller
         $soal->delete();
         AuditLog::record($request->user()->id, 'DELETE_SOAL', 'Soal', $soal->id);
         return redirect()->back()->with('success', 'Soal berhasil dihapus.');
+    }
+
+    /**
+     * Get active categories strictly filtered by the target Periode (UTS during UTS period, UAS during UAS period).
+     */
+    private function getKategoriForPeriode(?PeriodeVerifikasi $periode)
+    {
+        $query = KategoriSoal::where('status', 'ACTIVE');
+
+        if ($periode) {
+            $periodText = mb_strtolower(($periode->nama ?? '') . ' ' . ($periode->catatan ?? ''));
+            $isUas = str_contains($periodText, 'uas') || str_contains($periodText, 'akhir semester');
+
+            if ($isUas) {
+                // In UAS period: ONLY UAS
+                $query->where(function ($q) {
+                    $q->whereRaw('LOWER(nama) LIKE ?', ['%uas%'])
+                      ->orWhereRaw('LOWER(deskripsi) LIKE ?', ['%akhir semester%']);
+                });
+            } else {
+                // In UTS period (default): ONLY UTS
+                $query->where(function ($q) {
+                    $q->whereRaw('LOWER(nama) LIKE ?', ['%uts%'])
+                      ->orWhereRaw('LOWER(deskripsi) LIKE ?', ['%tengah semester%']);
+                });
+            }
+        } else {
+            $query->where(function ($q) {
+                $q->whereRaw('LOWER(nama) LIKE ?', ['%uts%'])
+                  ->orWhereRaw('LOWER(nama) LIKE ?', ['%uas%']);
+            });
+        }
+
+        $results = $query->orderBy('nama', 'asc')->get(['id', 'nama', 'deskripsi']);
+
+        // Auto-provision if the matching master category doesn't exist yet
+        if ($results->isEmpty() && $periode) {
+            $periodText = mb_strtolower(($periode->nama ?? '') . ' ' . ($periode->catatan ?? ''));
+            $isUas = str_contains($periodText, 'uas') || str_contains($periodText, 'akhir semester');
+            $name = $isUas ? 'UAS' : 'UTS';
+            $desc = $isUas ? 'Ujian Akhir Semester (UAS)' : 'Ujian Tengah Semester (UTS)';
+
+            $cat = KategoriSoal::firstOrCreate(
+                ['nama' => $name],
+                ['id' => (string) Str::uuid(), 'deskripsi' => $desc, 'status' => 'ACTIVE']
+            );
+            return collect([$cat]);
+        }
+
+        return $results;
     }
 }
