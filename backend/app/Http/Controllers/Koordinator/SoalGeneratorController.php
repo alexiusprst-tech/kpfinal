@@ -82,17 +82,20 @@ class SoalGeneratorController extends Controller
         ]);
 
         $plo = $request->input('plo', []);
-        $totalWeight = 0;
         foreach ($plo as $ploItem) {
+            $ploCode = $ploItem['kode'] ?? 'PLO';
             $cloList = $ploItem['clo'] ?? [];
+            if (empty($cloList)) continue;
+
+            $ploWeight = 0;
             foreach ($cloList as $cloItem) {
                 $bobot = isset($cloItem['bobot_lo']) ? (int) str_replace('%', '', $cloItem['bobot_lo']) : 0;
-                $totalWeight += $bobot;
+                $ploWeight += $bobot;
             }
-        }
 
-        if ($totalWeight !== 100) {
-            abort(422, 'Total bobot LO harus tepat 100%. Saat ini: ' . $totalWeight . '%.');
+            if ($ploWeight !== 100) {
+                abort(422, "Total bobot LO untuk {$ploCode} harus tepat 100%. Saat ini: {$ploWeight}%.");
+            }
         }
 
         $data = $request->all();
@@ -145,17 +148,20 @@ class SoalGeneratorController extends Controller
         ]);
 
         $plo = $request->input('plo', []);
-        $totalWeight = 0;
         foreach ($plo as $ploItem) {
+            $ploCode = $ploItem['kode'] ?? 'PLO';
             $cloList = $ploItem['clo'] ?? [];
+            if (empty($cloList)) continue;
+
+            $ploWeight = 0;
             foreach ($cloList as $cloItem) {
                 $bobot = isset($cloItem['bobot_lo']) ? (int) str_replace('%', '', $cloItem['bobot_lo']) : 0;
-                $totalWeight += $bobot;
+                $ploWeight += $bobot;
             }
-        }
 
-        if ($totalWeight !== 100) {
-            abort(422, 'Total bobot LO harus tepat 100%. Saat ini: ' . $totalWeight . '%.');
+            if ($ploWeight !== 100) {
+                abort(422, "Total bobot LO untuk {$ploCode} harus tepat 100%. Saat ini: {$ploWeight}%.");
+            }
         }
 
         $data = $request->all();
@@ -229,26 +235,26 @@ class SoalGeneratorController extends Controller
         $allPlo = $mataKuliah->plo;
         $allClo = $mataKuliah->clo;
 
-        $totalCloCount = $allClo->count();
-        $defaultWeight = $totalCloCount > 0 ? (int) floor(100 / $totalCloCount) : 0;
-        $remainder = $totalCloCount > 0 ? (100 % $totalCloCount) : 0;
-
-        $cloIndex = 0;
         foreach ($allPlo as $plo) {
+            $matchingClos = $allClo->filter(function ($clo) use ($plo) {
+                return $clo->plo->contains('id', $plo->id);
+            })->values();
+
+            $cloCount = $matchingClos->count();
+            $defaultWeight = $cloCount > 0 ? (int) floor(100 / $cloCount) : 0;
+            $remainder = $cloCount > 0 ? (100 % $cloCount) : 0;
+
             $cloList = [];
-            foreach ($allClo as $clo) {
-                if ($clo->plo->contains('id', $plo->id)) {
-                    $weight = $defaultWeight;
-                    if ($cloIndex === 0) {
-                        $weight += $remainder;
-                    }
-                    $cloList[] = [
-                        'kode' => $clo->kode_clo,
-                        'deskripsi' => $clo->deskripsi,
-                        'bobot_lo' => $weight . '%'
-                    ];
-                    $cloIndex++;
+            foreach ($matchingClos as $idx => $clo) {
+                $weight = $defaultWeight;
+                if ($idx === 0) {
+                    $weight += $remainder;
                 }
+                $cloList[] = [
+                    'kode' => $clo->kode_clo,
+                    'deskripsi' => $clo->deskripsi,
+                    'bobot_lo' => $weight . '%'
+                ];
             }
 
             if (!empty($cloList)) {
@@ -270,24 +276,32 @@ class SoalGeneratorController extends Controller
                 }
             }
             if (!$linked) {
-                $weight = $defaultWeight;
-                if ($cloIndex === 0) {
-                    $weight += $remainder;
-                }
-                $unlinkedClo[] = [
-                    'kode' => $clo->kode_clo,
-                    'deskripsi' => $clo->deskripsi,
-                    'bobot_lo' => $weight . '%'
-                ];
-                $cloIndex++;
+                $unlinkedClo[] = $clo;
             }
         }
 
         if (!empty($unlinkedClo)) {
+            $unlinkedCount = count($unlinkedClo);
+            $unlinkedDefaultWeight = $unlinkedCount > 0 ? (int) floor(100 / $unlinkedCount) : 0;
+            $unlinkedRemainder = $unlinkedCount > 0 ? (100 % $unlinkedCount) : 0;
+
+            $unlinkedList = [];
+            foreach ($unlinkedClo as $idx => $clo) {
+                $weight = $unlinkedDefaultWeight;
+                if ($idx === 0) {
+                    $weight += $unlinkedRemainder;
+                }
+                $unlinkedList[] = [
+                    'kode' => $clo->kode_clo,
+                    'deskripsi' => $clo->deskripsi,
+                    'bobot_lo' => $weight . '%'
+                ];
+            }
+
             $ploData[] = [
                 'kode' => 'PLO-Lainnya',
                 'deskripsi' => 'Program Learning Outcomes Lainnya',
-                'clo' => $unlinkedClo
+                'clo' => $unlinkedList
             ];
         }
 

@@ -15,13 +15,13 @@ function Toast({ flash }) {
 
 
 const STATUS_CONFIG = {
-    DRAFT:       { label: 'Draft',        color: 'bg-gray-100 text-gray-600',       dot: 'bg-gray-400' },
-    SUBMITTED:   { label: 'Disubmit',     color: 'bg-blue-100 text-blue-700',       dot: 'bg-blue-500' },
-    IN_REVIEW:   { label: 'Direview',     color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'Resubmit',     color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-500' },
-    APPROVED:    { label: 'Disetujui',    color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REVISION:    { label: 'Perlu Revisi', color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
-    REJECTED:    { label: 'Ditolak',      color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
+    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
+    APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
 };
 
 const ACTION_CONFIG = {
@@ -150,13 +150,10 @@ export default function SoalShow({ soal }) {
                 </div>
 
                 {/* Revision callout */}
-                {soal.status === 'REVISION' && latestRevisionNote && (
+                    {soal.status === 'REVISION' && latestRevisionNote && (
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
                         <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
                             <AlertTriangle className="w-4 h-4" /> PERLU REVISI
-                        </div>
-                        <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
-                            <User className="w-3.5 h-3.5" /> Verifikator: <strong>{latestRevisionNote.verifikator?.name}</strong>
                         </div>
                         <p className="mt-2 text-sm text-gray-700 bg-white rounded-lg p-3 border border-amber-100">
                             "{latestRevisionNote.catatan || 'Tidak ada catatan tambahan.'}"
@@ -180,8 +177,8 @@ export default function SoalShow({ soal }) {
                                     <div key={v.id} className="flex items-start gap-3">
                                         <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${cfg.color}`} />
                                         <div className="min-w-0">
-                                            <p className="text-sm text-gray-700">
-                                                <strong>{v.verifikator?.name}</strong> {cfg.label.toLowerCase()}
+                                    <p className="text-sm text-gray-700">
+                                                <span className={`font-semibold ${cfg.color}`}>{cfg.label}</span>
                                             </p>
                                             {v.catatan && <p className="text-xs text-gray-500 mt-0.5">"{v.catatan}"</p>}
                                             <p className="text-[10px] text-gray-400 mt-0.5">{formatDateTime(v.created_at)}</p>

@@ -38,23 +38,33 @@ class HandleInertiaRequests extends Middleware
     {
         $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
         $user = $request->user();
+        $hasActiveKoor = false;
+        $hasActiveVerif = false;
 
-        if ($user && $user->role !== 'SUPER_ADMIN') {
-            $dosen = $user->dosen;
-            if ($dosen) {
-                $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
-                $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+        if ($user) {
+            if ($user->role === 'SUPER_ADMIN') {
+                $hasActiveKoor = true;
+                $hasActiveVerif = true;
+            } else {
+                $dosen = $user->dosen;
+                if ($dosen) {
+                    $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+                    $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
 
-                if ($request->is('verifikator*') && $hasActiveVerif) {
-                    $user->role = 'VERIFIKATOR';
-                } elseif ($request->is('koordinator*') && $hasActiveKoor) {
-                    $user->role = 'KOORDINATOR';
-                } elseif ($hasActiveVerif && !$hasActiveKoor && $user->role !== 'VERIFIKATOR') {
-                    $user->update(['role' => 'VERIFIKATOR']);
-                    $user->role = 'VERIFIKATOR';
-                } elseif ($hasActiveKoor && !$hasActiveVerif && $user->role !== 'KOORDINATOR') {
-                    $user->update(['role' => 'KOORDINATOR']);
-                    $user->role = 'KOORDINATOR';
+                    if ($request->is('verifikator*') && $hasActiveVerif) {
+                        $user->role = 'VERIFIKATOR';
+                    } elseif ($request->is('koordinator*') && $hasActiveKoor) {
+                        $user->role = 'KOORDINATOR';
+                    } elseif ($hasActiveVerif && !$hasActiveKoor && $user->role !== 'VERIFIKATOR') {
+                        $user->update(['role' => 'VERIFIKATOR']);
+                        $user->role = 'VERIFIKATOR';
+                    } elseif ($hasActiveKoor && !$hasActiveVerif && $user->role !== 'KOORDINATOR') {
+                        $user->update(['role' => 'KOORDINATOR']);
+                        $user->role = 'KOORDINATOR';
+                    }
+                } else {
+                    $hasActiveKoor = ($user->role === 'KOORDINATOR' || $user->role === 'DOSEN');
+                    $hasActiveVerif = ($user->role === 'VERIFIKATOR');
                 }
             }
         }
@@ -62,10 +72,13 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $user ? [
-                    'id'    => $user->id,
-                    'name'  => $user->name,
-                    'email' => $user->email,
-                    'role'  => $user->role,
+                    'id'             => $user->id,
+                    'name'           => $user->name,
+                    'email'          => $user->email,
+                    'role'           => $user->role,
+                    'is_koordinator' => (bool)$hasActiveKoor,
+                    'is_verifikator' => (bool)$hasActiveVerif,
+                    'has_dual_role'  => (bool)($hasActiveKoor && $hasActiveVerif),
                     'dosen' => $user->dosen ? [
                         'id'          => $user->dosen->id,
                         'kode_dosen'  => $user->dosen->kode_dosen,

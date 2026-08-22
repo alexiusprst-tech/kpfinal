@@ -32,31 +32,29 @@ class CheckRole
             ]);
         }
 
-        if (!in_array($user->role, $roles)) {
-            $dosen = $user->dosen;
-            if ($dosen) {
-                $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
-                $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+        if ($user->isSuperAdmin()) {
+            return $next($request);
+        }
 
-                if (in_array('VERIFIKATOR', $roles) && $hasActiveVerif) {
-                    if ($user->role !== 'VERIFIKATOR' && !$hasActiveKoor) {
-                        $user->update(['role' => 'VERIFIKATOR']);
-                        $user->role = 'VERIFIKATOR';
-                    }
-                    return $next($request);
-                }
+        if (in_array($user->role, $roles)) {
+            return $next($request);
+        }
 
-                if (in_array('KOORDINATOR', $roles) && $hasActiveKoor) {
-                    if ($user->role !== 'KOORDINATOR') {
-                        $user->update(['role' => 'KOORDINATOR']);
-                        $user->role = 'KOORDINATOR';
-                    }
-                    return $next($request);
-                }
+        $dosen = $user->dosen;
+        if ($dosen) {
+            $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+            $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+
+            if (in_array('VERIFIKATOR', $roles) && $hasActiveVerif) {
+                return $next($request);
             }
 
-            abort(403, 'Anda tidak memiliki akses ke halaman ini.');
+            if (in_array('KOORDINATOR', $roles) && $hasActiveKoor) {
+                return $next($request);
+            }
         }
+
+        abort(403, 'Anda tidak memiliki akses ke halaman ini.');
 
         return $next($request);
     }

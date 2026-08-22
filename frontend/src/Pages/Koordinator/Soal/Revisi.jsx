@@ -86,11 +86,6 @@ export default function SoalRevisi({ soal, catatan, verifikator }) {
                         <AlertTriangle className="w-4 h-4" /> PERLU REVISI
                     </div>
                     <p className="text-xs text-gray-500 mt-2">Soal: <strong className="text-gray-700">{soal.judul}</strong></p>
-                    {verifikator && (
-                        <div className="mt-1 flex items-center gap-2 text-xs text-gray-600">
-                            <User className="w-3.5 h-3.5" /> Verifikator: <strong>{verifikator}</strong>
-                        </div>
-                    )}
                     <p className="mt-3 text-sm text-gray-700 bg-white rounded-lg p-3 border border-amber-100">
                         "{catatan || 'Tidak ada catatan tambahan.'}"
                     </p>

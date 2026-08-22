@@ -63,7 +63,7 @@
             <td class="meta-value">100-S1SI-001-R1</td>
         </tr>
         <tr>
-            <td class="title-sub">Jl. Telekomunikasi No. 1, DayeuhKolot, Kab. Bandung 40257</td>
+            <td class="title-sub">Jl. Minangkabau Barat No.50, RT.1/RW.1, Ps. Manggis, Kecamatan Setiabudi, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta</td>
             <td class="meta-label">No. Revisi</td>
             <td class="meta-value">-</td>
         </tr>
@@ -158,8 +158,18 @@
         <td style="width: 33%; font-weight: bold;">Ka. Prodi</td>
     </tr>
     <tr>
-        <td class="sign-space"></td>
-        <td class="sign-space"></td>
+        <td class="sign-space">
+            @if(!empty($tanda_tangan_evaluator) && file_exists($tanda_tangan_evaluator))
+                <img src="{{ $tanda_tangan_evaluator }}" alt="TTD Evaluator"
+                     style="max-height: 60px; max-width: 120px; object-fit: contain; display: block; margin: 0 auto;" />
+            @endif
+        </td>
+        <td class="sign-space">
+            @if(!empty($tanda_tangan_koordinator) && file_exists($tanda_tangan_koordinator))
+                <img src="{{ $tanda_tangan_koordinator }}" alt="TTD Koordinator"
+                     style="max-height: 60px; max-width: 120px; object-fit: contain; display: block; margin: 0 auto;" />
+            @endif
+        </td>
         <td class="sign-space"></td>
     </tr>
     <tr>
@@ -168,6 +178,7 @@
         <td style="font-weight: normal;">Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.</td>
     </tr>
 </table>
+
 
 <div class="page-break"></div>
 

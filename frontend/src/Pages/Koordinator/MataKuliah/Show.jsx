@@ -14,17 +14,17 @@ function Toast({ flash }) {
 
 
 const STATUS_CONFIG = {
-    DRAFT:       { label: 'Draft',        color: 'bg-gray-100 text-gray-600',       dot: 'bg-gray-400' },
-    SUBMITTED:   { label: 'Disubmit',     color: 'bg-blue-100 text-blue-700',       dot: 'bg-blue-500' },
-    IN_REVIEW:   { label: 'Direview',     color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'Resubmit',     color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-500' },
-    APPROVED:    { label: 'Disetujui',    color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REVISION:    { label: 'Perlu Revisi', color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
-    REJECTED:    { label: 'Ditolak',      color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
+    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
+    APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }) {
-    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IN_REVIEW;
     return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${cfg.color}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -56,10 +56,9 @@ function relativeTime(dateStr) {
 }
 
 const TABS = [
-    { key: 'soal',        label: 'Soal',        icon: FileText },
-    { key: 'clo-plo',     label: 'CLO / PLO',    icon: Target },
-    { key: 'verifikator', label: 'Verifikator', icon: Users },
-    { key: 'aktivitas',   label: 'Aktivitas',   icon: ActivityIcon },
+    { key: 'soal',      label: 'Soal',      icon: FileText },
+    { key: 'clo-plo',   label: 'CLO / PLO', icon: Target },
+    { key: 'aktivitas', label: 'Aktivitas', icon: ActivityIcon },
 ];
 
 function SoalActions({ soal, onSubmit }) {
@@ -132,12 +131,6 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                         <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Dashboard
                     </Link>
                     <div className="flex items-center gap-2">
-                        {uploadOpen && (
-                            <Link href={`/koordinator/soal/create?mata_kuliah_id=${mataKuliah.id}&tab=generator`}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm transition-all duration-200">
-                                <Sparkles className="w-3.5 h-3.5" /> Generator Lembar Soal
-                            </Link>
-                        )}
                         {uploadOpen ? (
                             <Link href={`/koordinator/soal/create?mata_kuliah_id=${mataKuliah.id}`}
                                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] shadow-sm transition-all duration-200">
@@ -222,7 +215,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                                 <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">No</th>
                                                 <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Judul / File</th>
                                                 <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Status</th>
-                                                <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Verifikator</th>
+
                                                 <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Diupload</th>
                                                 <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Diperbarui</th>
                                                 <th className="text-right px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Aksi</th>
@@ -237,7 +230,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                                         <p className="text-[10px] text-gray-400">{soal.kategori?.nama || '-'} · {soal.nama_file}</p>
                                                     </td>
                                                     <td className="px-4 py-3"><StatusBadge status={soal.status} /></td>
-                                                    <td className="px-4 py-3 text-xs text-gray-600">{soal.latest_verifikasi?.verifikator?.name || '-'}</td>
+
                                                     <td className="px-4 py-3 text-xs text-gray-400">{relativeTime(soal.created_at)}</td>
                                                     <td className="px-4 py-3 text-xs text-gray-400">{relativeTime(soal.updated_at)}</td>
                                                     <td className="px-4 py-3">
@@ -272,28 +265,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                             )
                         )}
 
-                        {tab === 'verifikator' && (
-                            verifikators.length === 0 ? (
-                                <p className="text-sm text-gray-400 text-center py-10">Belum ada verifikator yang ditugaskan.</p>
-                            ) : (
-                                <div className="grid md:grid-cols-2 gap-3">
-                                    {verifikators.map(v => (
-                                        <div key={v.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                                            <div className="w-9 h-9 rounded-lg bg-[#801720]/10 flex items-center justify-center flex-shrink-0 text-[#801720] font-bold text-xs">
-                                                {v.nama ? v.nama.substring(0, 2).toUpperCase() : 'VF'}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-bold text-gray-800 truncate">{v.nama}</p>
-                                                <p className="text-[10px] text-gray-400">{v.kode_dosen}</p>
-                                            </div>
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Aktif
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )
-                        )}
+
 
                         {tab === 'aktivitas' && (
                             activity.length === 0 ? (

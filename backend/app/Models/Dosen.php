@@ -22,6 +22,7 @@ class Dosen extends Model
         'kategori_dosen',
         'user_id',
         'status',
+        'tanda_tangan',
     ];
 
     // ─── Relationships ─────────────────────────────────────────────────────────

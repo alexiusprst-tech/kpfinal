@@ -85,7 +85,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
             <Head title={`${kelompok.nama} - Detail Kelompok`} />
             <Toast flash={flash} />
 
-            <div className="max-w-7xl mx-auto space-y-6 pb-16">
+            <div className="w-full space-y-6 pb-16">
                 
                 {/* Top Nav & Action Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -360,9 +360,10 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                             <thead className="bg-gray-50/80 border-b border-gray-100 text-gray-400 font-extrabold uppercase tracking-wider text-[10px]">
                                 <tr>
                                     <th className="py-3 px-4 w-12 text-center">No</th>
-                                    <th className="py-3 px-4 min-w-[120px]">Kode Dosen</th>
-                                    <th className="py-3 px-4 min-w-[220px]">Nama Lengkap</th>
-                                    <th className="py-3 px-3 text-center">Total Soal Kelompok</th>
+                                    <th className="py-3 px-4 min-w-[110px]">Kode Dosen</th>
+                                    <th className="py-3 px-4 min-w-[200px]">Nama Lengkap</th>
+                                    <th className="py-3 px-4 min-w-[180px]">Mata Kuliah Ditugaskan</th>
+                                    <th className="py-3 px-3 text-center">Total Soal</th>
                                     <th className="py-3 px-3 text-center">Menunggu</th>
                                     <th className="py-3 px-3 text-center">Diverifikasi (Approved)</th>
                                     <th className="py-3 px-3 text-center">Minta Revisi</th>
@@ -370,37 +371,58 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {verifikatorListStats.map((v, idx) => (
-                                    <tr key={v.id} className="hover:bg-slate-50/70 transition-colors">
-                                        <td className="py-3 px-4 text-center font-bold text-gray-400">{idx + 1}</td>
-                                        <td className="py-3 px-4 font-black text-gray-900">{v.kode_dosen}</td>
-                                        <td className="py-3 px-4">
-                                            <span className="font-bold text-gray-800 block">{v.nama_lengkap}</span>
-                                            <span className="text-[10px] text-gray-400">{v.email || '-'}</span>
-                                        </td>
-                                        <td className="py-3 px-3 text-center font-bold text-gray-700">{v.total_soal}</td>
-                                        <td className="py-3 px-3 text-center">
-                                            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${v.menunggu > 0 ? 'bg-amber-50 text-amber-700' : 'text-gray-300'}`}>
-                                                {v.menunggu}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-3 text-center">
-                                            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${v.diverifikasi > 0 ? 'bg-emerald-50 text-emerald-700' : 'text-gray-300'}`}>
-                                                {v.diverifikasi}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-3 text-center">
-                                            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${v.revisi > 0 ? 'bg-red-50 text-red-700' : 'text-gray-300'}`}>
-                                                {v.revisi}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-4 text-center">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                {v.status}
-                                            </span>
+                                {verifikatorListStats.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={9} className="text-center py-8 text-gray-400 font-medium">
+                                            Belum ada tim verifikator yang ditugaskan dalam kelompok ini.
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    verifikatorListStats.map((v, idx) => (
+                                        <tr key={v.id || idx} className="hover:bg-slate-50/70 transition-colors">
+                                            <td className="py-3 px-4 text-center font-bold text-gray-400">{idx + 1}</td>
+                                            <td className="py-3 px-4 font-black text-gray-900">{v.kode_dosen || '-'}</td>
+                                            <td className="py-3 px-4">
+                                                <span className="font-bold text-gray-800 block">{v.nama_lengkap || '-'}</span>
+                                                <span className="text-[10px] text-gray-400">{v.email || '-'}</span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {v.mata_kuliah_list && v.mata_kuliah_list.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {v.mata_kuliah_list.map((mk) => (
+                                                            <span key={mk.id} className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md border border-blue-100" title={mk.nama_mk}>
+                                                                {mk.kode_mk}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[11px] text-gray-400 italic">Semua MK Kelompok</span>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-3 text-center font-bold text-gray-700">{v.total_soal ?? 0}</td>
+                                            <td className="py-3 px-3 text-center">
+                                                <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${(v.menunggu || 0) > 0 ? 'bg-amber-50 text-amber-700' : 'text-gray-300'}`}>
+                                                    {v.menunggu ?? 0}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-3 text-center">
+                                                <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${(v.diverifikasi || 0) > 0 ? 'bg-emerald-50 text-emerald-700' : 'text-gray-300'}`}>
+                                                    {v.diverifikasi ?? 0}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-3 text-center">
+                                                <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${(v.revisi || 0) > 0 ? 'bg-red-50 text-red-700' : 'text-gray-300'}`}>
+                                                    {v.revisi ?? 0}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    {v.status || 'ACTIVE'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>

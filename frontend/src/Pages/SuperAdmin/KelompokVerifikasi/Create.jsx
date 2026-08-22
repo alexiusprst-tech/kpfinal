@@ -7,7 +7,7 @@ import SearchableSelect from '@/Components/SearchableSelect';
 import {
     Layers, CheckCircle2, ChevronRight, AlertCircle, ArrowLeft, ArrowRight,
     Save, Play, BookOpen, UserCheck, Shield, Users, Search, Check, Copy, X,
-    GraduationCap, Calendar, Info
+    GraduationCap, Calendar, Info, Plus, Trash2
 } from 'lucide-react';
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -35,6 +35,8 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
     // UI Feedback
     const [loading, setLoading] = useState(false);
     const [copyNotification, setCopyNotification] = useState('');
+    const [showAddMkSelector, setShowAddMkSelector] = useState(false);
+    const [addMkSearch, setAddMkSearch] = useState('');
 
     // Active Periode Object
     const selectedPeriode = periodeList.find((p) => p.id === periodeId);
@@ -49,6 +51,20 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
         const matchSemester = semesterFilter === 'ALL' || String(mk.semester) === String(semesterFilter);
         return matchSearch && matchSemester;
     });
+
+    // Unselected MKs for quick addition in Step 3
+    const unselectedMks = mkAll.filter((m) => !selectedMkIds.includes(m.id));
+    const filteredUnselectedMks = unselectedMks.filter((mk) => {
+        const s = addMkSearch.toLowerCase();
+        return mk.nama_mk.toLowerCase().includes(s) || mk.kode_mk.toLowerCase().includes(s);
+    });
+
+    const handleAddAdditionalMk = (mk) => {
+        setSelectedMkIds((prev) => [...prev, mk.id]);
+        showToast('success', `Mata kuliah ${mk.kode_mk} berhasil ditambahkan ke penetapan.`);
+        setShowAddMkSelector(false);
+        setAddMkSearch('');
+    };
 
     // Toggle MK Selection in Step 2
     const handleToggleMk = (mkId) => {
@@ -314,7 +330,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
         <AuthenticatedLayout auth={auth}>
             <Head title="Buat Kelompok Verifikasi" />
 
-            <div className="space-y-6 max-w-6xl mx-auto pb-16">
+            <div className="space-y-6 w-full pb-16">
                 {/* Header Title */}
                 <div className="flex items-center justify-between">
                     <div>
@@ -330,7 +346,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
 
                 {/* Wizard Progress Steps Bar */}
                 <div className="bg-white py-6 px-4 sm:px-8 rounded-2xl border border-gray-200/80 shadow-sm">
-                    <div className="flex items-start justify-between relative max-w-3xl mx-auto">
+                    <div className="flex items-start justify-between relative max-w-4xl mx-auto">
                         {[
                             { num: 1, title: 'Periode', desc: 'Pilih Periode' },
                             { num: 2, title: 'Mata Kuliah', desc: 'Target MK' },
@@ -419,7 +435,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
                                 {periodeList.map((periode) => {
                                     const isSelected = periode.id === periodeId;
                                     return (
@@ -631,6 +647,16 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                             Sem. {mk?.semester}
                                                         </span>
                                                     )}
+                                                    {selectedMkIds.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleToggleMk(mkId)}
+                                                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                                            title="Hapus mata kuliah ini dari penetapan"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -801,6 +827,93 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                     );
                                 })}
                             </div>
+
+                            {/* Add Additional MK Section */}
+                            {unselectedMks.length > 0 ? (
+                                <div className="pt-2">
+                                    {!showAddMkSelector ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAddMkSelector(true)}
+                                            className="w-full py-3.5 border-2 border-dashed border-gray-300 hover:border-[#801720] bg-gray-50/70 hover:bg-[#801720]/5 rounded-2xl flex items-center justify-center gap-2.5 text-xs font-extrabold text-gray-600 hover:text-[#801720] transition-all cursor-pointer group shadow-2xs"
+                                        >
+                                            <div className="w-7 h-7 rounded-xl bg-white group-hover:bg-[#801720] text-gray-500 group-hover:text-white flex items-center justify-center shadow-xs border border-gray-200 group-hover:border-[#801720] transition-all">
+                                                <Plus className="w-4 h-4" />
+                                            </div>
+                                            <span>+ Tambah Penetapan Mata Kuliah</span>
+                                            <span className="text-[11px] font-normal text-gray-400">({unselectedMks.length} mata kuliah tersedia)</span>
+                                        </button>
+                                    ) : (
+                                        <div className="p-5 bg-slate-50 border-2 border-[#801720]/30 rounded-2xl space-y-3.5 animate-in fade-in duration-150 shadow-xs">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <BookOpen className="w-4 h-4 text-[#801720]" />
+                                                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">
+                                                        Pilih Mata Kuliah untuk Ditambahkan
+                                                    </h4>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setShowAddMkSelector(false); setAddMkSearch(''); }}
+                                                    className="text-xs font-bold text-gray-400 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-200/60 transition-colors cursor-pointer"
+                                                >
+                                                    Batal
+                                                </button>
+                                            </div>
+
+                                            <div className="relative">
+                                                <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                                <input
+                                                    type="text"
+                                                    value={addMkSearch}
+                                                    onChange={(e) => setAddMkSearch(e.target.value)}
+                                                    placeholder="Ketik kode atau nama mata kuliah yang ingin ditambahkan..."
+                                                    className="w-full pl-10 pr-4 py-2 text-xs font-semibold border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]"
+                                                    autoFocus
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1">
+                                                {filteredUnselectedMks.length === 0 ? (
+                                                    <div className="col-span-2 text-center py-6 text-xs text-gray-400 font-semibold">
+                                                        Tidak ada mata kuliah yang cocok dengan kata kunci pencarian.
+                                                    </div>
+                                                ) : (
+                                                    filteredUnselectedMks.map((m) => (
+                                                        <div
+                                                            key={m.id}
+                                                            onClick={() => handleAddAdditionalMk(m)}
+                                                            className="p-3 bg-white hover:bg-[#801720]/5 border border-gray-200 hover:border-[#801720] rounded-xl flex items-center justify-between cursor-pointer transition-all group shadow-2xs"
+                                                        >
+                                                            <div className="min-w-0 pr-2">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="font-extrabold text-xs text-gray-900 group-hover:text-[#801720]">{m.kode_mk}</span>
+                                                                    <span className="text-[10px] font-bold px-1.5 py-0.2 bg-gray-100 text-gray-600 rounded">
+                                                                        {m.sks} SKS
+                                                                    </span>
+                                                                    {m.semester && (
+                                                                        <span className="text-[10px] font-bold px-1.5 py-0.2 bg-blue-50 text-blue-600 rounded">
+                                                                            Sem. {m.semester}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-xs text-gray-600 font-medium truncate mt-0.5">{m.nama_mk}</p>
+                                                            </div>
+                                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#801720] bg-red-50 px-2.5 py-1 rounded-lg border border-red-200/80 group-hover:bg-[#801720] group-hover:text-white transition-all shrink-0">
+                                                                <Plus className="w-3.5 h-3.5" /> Tambah
+                                                            </span>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-center py-3 text-xs text-gray-400 font-medium">
+                                    Semua mata kuliah telah ditambahkan ke dalam penetapan.
+                                </div>
+                            )}
                         </div>
                     )}
 

@@ -4,17 +4,17 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { FileCheck, Download, Eye, ArrowRight, X } from 'lucide-react';
 
 const STATUS_CONFIG = {
-    DRAFT:       { label: 'Draft',         color: 'bg-gray-100 text-gray-600',      dot: 'bg-gray-400' },
-    SUBMITTED:   { label: 'Disubmit',      color: 'bg-blue-100 text-blue-700',      dot: 'bg-blue-500' },
-    IN_REVIEW:   { label: 'Sedang Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'Revisi Submit', color: 'bg-indigo-100 text-indigo-700',  dot: 'bg-indigo-500' },
-    APPROVED:    { label: 'Disetujui',     color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REVISION:    { label: 'Perlu Revisi',  color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
-    REJECTED:    { label: 'Ditolak',       color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
+    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
+    APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }) {
-    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IN_REVIEW;
     return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.color}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -29,7 +29,13 @@ function Toast({ flash }) {
     return <FlashAlert type="toast" flash={flash} />;
 }
 
-const STATUS_FILTERS = ['', 'SUBMITTED', 'IN_REVIEW', 'RESUBMITTED', 'APPROVED', 'REVISION', 'REJECTED'];
+const STATUS_FILTERS = [
+    { key: '', label: 'Semua Status' },
+    { key: 'IN_REVIEW', label: 'In Review' },
+    { key: 'REVISION', label: 'Revisi' },
+    { key: 'APPROVED', label: 'Disetujui' },
+    { key: 'REJECTED', label: 'Ditolak' },
+];
 
 export default function VerifikatorSoalIndex({ soalList, filters }) {
     const { flash } = usePage().props;
@@ -55,10 +61,17 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
 
                 {/* Status Filter */}
                 <div className="flex gap-2 flex-wrap">
-                    {STATUS_FILTERS.map(s => (
-                        <button key={s} onClick={() => handleFilter(s)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${statusFilter === s ? 'bg-[#801720] text-white border-[#801720]' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
-                            {s || 'Menunggu Review'}
+                    {STATUS_FILTERS.map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => handleFilter(tab.key)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                (statusFilter === tab.key) || (!statusFilter && tab.key === '')
+                                    ? 'bg-[#801720] text-white border-[#801720] shadow-xs'
+                                    : 'border-gray-200 text-gray-600 bg-white hover:bg-gray-50'
+                            }`}
+                        >
+                            {tab.label}
                         </button>
                     ))}
                 </div>

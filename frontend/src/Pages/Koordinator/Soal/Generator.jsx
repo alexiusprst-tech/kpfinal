@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import axios from 'axios';
@@ -10,7 +10,15 @@ import { showToast, showAlert } from '@/Utils/sweetalert';
 
 
 export default function SoalGenerator({ mataKuliah, activePeriode, initialData }) {
-    const [formData, setFormData] = useState(initialData);
+    const [originalPloList] = useState(initialData?.plo || []);
+    const [formData, setFormData] = useState(() => {
+        if (!initialData) return initialData;
+        const plos = initialData.plo || [];
+        return {
+            ...initialData,
+            plo: plos.length > 0 ? [JSON.parse(JSON.stringify(plos[0]))] : []
+        };
+    });
     const [isExporting, setIsExporting] = useState(false);
     const [exportError, setExportError] = useState('');
 
@@ -24,9 +32,9 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
 
     const handlePetunjukChange = (index, value) => {
         setFormData(prev => {
-            const list = [...prev.petunjuk_pengerjaan];
-            list[index] = value;
-            return { ...prev, petunjuk_pengerjaan: list };
+            const next = [...prev.petunjuk_pengerjaan];
+            next[index] = value;
+            return { ...prev, petunjuk_pengerjaan: next };
         });
     };
 
@@ -38,10 +46,10 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
     };
 
     const removePetunjuk = (index) => {
-        setFormData(prev => {
-            const list = prev.petunjuk_pengerjaan.filter((_, i) => i !== index);
-            return { ...prev, petunjuk_pengerjaan: list };
-        });
+        setFormData(prev => ({
+            ...prev,
+            petunjuk_pengerjaan: prev.petunjuk_pengerjaan.filter((_, i) => i !== index)
+        }));
     };
 
     const movePetunjuk = (index, direction) => {
@@ -58,33 +66,53 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
     };
 
     // --- PLO Handlers ---
-    const handlePloChange = (ploIndex, field, value) => {
+    const handlePloChange = (index, field, value) => {
         setFormData(prev => {
-            const plos = [...prev.plo];
-            plos[ploIndex] = { ...plos[ploIndex], [field]: value };
-            return { ...prev, plo: plos };
+            const nextPlo = [...prev.plo];
+            nextPlo[index] = {
+                ...nextPlo[index],
+                [field]: value
+            };
+            return { ...prev, plo: nextPlo };
         });
     };
 
     const addPlo = () => {
-        setFormData(prev => ({
-            ...prev,
-            plo: [
-                ...prev.plo,
-                {
-                    kode: `PLO${prev.plo.length + 1}`,
-                    deskripsi: '',
-                    clo: []
-                }
-            ]
-        }));
+        const currentKodes = formData.plo.map(p => p.kode);
+        const nextPlo = originalPloList.find(p => !currentKodes.includes(p.kode));
+
+        if (nextPlo) {
+            setFormData(prev => ({
+                ...prev,
+                plo: [...prev.plo, JSON.parse(JSON.stringify(nextPlo))]
+            }));
+        } else {
+            const nextIdx = formData.plo.length + 1;
+            setFormData(prev => ({
+                ...prev,
+                plo: [
+                    ...prev.plo,
+                    {
+                        kode: `PLO-${nextIdx}`,
+                        deskripsi: '',
+                        clo: [
+                            {
+                                kode: `CLO-${nextIdx}.1`,
+                                deskripsi: '',
+                                bobot_lo: '100%'
+                            }
+                        ]
+                    }
+                ]
+            }));
+        }
     };
 
-    const removePlo = (ploIndex) => {
-        setFormData(prev => {
-            const plos = prev.plo.filter((_, i) => i !== ploIndex);
-            return { ...prev, plo: plos };
-        });
+    const removePlo = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            plo: prev.plo.filter((_, i) => i !== index)
+        }));
     };
 
     // --- CLO Handlers ---
@@ -92,7 +120,10 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
         setFormData(prev => {
             const plos = [...prev.plo];
             const clos = [...plos[ploIndex].clo];
-            clos[cloIndex] = { ...clos[cloIndex], [field]: value };
+            clos[cloIndex] = {
+                ...clos[cloIndex],
+                [field]: value
+            };
             plos[ploIndex] = { ...plos[ploIndex], clo: clos };
             return { ...prev, plo: plos };
         });
@@ -101,18 +132,18 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
     const addClo = (ploIndex) => {
         setFormData(prev => {
             const plos = [...prev.plo];
-            // Count total CLOs globally to determine default code
-            let totalClos = 0;
-            plos.forEach(p => { totalClos += p.clo.length; });
-
-            const newClo = {
-                kode: `CLO${totalClos + 1}`,
-                deskripsi: '',
-                bobot_lo: '0%'
-            };
+            const nextCloIdx = plos[ploIndex].clo.length + 1;
+            const ploNum = plos[ploIndex].kode.replace(/[^0-9]/g, '') || ploIndex + 1;
             plos[ploIndex] = {
                 ...plos[ploIndex],
-                clo: [...plos[ploIndex].clo, newClo]
+                clo: [
+                    ...plos[ploIndex].clo,
+                    {
+                        kode: `CLO-${ploNum}.${nextCloIdx}`,
+                        deskripsi: '',
+                        bobot_lo: '0%'
+                    }
+                ]
             };
             return { ...prev, plo: plos };
         });
@@ -128,16 +159,27 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
     };
 
     // --- Calculations ---
-    const calculateTotalWeight = () => {
-        let total = 0;
-        formData.plo.forEach(p => {
-            p.clo.forEach(c => {
-                const val = parseInt(c.bobot_lo) || 0;
-                total += val;
-            });
-        });
-        return total;
+    const getPloWeight = (ploItem) => {
+        if (!ploItem || !ploItem.clo) return 0;
+        return ploItem.clo.reduce((acc, c) => acc + (parseInt(c.bobot_lo) || 0), 0);
     };
+
+    const plosWeightInfo = useMemo(() => {
+        if (!formData?.plo || formData.plo.length === 0) return [];
+        return formData.plo.map(p => {
+            const weight = getPloWeight(p);
+            return {
+                kode: p.kode,
+                weight,
+                isValid: weight === 100,
+            };
+        });
+    }, [formData?.plo]);
+
+    const isWeightValid = useMemo(() => {
+        if (!plosWeightInfo || plosWeightInfo.length === 0) return false;
+        return plosWeightInfo.every(p => p.isValid);
+    }, [plosWeightInfo]);
 
     const getGlobalCloCount = () => {
         let count = 0;
@@ -146,9 +188,6 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
         });
         return count;
     };
-
-    const totalWeight = calculateTotalWeight();
-    const isWeightValid = totalWeight === 100;
 
     // --- Exports ---
     const handleExport = (type) => {
@@ -173,13 +212,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
         })
         .catch(err => {
             console.error(err);
-            const msg = 'Gagal melakukan ekspor dokumen. Pastikan semua data terisi dengan format benar.';
-            setExportError(msg);
-            showAlert({
-                icon: 'error',
-                title: 'Ekspor Gagal',
-                text: msg,
-            });
+            setExportError('Gagal melakukan ekspor dokumen. Pastikan semua data terisi dengan format benar.');
         })
         .finally(() => {
             setIsExporting(false);
@@ -191,11 +224,11 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
     let previewQuestionIndex = 1;
 
     return (
-        <AuthenticatedLayout title={`Generator Lembar Soal - ${mataKuliah.nama_mk}`}>
-            <Head title="Generator Lembar Soal" />
+        <AuthenticatedLayout title="Generator Lembar Soal">
+            <Head title={`Generator Soal - ${mataKuliah.nama_mk}`} />
 
-            <div className="max-w-[1600px] mx-auto space-y-4">
-                {/* Upper Breadcrumbs & Quick Action Header */}
+            <div className="space-y-6 max-w-[1600px] mx-auto">
+                {/* Header Actions */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <Link href={`/koordinator/mata-kuliah/${mataKuliah.id}`}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors">
@@ -212,7 +245,12 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                             ) : (
                                 <AlertTriangle className="w-4 h-4 text-amber-600" />
                             )}
-                            Total Bobot LO: {totalWeight}%
+                            <span>
+                                {isWeightValid
+                                    ? 'Bobot per PLO: 100% (Valid)'
+                                    : `Bobot per PLO: ${plosWeightInfo.filter(p => p.isValid).length}/${plosWeightInfo.length} Valid (Harus 100% per PLO)`
+                                }
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -398,12 +436,28 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                                 />
                                             </div>
                                             <div className="flex-1">
-                                                <label className="text-[9px] font-bold text-gray-400 uppercase">Deskripsi PLO</label>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <label className="text-[9px] font-bold text-gray-400 uppercase">Deskripsi PLO</label>
+                                                    {(() => {
+                                                        const ploWeight = getPloWeight(ploItem);
+                                                        const isPloValid = ploWeight === 100;
+                                                        return (
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black border ${
+                                                                isPloValid
+                                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                                                            }`}>
+                                                                {isPloValid ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <AlertTriangle className="w-3 h-3 text-amber-600" />}
+                                                                Bobot {ploItem.kode}: {ploWeight}% / 100%
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </div>
                                                 <textarea
                                                     value={ploItem.deskripsi}
                                                     onChange={e => handlePloChange(ploIdx, 'deskripsi', e.target.value)}
                                                     rows={1}
-                                                    className="mt-1 w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#801720]/20 resize-none bg-white"
+                                                    className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#801720]/20 resize-none bg-white"
                                                     placeholder="Deskripsi Program Learning Outcome..."
                                                 />
                                             </div>
@@ -492,22 +546,25 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sticky top-3 z-10">
                             <div>
                                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cetak Dokumen Lembar Soal</h3>
-                                <p className="text-[10px] text-gray-400">Pastikan total bobot LO adalah 100% sebelum mencetak.</p>
+                                <p className={`text-[10px] font-semibold ${isWeightValid ? 'text-gray-400' : 'text-amber-600'}`}>
+                                    {isWeightValid 
+                                        ? 'Bobot LO per PLO valid (masing-masing 100%). Dokumen siap dicetak.' 
+                                        : (() => {
+                                            const invalidPlos = plosWeightInfo.filter(p => !p.isValid);
+                                            const infoStr = invalidPlos.map(p => `${p.kode}: ${p.weight}%`).join(', ');
+                                            return `Pastikan total bobot LO per PLO adalah 100%. (Perlu penyesuaian: ${infoStr})`;
+                                        })()
+                                    }
+                                </p>
                             </div>
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => handleExport('docx')}
-                                    disabled={isExporting}
-                                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50"
-                                >
-                                    <Download className="w-3.5 h-3.5" /> {isExporting ? 'Proses...' : 'Ekspor DOCX'}
-                                </button>
-                                <button
                                     onClick={() => handleExport('pdf')}
-                                    disabled={isExporting}
-                                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50"
+                                    disabled={isExporting || !isWeightValid}
+                                    className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                                    title={!isWeightValid ? "Total bobot LO setiap PLO harus 100% untuk mengaktifkan ekspor" : ""}
                                 >
-                                    <FileText className="w-3.5 h-3.5" /> {isExporting ? 'Proses...' : 'Ekspor PDF'}
+                                    <FileText className="w-3.5 h-3.5" /> {isExporting ? 'Proses Ekspor...' : 'Ekspor PDF'}
                                 </button>
                             </div>
                         </div>

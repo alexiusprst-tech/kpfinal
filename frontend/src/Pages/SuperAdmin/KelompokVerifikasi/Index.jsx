@@ -140,7 +140,7 @@ export default function KelompokVerifikasiIndex({
             <Head title="Kelompok Verifikasi - Super Admin" />
             <Toast flash={flash} />
 
-            <div className="space-y-6 max-w-7xl mx-auto pb-12">
+            <div className="space-y-6 w-full pb-12">
                 
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -157,13 +157,7 @@ export default function KelompokVerifikasiIndex({
                             </div>
                         </div>
                     </div>
-                    <Link
-                        href="/superadmin/kelompok-verifikasi/create"
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#681219] text-white text-xs font-bold rounded-2xl shadow-md shadow-[#801720]/20 transition-all hover:scale-[1.02] cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Buat Kelompok Baru
-                    </Link>
+
                 </div>
 
                 {/* Summary Cards */}

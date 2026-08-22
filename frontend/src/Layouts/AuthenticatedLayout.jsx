@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, usePage, router } from '@inertiajs/react';
+import React, { useState, useEffect } from "react";
+import { Link, usePage, router } from "@inertiajs/react";
 import {
     LayoutDashboard,
     Users,
@@ -13,187 +13,159 @@ import {
     LogOut,
     Menu,
     X,
-    Shield,
     FolderKanban,
-    ChevronDown,
     Bell,
+    PanelLeftClose,
+    PanelLeftOpen,
+    UserCircle2,
+    ShieldCheck,
     Sparkles,
-} from 'lucide-react';
-import { showToast, showConfirm } from '@/Utils/sweetalert';
+} from "lucide-react";
+import { showToast, showConfirm } from "@/Utils/sweetalert";
+import NotificationDropdown from "@/Components/NotificationDropdown";
 
+function getNavSections(user, pathname = "") {
+    if (!user) return [];
 
-// Sidebar navigation according to role & DESIGN.md.
-// A "group" renders as a collapsible section with an uppercase label
-// (Master Data, Penugasan); a plain item renders directly (e.g. Dashboard).
-function getNavSections(role) {
-    if (role === 'SUPER_ADMIN') {
+    if (user.role === "SUPER_ADMIN") {
         return [
-            { type: 'item', label: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard },
-            {
-                type: 'group', label: 'Master Data', items: [
-                    { label: 'Tahun Ajaran',       href: '/superadmin/tahun-ajaran',  icon: Calendar },
-                    { label: 'Periode Verifikasi', href: '/superadmin/periode',       icon: Clock },
-                    { label: 'Mata Kuliah',        href: '/superadmin/mata-kuliah',   icon: BookOpen },
-                    { label: 'PLO',                href: '/superadmin/plo',           icon: Target },
-                    { label: 'CLO',                href: '/superadmin/clo',           icon: Activity },
-                    { label: 'Dosen',              href: '/superadmin/dosen',         icon: Users },
-                ],
-            },
-            {
-                type: 'group', label: 'Penugasan', items: [
-                    { label: 'Kelompok Verifikasi', href: '/superadmin/kelompok-verifikasi', icon: FolderKanban },
-                ],
-            },
+            { type: "item",    label: "Dashboard",           href: "/superadmin/dashboard",          icon: LayoutDashboard },
+            { type: "divider", label: "Master Data" },
+            { type: "item",    label: "Tahun Ajaran",        href: "/superadmin/tahun-ajaran",        icon: Calendar },
+            { type: "item",    label: "Periode Verifikasi",  href: "/superadmin/periode",             icon: Clock },
+            { type: "item",    label: "Mata Kuliah",         href: "/superadmin/mata-kuliah",         icon: BookOpen },
+            { type: "item",    label: "PLO",                 href: "/superadmin/plo",                 icon: Target },
+            { type: "item",    label: "CLO",                 href: "/superadmin/clo",                 icon: Activity },
+            { type: "item",    label: "Dosen",               href: "/superadmin/dosen",               icon: Users },
+            { type: "divider", label: "Penugasan" },
+            { type: "item",    label: "Kelompok Verifikasi", href: "/superadmin/kelompok-verifikasi", icon: FolderKanban },
         ];
     }
 
-    if (role === 'KOORDINATOR' || role === 'DOSEN') {
+    const isVerifikatorPage = pathname.startsWith("/verifikator");
+
+    if (user.has_dual_role || (user.is_koordinator && user.is_verifikator)) {
         return [
-            { type: 'item', label: 'Dashboard', href: '/koordinator/dashboard', icon: LayoutDashboard },
             {
-                type: 'group', label: 'Lembar Soal', items: [
-                    { label: 'Daftar Lembar Soal',    href: '/koordinator/soal',           icon: FileText },
-                ],
+                type: "item",
+                label: "Dashboard",
+                href: isVerifikatorPage ? "/verifikator/dashboard" : "/koordinator/dashboard",
+                icon: LayoutDashboard,
+                matchPaths: ["/koordinator/dashboard", "/verifikator/dashboard"],
             },
+            { type: "divider", label: "Koordinator MK" },
+            { type: "item",    label: "Daftar Lembar Soal",    href: "/koordinator/soal",      icon: FileText },
+            { type: "divider", label: "Verifikator Soal" },
+            { type: "item",    label: "Verifikasi Soal",       href: "/verifikator/soal",      icon: FileCheck },
+            { type: "item",    label: "Berita Acara",          href: "/verifikator/berita-acara", icon: FileText },
         ];
     }
 
-    if (role === 'VERIFIKATOR') {
+    if (user.is_verifikator || user.role === "VERIFIKATOR") {
         return [
-            { type: 'item', label: 'Dashboard',       href: '/verifikator/dashboard', icon: LayoutDashboard },
-            { type: 'item', label: 'Verifikasi Soal', href: '/verifikator/soal',      icon: FileCheck },
-            { type: 'item', label: 'Berita Acara',    href: '/verifikator/berita-acara', icon: FileText },
+            { type: "item",    label: "Dashboard",             href: "/verifikator/dashboard",    icon: LayoutDashboard },
+            { type: "divider", label: "Verifikasi Soal" },
+            { type: "item",    label: "Verifikasi Soal",       href: "/verifikator/soal",         icon: FileCheck },
+            { type: "item",    label: "Berita Acara",          href: "/verifikator/berita-acara", icon: FileText },
         ];
     }
 
-    return [];
+    // Default Koordinator
+    return [
+        { type: "item",    label: "Dashboard",             href: "/koordinator/dashboard", icon: LayoutDashboard },
+        { type: "divider", label: "Lembar Soal" },
+        { type: "item",    label: "Daftar Lembar Soal",    href: "/koordinator/soal",      icon: FileText },
+    ];
 }
 
-function isPathActive(href) {
-    if (href === '#' || !href) return false;
-    if (href === '/superadmin/dashboard' || href === '/koordinator/dashboard' || href === '/verifikator/dashboard') {
-        return window.location.pathname === href;
+function isPathActive(item) {
+    if (!item) return false;
+    const href = typeof item === "string" ? item : item.href;
+    const matchPaths = item?.matchPaths;
+
+    if (typeof window === "undefined") return false;
+    const path = window.location.pathname;
+
+    if (matchPaths && Array.isArray(matchPaths)) {
+        if (matchPaths.includes(path)) return true;
     }
-    return window.location.pathname === href || window.location.pathname.startsWith(href + '/');
+
+    if (!href || href === "#") return false;
+    if (["/superadmin/dashboard", "/koordinator/dashboard", "/verifikator/dashboard", "/profile"].includes(href)) {
+        return path === href;
+    }
+    return path === href || path.startsWith(href + "/");
 }
 
-function NavLink({ item }) {
-    const Icon = item.icon;
-    const active = isPathActive(item.href);
+function NavLink({ item, collapsed }) {
+    const Icon   = item.icon;
+    const active = isPathActive(item);
     return (
         <Link
             href={item.href}
-            className={`
-                flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-200
-                ${active
-                    ? 'bg-[#801720] text-white shadow-md shadow-[#801720]/25 scale-[1.02]'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 hover:translate-x-1'
-                }
-            `}
+            title={collapsed ? item.label : undefined}
+            className={[
+                "flex items-center gap-3.5 rounded-2xl text-sm font-bold transition-all duration-200 group relative",
+                collapsed ? "justify-center p-3" : "px-3 py-2.5",
+                active
+                    ? "bg-[#801720] text-white shadow-md shadow-[#801720]/25"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+            ].join(" ")}
         >
-            <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-white' : 'text-slate-500'}`} />
-            <span className="tracking-tight">{item.label}</span>
+            <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-white" : "text-slate-500 group-hover:text-slate-900"}`} />
+            {!collapsed && <span className="tracking-tight truncate">{item.label}</span>}
+            {collapsed && (
+                <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-lg">
+                    {item.label}
+                </span>
+            )}
         </Link>
     );
 }
 
-function NavGroup({ group }) {
-    const hasActiveChild = group.items.some(i => isPathActive(i.href));
-    const [open, setOpen] = useState(true);
-
-    return (
-        <div>
-            <button
-                type="button"
-                onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors"
-            >
-                <span>{group.label}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? '' : '-rotate-90'} ${hasActiveChild ? 'text-[#801720]' : ''}`} />
-            </button>
-            {open && (
-                <div className="space-y-1 mt-1">
-                    {group.items.map((item, idx) => <NavLink key={idx} item={item} />)}
-                </div>
-            )}
-        </div>
-    );
-}
-
-export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
-    const { auth, activePeriod, notifications, flash } = usePage().props;
+export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
+    const { auth, activePeriod, flash } = usePage().props;
     const user = auth?.user;
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [showDrawer, setShowDrawer] = useState(false);
+    const [mobileMenuOpen,   setMobileMenuOpen]   = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-    const notifList = notifications?.list || [];
-    const notifCount = notifications?.count || 0;
-
-    // Trigger SweetAlert2 toast when flash message exists
     useEffect(() => {
         if (!flash) return;
         const message = flash.success || flash.error || flash.warning || flash.info;
         if (message) {
-            const icon = flash.success ? 'success' : flash.error ? 'error' : flash.warning ? 'warning' : 'info';
+            const icon = flash.success ? "success" : flash.error ? "error" : flash.warning ? "warning" : "info";
             showToast(icon, message);
         }
     }, [flash?.success, flash?.error, flash?.warning, flash?.info]);
 
     useEffect(() => {
-        const handleOpen = () => setShowDrawer(true);
-
-        window.addEventListener('open-notifications', handleOpen);
-        return () => window.removeEventListener('open-notifications', handleOpen);
-    }, []);
-
-    useEffect(() => {
         const interval = setInterval(() => {
             if (auth?.user) {
-                router.reload({
-                    only: ['notifications'],
-                    preserveScroll: true,
-                    preserveState: true,
-                });
+                router.reload({ only: ["notifications"], preserveScroll: true, preserveState: true });
             }
         }, 15000);
-
         return () => clearInterval(interval);
     }, [auth?.user]);
-
-    const handleReadAll = () => {
-        router.post('/notifications/read-all', {}, {
-            preserveScroll: true,
-            preserveState: true,
-        });
-    };
-
-    const handleReadSingle = (id) => {
-        router.post(`/notifications/${id}/read`, {}, {
-            preserveScroll: true,
-            preserveState: true,
-        });
-    };
 
     const handleLogout = async (e) => {
         e.preventDefault();
         const result = await showConfirm({
-            title: 'Konfirmasi Keluar',
-            text: 'Apakah Anda yakin ingin keluar dari sistem verifikasi?',
-            icon: 'question',
-            confirmButtonText: 'Ya, Keluar',
-            cancelButtonText: 'Batal',
-            confirmButtonColor: '#801720',
+            title: "Konfirmasi Keluar",
+            text: "Apakah Anda yakin ingin keluar dari sistem verifikasi?",
+            icon: "question",
+            confirmButtonText: "Ya, Keluar",
+            cancelButtonText: "Batal",
+            confirmButtonColor: "#801720",
         });
-        if (result.isConfirmed) {
-            window.location.href = '/logout';
-        }
+        if (result.isConfirmed) window.location.href = "/logout";
     };
 
-    const navSections = getNavSections(user?.role);
-
+    const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+    const navSections = getNavSections(user, pathname);
 
     return (
         <div className="min-h-screen bg-[#F0F3F8] flex flex-col lg:flex-row font-sans">
+
             {/* MOBILE TOPBAR */}
             <div className="lg:hidden bg-white text-slate-900 border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
                 <div className="flex items-center gap-2.5">
@@ -203,191 +175,127 @@ export default function AuthenticatedLayout({ children, title = 'Dashboard' }) {
                     <span className="font-extrabold text-sm text-[#801720] tracking-tight">Verifikasi Soal</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setShowDrawer(true)}
-                        className="relative p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-all text-slate-700"
-                        title="Notifikasi"
-                    >
-                        <Bell className="w-5 h-5" />
-                        {notifCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white animate-pulse">
-                                {notifCount}
-                            </span>
-                        )}
-                    </button>
-                    <button
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-all text-slate-700"
-                    >
+                    <NotificationDropdown align="right" />
+                    <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 transition-all text-slate-700 cursor-pointer">
                         {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
                 </div>
             </div>
 
-            {/* SIDEBAR (Wider w-72 (288px), Clean White BG with Maroon Active Items) */}
-            <aside className={`
-                fixed inset-y-0 left-0 z-40 w-72 bg-white text-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen border-r border-slate-200/80 shadow-lg lg:shadow-none flex-shrink-0
-                ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-            `}>
-                <div className="flex flex-col h-full justify-between overflow-y-auto p-6 lg:p-8 lg:pt-10">
+            {/* SIDEBAR */}
+            <aside className={[
+                "fixed inset-y-0 left-0 z-40 bg-white text-slate-800 flex flex-col",
+                "transition-all duration-300 ease-in-out",
+                "border-r border-slate-200/80 shadow-lg lg:shadow-none flex-shrink-0",
+                "lg:sticky lg:top-0 lg:h-screen",
+                mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+                sidebarCollapsed ? "w-[72px]" : "w-72",
+            ].join(" ")}>
+
+                <div className="flex flex-col h-full justify-between overflow-y-auto overflow-x-hidden py-6 px-3">
+
+                    {/* Top */}
                     <div>
-                        {/* Brand Section */}
-                        <div className="flex items-center gap-3.5 px-2 pb-5 mb-8 border-b border-slate-100">
-                            <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm flex-shrink-0 p-2 border border-slate-200/80">
-                                <img src="/images/logo-telkom.png" alt="Telkom Logo" className="h-full w-auto object-contain" />
-                            </div>
-                            <div>
-                                <h1 className="font-black text-base leading-tight tracking-tight text-[#801720]">Sistem Verifikasi</h1>
-                                <p className="text-xs text-slate-500 font-bold tracking-wide">Telkom University</p>
-                            </div>
+                        {/* Brand + Toggle */}
+                        <div className={`flex items-center mb-8 pb-5 border-b border-slate-100 ${sidebarCollapsed ? "justify-center" : "justify-between px-1"}`}>
+                            {!sidebarCollapsed && (
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm flex-shrink-0 p-1.5 border border-slate-200/80">
+                                        <img src="/images/logo-telkom.png" alt="Telkom Logo" className="h-full w-auto object-contain" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h1 className="font-black text-sm leading-tight tracking-tight text-[#801720] truncate">Sistem Verifikasi</h1>
+                                        <p className="text-[11px] text-slate-500 font-bold tracking-wide">Telkom University</p>
+                                    </div>
+                                </div>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setSidebarCollapsed(c => !c)}
+                                className="hidden lg:flex p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all flex-shrink-0"
+                                title={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
+                            >
+                                {sidebarCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+                            </button>
                         </div>
 
-                        {/* Navigation Menu */}
-                        <nav className="space-y-4">
-                            {navSections.map((section, idx) => (
-                                section.type === 'group'
-                                    ? <NavGroup key={idx} group={section} />
-                                    : <NavLink key={idx} item={section} />
-                            ))}
+                        {/* Nav */}
+                        <nav className="space-y-0.5">
+                            {navSections.map((section, idx) => {
+                                if (section.type === "divider") {
+                                    return sidebarCollapsed
+                                        ? <div key={idx} className="my-3 mx-2 border-t border-slate-100" />
+                                        : (
+                                            <div key={idx} className="pt-5 pb-1.5 px-2">
+                                                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">{section.label}</span>
+                                            </div>
+                                        );
+                                }
+                                return <NavLink key={idx} item={section} collapsed={sidebarCollapsed} />;
+                            })}
                         </nav>
                     </div>
 
-                    {/* Footer: User & Period Card */}
-                    <div className="pt-5 border-t border-slate-100 space-y-3 mt-6">
-                        {/* Active Period Indicator */}
-                        <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/80 text-xs">
-                            <div className="text-[10px] uppercase font-extrabold text-slate-400 mb-1 tracking-wider">Periode Aktif</div>
-                            <div className="flex items-center gap-2 font-extrabold text-slate-800 text-sm">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <span className="truncate">{activePeriod?.nama || 'Tidak ada periode'}</span>
-                            </div>
-                        </div>
-
-                        {/* User Profile */}
-                        <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100/80 transition-all border border-slate-200/80">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="w-9 h-9 rounded-full bg-[#801720]/10 text-[#801720] font-black text-sm flex items-center justify-center flex-shrink-0 border border-[#801720]/20">
-                                    {user?.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-sm font-extrabold text-slate-800 truncate leading-tight">{user?.name || 'User'}</p>
-                                    <p className="text-xs text-slate-500 truncate font-semibold">{user?.role}</p>
+                    {/* Bottom */}
+                    <div className="pt-5 border-t border-slate-100 space-y-2 mt-6">
+                        {!sidebarCollapsed && (
+                            <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/80 text-xs">
+                                <div className="text-[10px] uppercase font-extrabold text-slate-400 mb-1 tracking-wider">Periode Aktif</div>
+                                <div className="flex items-center gap-2 font-extrabold text-slate-800 text-sm">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+                                    <span className="truncate">{activePeriod?.nama || "Tidak ada periode"}</span>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={handleLogout}
-                                className="p-2 rounded-xl bg-slate-100 hover:bg-red-600 hover:text-white text-slate-500 transition-all flex-shrink-0 shadow-xs cursor-pointer"
-                                title="Keluar"
-                            >
-                                <LogOut className="w-4 h-4" />
-                            </button>
+                        )}
 
-                        </div>
+                        {sidebarCollapsed ? (
+                            <div className="flex flex-col items-center gap-2">
+                                <Link
+                                    href="/profile"
+                                    className={`w-9 h-9 rounded-full ${isPathActive('/profile') ? 'bg-[#801720] text-white shadow-md shadow-[#801720]/25 ring-2 ring-[#801720]' : 'bg-[#801720]/10 text-[#801720] hover:bg-[#801720]/20'} font-black text-sm flex items-center justify-center border border-[#801720]/20 transition-all group relative cursor-pointer`}
+                                    title={`Profil Saya: ${user?.name}`}
+                                >
+                                    {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
+                                    <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-lg">
+                                        Profil Saya
+                                    </span>
+                                </Link>
+                                <button type="button" onClick={handleLogout} className="p-2 rounded-xl bg-slate-50 hover:bg-red-50 hover:text-red-600 text-slate-500 transition-all border border-slate-200/80 cursor-pointer" title="Keluar">
+                                    <LogOut className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className={`flex items-center justify-between p-2 rounded-2xl ${isPathActive('/profile') ? 'bg-[#801720]/10 border-[#801720]/30 shadow-xs' : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200/80'} transition-all border gap-2`}>
+                                <Link
+                                    href="/profile"
+                                    className="flex items-center gap-2.5 overflow-hidden flex-1 min-w-0 group py-0.5 px-1 rounded-xl transition-all cursor-pointer"
+                                    title="Buka Profil Saya"
+                                >
+                                    <div className={`w-8 h-8 rounded-full ${isPathActive('/profile') ? 'bg-[#801720] text-white' : 'bg-[#801720]/10 text-[#801720] group-hover:bg-[#801720] group-hover:text-white'} font-black text-sm flex items-center justify-center flex-shrink-0 border border-[#801720]/20 transition-colors`}>
+                                        {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
+                                    </div>
+                                    <div className="overflow-hidden min-w-0 flex-1">
+                                        <p className={`text-xs font-extrabold ${isPathActive('/profile') ? 'text-[#801720]' : 'text-slate-800 group-hover:text-[#801720]'} truncate leading-tight transition-colors`}>
+                                            {user?.name || "User"}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 truncate font-semibold">
+                                            {user?.has_dual_role ? "Koordinator & Verifikator" : (user?.role || "User")}
+                                        </p>
+                                    </div>
+                                </Link>
+                                <button type="button" onClick={handleLogout} className="p-1.5 rounded-xl bg-slate-100 hover:bg-red-600 hover:text-white text-slate-500 transition-all flex-shrink-0 cursor-pointer" title="Keluar">
+                                    <LogOut className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </aside>
 
-            {/* MAIN CONTENT AREA */}
+            {/* MAIN CONTENT */}
             <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 {children}
             </main>
-
-            {/* NOTIFICATION DRAWER */}
-            {showDrawer && (
-                <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
-                    <div className="absolute inset-0 overflow-hidden">
-                        <div 
-                            className="absolute inset-0 bg-slate-600/30 backdrop-blur-xs transition-opacity" 
-                            onClick={() => setShowDrawer(false)}
-                        />
-
-                        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-                            <div className="pointer-events-auto w-screen max-w-md transform bg-white shadow-2xl transition-all duration-300 ease-in-out">
-                                <div className="flex h-full flex-col overflow-y-scroll bg-white py-6 shadow-xl">
-                                    {/* Header */}
-                                    <div className="px-6 flex items-center justify-between border-b border-slate-100 pb-4">
-                                        <div className="flex items-center gap-2">
-                                            <Bell className="w-5 h-5 text-[#801720]" />
-                                            <h2 className="text-lg font-extrabold text-slate-800" id="slide-over-title">Notifikasi</h2>
-                                            {notifCount > 0 && (
-                                                <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                                                    {notifCount} baru
-                                                </span>
-                                            )}
-                                        </div>
-                                        <button 
-                                            type="button" 
-                                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-500 transition-all cursor-pointer"
-                                            onClick={() => setShowDrawer(false)}
-                                        >
-                                            <X className="w-5 h-5" />
-                                        </button>
-                                    </div>
-
-                                    {/* Actions */}
-                                    {notifList.length > 0 && (
-                                        <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center text-xs">
-                                            <span className="text-slate-500 font-semibold">Tampilkan {notifList.length} terbaru</span>
-                                            <button 
-                                                onClick={handleReadAll}
-                                                className="text-[#801720] hover:text-[#6a1219] font-extrabold transition-colors cursor-pointer"
-                                            >
-                                                Tandai Semua Dibaca
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* Notification List */}
-                                    <div className="relative mt-2 flex-1 px-4 sm:px-6">
-                                        {notifList.length === 0 ? (
-                                            <div className="flex flex-col items-center justify-center py-20 text-center text-slate-400">
-                                                <Bell className="w-12 h-12 text-slate-200 mb-3" />
-                                                <p className="text-sm font-bold">Tidak ada notifikasi baru</p>
-                                                <p className="text-xs text-slate-400 mt-1">Anda akan menerima pemberitahuan di sini saat ada pembaruan penugasan atau verifikasi soal.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="divide-y divide-slate-100">
-                                                {notifList.map((notif) => (
-                                                    <div 
-                                                        key={notif.id} 
-                                                        className={`py-4 px-2 rounded-xl transition-colors flex items-start justify-between gap-3 ${notif.is_read ? 'hover:bg-slate-50/50' : 'bg-rose-50/40 hover:bg-rose-50/70'}`}
-                                                    >
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-1.5">
-                                                                {!notif.is_read && <span className="w-1.5 h-1.5 bg-red-600 rounded-full flex-shrink-0 animate-pulse" />}
-                                                                <p className="text-sm font-bold text-slate-800 leading-snug">{notif.title}</p>
-                                                            </div>
-                                                            <p className="text-xs text-slate-600 font-semibold mt-1 leading-relaxed">{notif.message}</p>
-                                                            <p className="text-[10px] text-slate-400 font-bold mt-2">
-                                                                {new Date(notif.created_at).toLocaleString('id-ID', {
-                                                                    day: 'numeric',
-                                                                    month: 'short',
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                })}
-                                                            </p>
-                                                        </div>
-                                                        {!notif.is_read && (
-                                                            <button
-                                                                onClick={() => handleReadSingle(notif.id)}
-                                                                className="text-[10px] bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300 font-bold px-2 py-1 rounded-lg transition-all flex-shrink-0 cursor-pointer shadow-xs"
-                                                                title="Tandai dibaca"
-                                                            >
-                                                                Tandai dibaca
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

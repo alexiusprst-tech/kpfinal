@@ -146,22 +146,28 @@ class BeritaAcaraController extends Controller
             $tanggal = now();
 
             $data = [
-                'nomor'            => $nomor,
-                'tanggal'          => $tanggal,
-                'tanggalIndonesia' => $this->formatTanggalIndonesia($tanggal),
-                'periode'          => $lockedPeriod,
-                'mataKuliah'       => $mataKuliah,
-                'evaluatorNama'    => $user->name,
-                'evaluatorKode'    => $dosen->kode_dosen ?? '-',
-                'programStudi'     => config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi')),
-                'koordinatorNama'  => $koordinatorDosen->nama_lengkap,
-                'kaProdi'          => config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
-                'soalList'         => $soalList,
-                'clos'             => $clos,
-                'jumlahSoal'       => $soalList->count(),
-                'jumlahApproved'   => $jumlahApproved,
-                'jumlahRevision'   => $jumlahRevision,
-                'jumlahRejected'   => $jumlahRejected,
+                'nomor'                     => $nomor,
+                'tanggal'                   => $tanggal,
+                'tanggalIndonesia'          => $this->formatTanggalIndonesia($tanggal),
+                'periode'                   => $lockedPeriod,
+                'mataKuliah'               => $mataKuliah,
+                'evaluatorNama'            => $user->name,
+                'evaluatorKode'            => $dosen->kode_dosen ?? '-',
+                'programStudi'             => config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi')),
+                'koordinatorNama'          => $koordinatorDosen->nama_lengkap,
+                'kaProdi'                  => config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
+                'soalList'                 => $soalList,
+                'clos'                     => $clos,
+                'jumlahSoal'               => $soalList->count(),
+                'jumlahApproved'           => $jumlahApproved,
+                'jumlahRevision'           => $jumlahRevision,
+                'jumlahRejected'           => $jumlahRejected,
+                'tanda_tangan_evaluator'   => $dosen->tanda_tangan
+                    ? storage_path('app/public/' . $dosen->tanda_tangan)
+                    : null,
+                'tanda_tangan_koordinator' => $koordinatorDosen->tanda_tangan
+                    ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan)
+                    : null,
             ];
 
             $pdf = Pdf::loadView('pdf.berita-acara', $data)->setPaper('a4', 'portrait');

@@ -23,8 +23,12 @@ class SoalController extends Controller
         $query = Soal::with(['mataKuliah', 'periode', 'kategori', 'uploadedBy', 'latestVerifikasi'])
             ->whereIn('mata_kuliah_id', $assignments);
 
-        if ($request->status) {
-            $query->where('status', $request->status);
+        if ($request->has('status')) {
+            if ($request->status === 'IN_REVIEW') {
+                $query->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED', 'DRAFT']);
+            } elseif (!empty($request->status)) {
+                $query->where('status', $request->status);
+            }
         } else {
             // Default: show pending review
             $query->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED']);

@@ -319,35 +319,48 @@ class KelompokVerifikasiController extends Controller
             ];
         });
 
-        // Verifikator Statistics
-        $verifikatorListStats = $kelompokVerifikasi->verifikator->map(function ($kv) use ($periodeId) {
-            $dosen = $kv->dosen;
-            $mk = $kv->mataKuliah;
+        // Verifikator Statistics - Grouped by distinct Dosen in this Kelompok
+        $verifikatorGrouped = KelompokVerifikator::where('kelompok_id', $kelompokVerifikasi->id)
+            ->with(['dosen', 'mataKuliah'])
+            ->get()
+            ->groupBy('dosen_id');
 
-            $verifiedCount = ($dosen && $dosen->user_id)
-                ? Verifikasi::where('verifikator_id', $dosen->user_id)
-                    ->whereHas('soal', function ($q) use ($periodeId, $kv) {
-                        $q->where('periode_id', $periodeId)
-                          ->when($kv->mata_kuliah_id, fn($mkQ, $mkId) => $mkQ->where('mata_kuliah_id', $mkId));
-                    })
-                    ->count()
-                : 0;
+        $verifikatorListStats = $verifikatorGrouped->map(function ($items, $dosenId) use ($periodeId) {
+            $first = $items->first();
+            $dosen = $first ? $first->dosen : null;
+            $mkIds = $items->pluck('mata_kuliah_id')->filter()->unique();
+            $mkList = $items->map(fn($it) => $it->mataKuliah ? [
+                'id' => $it->mataKuliah->id,
+                'kode_mk' => $it->mataKuliah->kode_mk,
+                'nama_mk' => $it->mataKuliah->nama_mk,
+            ] : null)->filter()->unique('id')->values();
 
-            $pendingCount = Soal::whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])
-                ->where('periode_id', $periodeId)
-                ->when($kv->mata_kuliah_id, function ($q, $mkId) {
-                    $q->where('mata_kuliah_id', $mkId);
-                })
-                ->count();
+            // Total soal for the courses assigned to this verifikator in this period
+            $soalQuery = Soal::whereIn('mata_kuliah_id', $mkIds)
+                ->where('periode_id', $periodeId);
+
+            $counts = (clone $soalQuery)
+                ->selectRaw("
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status IN ('SUBMITTED', 'IN_REVIEW', 'RESUBMITTED') THEN 1 ELSE 0 END) as menunggu,
+                    SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as diverifikasi,
+                    SUM(CASE WHEN status = 'REVISION' THEN 1 ELSE 0 END) as revisi
+                ")->first();
 
             return [
-                'id'             => $kv->id,
-                'dosen'          => $dosen,
-                'mata_kuliah'    => $mk,
-                'verified_count' => $verifiedCount,
-                'pending_count'  => $pendingCount,
+                'id'              => $dosenId,
+                'dosen_id'        => $dosenId,
+                'kode_dosen'      => $dosen->kode_dosen ?? '-',
+                'nama_lengkap'    => $dosen->nama_lengkap ?? '-',
+                'email'           => $dosen->email ?? '-',
+                'mata_kuliah_list'=> $mkList,
+                'total_soal'      => (int) ($counts->total ?? 0),
+                'menunggu'        => (int) ($counts->menunggu ?? 0),
+                'diverifikasi'    => (int) ($counts->diverifikasi ?? 0),
+                'revisi'          => (int) ($counts->revisi ?? 0),
+                'status'          => $dosen->status ?? 'ACTIVE',
             ];
-        });
+        })->values();
 
         // Overall Group Progress
         $totalMk = $mkListStats->count();

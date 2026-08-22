@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import NotificationDropdown from '@/Components/NotificationDropdown';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -164,19 +165,8 @@ export default function Dashboard({
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Notification Bell */}
-                    <button 
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-notifications'))}
-                        className="relative p-2.5 bg-white rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors text-slate-700 cursor-pointer"
-                        title="Notifikasi"
-                    >
-                        <Bell className="w-5 h-5" />
-                        {notifCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white animate-pulse">
-                                {notifCount}
-                            </span>
-                        )}
-                    </button>
+                    {/* Notification Dropdown */}
+                    <NotificationDropdown align="right" />
 
                     {/* Generate Laporan Button */}
                     <button 

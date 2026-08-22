@@ -297,7 +297,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
         <AuthenticatedLayout title={`Edit ${kelompok.nama}`}>
             <Head title={`Edit ${kelompok.nama} - Super Admin`} />
 
-            <div className="max-w-6xl mx-auto space-y-6 pb-16">
+            <div className="w-full space-y-6 pb-16">
                 
                 {/* Header */}
                 <div className="flex items-center justify-between">

@@ -11,17 +11,17 @@ import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 
 
 const STATUS_CONFIG = {
-    DRAFT:       { label: 'Draft',        color: 'bg-gray-100 text-gray-600',      dot: 'bg-gray-400' },
-    SUBMITTED:   { label: 'Disubmit',     color: 'bg-blue-100 text-blue-700',      dot: 'bg-blue-500' },
-    IN_REVIEW:   { label: 'Sedang Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'Revisi Submit', color: 'bg-indigo-100 text-indigo-700',  dot: 'bg-indigo-500' },
-    APPROVED:    { label: 'Disetujui',    color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REVISION:    { label: 'Perlu Revisi', color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
-    REJECTED:    { label: 'Ditolak',      color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
+    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
+    APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }) {
-    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IN_REVIEW;
     return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.color}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -132,12 +132,18 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
         });
     };
 
-    const STATUS_FILTERS = ['', 'DRAFT', 'SUBMITTED', 'IN_REVIEW', 'REVISION', 'RESUBMITTED', 'APPROVED', 'REJECTED'];
+    const STATUS_FILTERS = [
+        { key: '', label: 'Semua Status' },
+        { key: 'IN_REVIEW', label: 'In Review' },
+        { key: 'REVISION', label: 'Revisi' },
+        { key: 'APPROVED', label: 'Disetujui' },
+        { key: 'REJECTED', label: 'Ditolak' },
+    ];
 
     return (
         <AuthenticatedLayout title="Kelola Soal">
             <Head title="Kelola Soal Saya" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 {/* Header */}
@@ -149,10 +155,6 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                         <p className="text-sm text-gray-500 mt-0.5">Upload, submit, dan pantau status soal Anda</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href="/koordinator/soal-generator"
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all shadow-sm cursor-pointer select-none">
-                            <Sparkles className="w-3.5 h-3.5" /> Generator Lembar Soal
-                        </Link>
                         <Link href="/koordinator/soal/create"
                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#6a1219] transition-all shadow-sm cursor-pointer select-none">
                             <Plus className="w-3.5 h-3.5" /> Upload Soal Baru
@@ -162,10 +164,17 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
 
                 {/* Status Filter Tabs */}
                 <div className="flex gap-2 flex-wrap">
-                    {STATUS_FILTERS.map(s => (
-                        <button key={s} onClick={() => handleFilterStatus(s)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${statusFilter === s ? 'bg-[#801720] text-white border-[#801720]' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
-                            {s || 'Semua Status'}
+                    {STATUS_FILTERS.map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => handleFilterStatus(tab.key)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                (statusFilter === tab.key) || (!statusFilter && tab.key === '')
+                                    ? 'bg-[#801720] text-white border-[#801720] shadow-xs'
+                                    : 'border-gray-200 text-gray-600 bg-white hover:bg-gray-50'
+                            }`}
+                        >
+                            {tab.label}
                         </button>
                     ))}
                 </div>

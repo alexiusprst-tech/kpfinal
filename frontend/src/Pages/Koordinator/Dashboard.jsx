@@ -6,19 +6,20 @@ import {
     LayoutDashboard, ArrowRight, BookOpen, Upload, Search, ChevronLeft, ChevronRight,
     Users, Target, Activity as ActivityIcon, CalendarClock, Bell, ShieldCheck, Calendar,
 } from 'lucide-react';
+import NotificationDropdown from '@/Components/NotificationDropdown';
 
 const STATUS_CONFIG = {
-    DRAFT:       { label: 'Draft',        color: 'bg-gray-100 text-gray-600',       dot: 'bg-gray-400' },
-    SUBMITTED:   { label: 'Disubmit',     color: 'bg-blue-100 text-blue-700',       dot: 'bg-blue-500' },
-    IN_REVIEW:   { label: 'Direview',     color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'Resubmit',     color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-500' },
-    APPROVED:    { label: 'Disetujui',    color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REVISION:    { label: 'Perlu Revisi', color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
-    REJECTED:    { label: 'Ditolak',      color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
+    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
+    APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }) {
-    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IN_REVIEW;
     return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${cfg.color}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -122,29 +123,40 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
 
             <div className="space-y-6">
                 {/* Header Row */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Dashboard Overview</h1>
                         <p className="text-xs text-slate-500 font-semibold mt-0.5">Sistem penyusunan dan verifikasi soal oleh dosen koordinator</p>
                     </div>
-                    <button 
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-notifications'))}
-                        className="relative p-2.5 bg-white rounded-xl border border-gray-200 shadow-xs hover:bg-slate-50 transition-colors text-slate-700 cursor-pointer"
-                        title="Notifikasi"
-                    >
-                        <Bell className="w-5 h-5 text-slate-700" />
-                        {notifCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white animate-pulse">
-                                {notifCount}
-                            </span>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                        {/* Dual Role Switcher */}
+                        {auth?.user?.has_dual_role && (
+                            <div className="flex items-center p-1 bg-white rounded-2xl border border-slate-200/90 shadow-xs">
+                                <Link
+                                    href="/koordinator/dashboard"
+                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-[#801720] text-white shadow-xs cursor-pointer"
+                                >
+                                    <BookOpen className="w-3.5 h-3.5" />
+                                    <span>Koordinator MK</span>
+                                </Link>
+                                <Link
+                                    href="/verifikator/dashboard"
+                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer"
+                                >
+                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                    <span>Verifikator Soal</span>
+                                </Link>
+                            </div>
                         )}
-                    </button>
+                        <NotificationDropdown align="right" />
+                    </div>
                 </div>
 
                 {/* Banner Hero */}
                 <div className="relative overflow-hidden bg-gradient-to-r from-[#801720] via-[#9B1B26] to-[#B82332] text-white rounded-3xl p-6 lg:p-8 shadow-xl shadow-[#801720]/15">
-                    <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 pointer-events-none flex items-center justify-end pr-8">
-                        <BookOpen className="w-64 h-64 text-white" />
+                    <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 pointer-events-none flex items-center justify-end pr-8">
+                        <img src="/images/logo-telkom.png" alt="Telkom University" className="w-48 h-48 object-contain filter brightness-0 invert" />
                     </div>
 
                     <div className="relative z-10 max-w-3xl space-y-3">
@@ -348,7 +360,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                         <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Mata Kuliah</th>
                                         <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Dosen</th>
                                         <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Status</th>
-                                        <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Verifikator</th>
+
                                         <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Update Terakhir</th>
                                         <th className="text-right px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Aksi</th>
                                     </tr>
@@ -360,7 +372,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                             <td className="px-4 py-3 text-xs text-gray-700">{soal.mata_kuliah}</td>
                                             <td className="px-4 py-3 text-xs text-gray-600">{soal.dosen}</td>
                                             <td className="px-4 py-3"><StatusBadge status={soal.status} /></td>
-                                            <td className="px-4 py-3 text-xs text-gray-600">{soal.verifikator || '-'}</td>
+
                                             <td className="px-4 py-3 text-xs text-gray-400">{relativeTime(soal.updated_at)}</td>
                                             <td className="px-4 py-3 text-right">
                                                 <Link href={`/koordinator/mata-kuliah/${soal.mata_kuliah_id}`}
@@ -468,48 +480,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                     )}
                 </div>
 
-                {/* Verifikator */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                    <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-[#801720]" /> Verifikator
-                    </h2>
-                    {verifikators.length === 0 ? (
-                        <p className="text-sm text-gray-400 text-center py-8">Belum ada verifikator yang ditugaskan untuk mata kuliah Anda.</p>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="bg-gray-50 border-b border-gray-100">
-                                    <tr>
-                                        <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Nama</th>
-                                        <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Kode Dosen</th>
-                                        <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Mata Kuliah</th>
-                                        <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Jumlah Soal</th>
-                                        <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Pending</th>
-                                        <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Approved</th>
-                                        <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {verifikators.map(v => (
-                                        <tr key={v.id} className="hover:bg-gray-50/50">
-                                            <td className="px-4 py-3 text-xs font-semibold text-gray-800">{v.nama}</td>
-                                            <td className="px-4 py-3 text-xs text-gray-500 font-mono">{v.kode_dosen}</td>
-                                            <td className="px-4 py-3 text-xs text-gray-700">{v.mata_kuliah}</td>
-                                            <td className="px-4 py-3 text-xs text-gray-600">{v.total_soal}</td>
-                                            <td className="px-4 py-3 text-xs text-blue-600 font-semibold">{v.pending}</td>
-                                            <td className="px-4 py-3 text-xs text-emerald-600 font-semibold">{v.approved}</td>
-                                            <td className="px-4 py-3">
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {v.status === 'ACTIVE' ? 'Aktif' : v.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
+
             </div>
         </AuthenticatedLayout>
     );

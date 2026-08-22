@@ -9,12 +9,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Drop legacy single-coordinator unique constraint if exists in PostgreSQL
-        DB::statement("ALTER TABLE penugasan_koordinator DROP CONSTRAINT IF EXISTS penugasan_koordinator_mata_kuliah_id_periode_id_status_unique;");
+        if (DB::getDriverName() === 'pgsql') {
+            // 1. Drop legacy single-coordinator unique constraint if exists in PostgreSQL
+            DB::statement("ALTER TABLE penugasan_koordinator DROP CONSTRAINT IF EXISTS penugasan_koordinator_mata_kuliah_id_periode_id_status_unique;");
 
-        // 2. Drop the 4-column constraint if it already exists to be idempotent
-        DB::statement("ALTER TABLE penugasan_koordinator DROP CONSTRAINT IF EXISTS penugasan_koor_dosen_mk_periode_status_unique;");
-        DB::statement("ALTER TABLE penugasan_koordinator DROP CONSTRAINT IF EXISTS penugasan_koordinator_dosen_id_mata_kuliah_id_periode_id_status_unique;");
+            // 2. Drop the 4-column constraint if it already exists to be idempotent
+            DB::statement("ALTER TABLE penugasan_koordinator DROP CONSTRAINT IF EXISTS penugasan_koor_dosen_mk_periode_status_unique;");
+            DB::statement("ALTER TABLE penugasan_koordinator DROP CONSTRAINT IF EXISTS penugasan_koordinator_dosen_id_mata_kuliah_id_periode_id_status_unique;");
+        }
 
         // 3. Add unique constraint per dosen, MK, periode, and status
         Schema::table('penugasan_koordinator', function (Blueprint $table) {

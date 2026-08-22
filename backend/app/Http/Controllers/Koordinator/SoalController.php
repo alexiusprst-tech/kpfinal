@@ -30,8 +30,16 @@ class SoalController extends Controller
         $query = Soal::with(['mataKuliah', 'periode', 'kategori', 'latestVerifikasi'])
             ->whereIn('mata_kuliah_id', $assignments->pluck('mata_kuliah_id'));
 
-        if ($request->status) $query->where('status', $request->status);
-        if ($request->mk_id)  $query->where('mata_kuliah_id', $request->mk_id);
+        if ($request->filled('status')) {
+            if ($request->status === 'IN_REVIEW') {
+                $query->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED', 'DRAFT']);
+            } else {
+                $query->where('status', $request->status);
+            }
+        }
+        if ($request->filled('mk_id')) {
+            $query->where('mata_kuliah_id', $request->mk_id);
+        }
 
         $soalList   = $query->orderBy('updated_at', 'desc')->paginate(10)->withQueryString();
         $kategoriAll = KategoriSoal::where('status', 'ACTIVE')->get();

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import axios from 'axios';
@@ -83,8 +83,14 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
             setExportError('');
             axios.get(`/koordinator/soal-generator/course-data?mata_kuliah_id=${data.mata_kuliah_id}`)
                 .then(res => {
-                    setGeneratorData(res.data);
-                    setOriginalPloList(res.data.plo || []);
+                    const allPlos = res.data.plo || [];
+                    setOriginalPloList(allPlos);
+                    // Display only 1 PLO initially, rest can be added by dosen as requested
+                    const initialPlos = allPlos.length > 0 ? [JSON.parse(JSON.stringify(allPlos[0]))] : [];
+                    setGeneratorData({
+                        ...res.data,
+                        plo: initialPlos
+                    });
                 })
                 .catch(err => {
                     console.error(err);
@@ -299,20 +305,27 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
         });
     };
 
-    const calculateTotalWeight = () => {
-        if (!generatorData) return 0;
-        let total = 0;
-        generatorData.plo.forEach(p => {
-            p.clo.forEach(c => {
-                const val = parseInt(c.bobot_lo) || 0;
-                total += val;
-            });
-        });
-        return total;
+    const getPloWeight = (ploItem) => {
+        if (!ploItem || !ploItem.clo) return 0;
+        return ploItem.clo.reduce((acc, c) => acc + (parseInt(c.bobot_lo) || 0), 0);
     };
 
-    const totalWeight = calculateTotalWeight();
-    const isWeightValid = totalWeight === 100;
+    const plosWeightInfo = useMemo(() => {
+        if (!generatorData?.plo || generatorData.plo.length === 0) return [];
+        return generatorData.plo.map(p => {
+            const weight = getPloWeight(p);
+            return {
+                kode: p.kode,
+                weight,
+                isValid: weight === 100,
+            };
+        });
+    }, [generatorData?.plo]);
+
+    const isWeightValid = useMemo(() => {
+        if (!plosWeightInfo || plosWeightInfo.length === 0) return false;
+        return plosWeightInfo.every(p => p.isValid);
+    }, [plosWeightInfo]);
 
     const handleExport = (type) => {
         if (!generatorData) return;
@@ -389,7 +402,12 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                             ) : (
                                 <AlertTriangle className="w-4 h-4 text-amber-600" />
                             )}
-                            Total Bobot LO: {totalWeight}%
+                            <span>
+                                {isWeightValid
+                                    ? 'Bobot per PLO: 100% (Valid)'
+                                    : `Bobot per PLO: ${plosWeightInfo.filter(p => p.isValid).length}/${plosWeightInfo.length} Valid (Harus 100% per PLO)`
+                                }
+                            </span>
                         </div>
                     )}
                 </div>
@@ -425,7 +443,12 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                     <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden max-w-xl mx-auto">
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-                            <h2 className="text-base font-extrabold text-slate-800">Upload Soal Baru</h2>
+                            <div>
+                                <h2 className="text-base font-extrabold text-slate-800">Upload Soal Baru</h2>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                    Pastikan berkas soal yang diunggah telah sesuai dengan format template lembar soal yang dibuat.
+                                </p>
+                            </div>
                             <Link
                                 href={selectedMk ? `/koordinator/mata-kuliah/${selectedMk.id}` : '/koordinator/dashboard'}
                                 className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
@@ -436,6 +459,17 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
 
                         {/* Form Body */}
                         <form onSubmit={handleSubmitUpload} className="p-6 space-y-4">
+                            
+                            {/* Info Banner Template Reminder */}
+                            <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-3.5 flex items-start gap-3 text-xs">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <div className="space-y-0.5">
+                                    <p className="font-bold text-amber-900">Petunjuk Format Berkas</p>
+                                    <p className="text-amber-700/90 text-[11px] leading-relaxed">
+                                        Pastikan lembar soal ujian telah mengikuti format template baku yang digenerate dari tab <strong>Generator Lembar Soal</strong> agar proses verifikasi berjalan lancar.
+                                    </p>
+                                </div>
+                            </div>
                             
                             {/* Mata Kuliah Field */}
                             <div>
@@ -804,7 +838,23 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                                                 </select>
                                                             </div>
                                                             <div className="flex-1">
-                                                                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Deskripsi PLO</label>
+                                                                <div className="flex items-center justify-between mb-1">
+                                                                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Deskripsi PLO</label>
+                                                                    {(() => {
+                                                                        const ploWeight = getPloWeight(ploItem);
+                                                                        const isPloValid = ploWeight === 100;
+                                                                        return (
+                                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black border ${
+                                                                                isPloValid
+                                                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                                                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                                                                            }`}>
+                                                                                {isPloValid ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <AlertTriangle className="w-3 h-3 text-amber-600" />}
+                                                                                Bobot {ploItem.kode}: {ploWeight}% / 100%
+                                                                            </span>
+                                                                        );
+                                                                    })()}
+                                                                </div>
                                                                 <div className="w-full bg-slate-50 text-slate-700 p-2.5 rounded-xl border border-slate-100 text-xs font-semibold leading-relaxed whitespace-pre-wrap">
                                                                     {ploItem.deskripsi || <span className="text-gray-400 italic">Tidak ada deskripsi PLO</span>}
                                                                 </div>
@@ -904,27 +954,23 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cetak Dokumen Lembar Soal</h3>
                                             <p className={`text-[10px] font-semibold ${isWeightValid ? 'text-gray-400' : 'text-amber-600'}`}>
                                                 {isWeightValid 
-                                                    ? 'Bobot LO valid (100%). Dokumen siap dicetak.' 
-                                                    : `Pastikan total bobot LO adalah 100% (Saat ini: ${totalWeight}%).`
+                                                    ? 'Bobot LO per PLO valid (masing-masing 100%). Dokumen siap dicetak.' 
+                                                    : (() => {
+                                                        const invalidPlos = plosWeightInfo.filter(p => !p.isValid);
+                                                        const infoStr = invalidPlos.map(p => `${p.kode}: ${p.weight}%`).join(', ');
+                                                        return `Pastikan total bobot LO per PLO adalah 100%. (Perlu penyesuaian: ${infoStr})`;
+                                                    })()
                                                 }
                                             </p>
                                         </div>
                                         <div className="flex gap-2">
                                             <button
-                                                onClick={() => handleExport('docx')}
-                                                disabled={isExporting || !isWeightValid}
-                                                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 select-none cursor-pointer disabled:cursor-not-allowed"
-                                                title={!isWeightValid ? "Total bobot LO harus 100% untuk mengaktifkan ekspor" : ""}
-                                            >
-                                                <Download className="w-3.5 h-3.5" /> {isExporting ? 'Proses...' : 'Ekspor DOCX'}
-                                            </button>
-                                            <button
                                                 onClick={() => handleExport('pdf')}
                                                 disabled={isExporting || !isWeightValid}
-                                                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 select-none cursor-pointer disabled:cursor-not-allowed"
-                                                title={!isWeightValid ? "Total bobot LO harus 100% untuk mengaktifkan ekspor" : ""}
+                                                className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 select-none cursor-pointer disabled:cursor-not-allowed"
+                                                title={!isWeightValid ? "Total bobot LO setiap PLO harus 100% untuk mengaktifkan ekspor" : ""}
                                             >
-                                                <FileText className="w-3.5 h-3.5" /> {isExporting ? 'Proses...' : 'Ekspor PDF'}
+                                                <FileText className="w-3.5 h-3.5" /> {isExporting ? 'Proses Ekspor...' : 'Ekspor PDF'}
                                             </button>
                                         </div>
                                     </div>

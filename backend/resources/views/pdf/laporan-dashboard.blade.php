@@ -185,7 +185,7 @@
             <td>
                 <div class="title-main">UNIVERSITAS TELKOM</div>
                 <div class="title-sub">Sistem Manajemen & Verifikasi Soal Ujian Akademik</div>
-                <div class="title-sub">Jl. Telekomunikasi No. 1, Terusan Buahbatu, Bandung</div>
+                <div class="title-sub">Jl. Minangkabau Barat No.50, RT.1/RW.1, Ps. Manggis, Kecamatan Setiabudi, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta</div>
             </td>
             <td class="meta-cell">
                 <div><strong>Laporan Sistem</strong></div>
@@ -330,7 +330,7 @@
     <tr>
         <td style="width: 60%;"></td>
         <td style="width: 40%; text-align: center;">
-            <div>Bandung, {{ $tanggalCetak }}</div>
+            <div>Jakarta, {{ $tanggalCetak }}</div>
             <div style="font-weight: bold; margin-top: 2px;">Administrator Sistem</div>
             <div class="sign-space"></div>
             <div style="font-weight: bold; text-decoration: underline;">Super Admin Akademik</div>
