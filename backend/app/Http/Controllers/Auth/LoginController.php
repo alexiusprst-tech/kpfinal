@@ -45,7 +45,13 @@ class LoginController extends Controller
             if (!$dosen->user_id || !\App\Models\User::where('id', $dosen->user_id)->exists()) {
                 $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
                 $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
-                $initialRole = ($hasActiveVerif && !$hasActiveKoor) ? 'VERIFIKATOR' : 'KOORDINATOR';
+                
+                $initialRole = null;
+                if ($hasActiveKoor) {
+                    $initialRole = 'KOORDINATOR';
+                } elseif ($hasActiveVerif) {
+                    $initialRole = 'VERIFIKATOR';
+                }
 
                 $user = \App\Models\User::firstOrCreate(
                     ['email' => $emailToAuth],
@@ -123,15 +129,21 @@ class LoginController extends Controller
             ->where('status', 'ACTIVE')
             ->exists();
 
-        if ($activeVerif && !$activeKoor) {
+        if ($activeKoor) {
+            if ($user->role !== 'KOORDINATOR') {
+                $user->update(['role' => 'KOORDINATOR']);
+                $user->role = 'KOORDINATOR';
+            }
+        } elseif ($activeVerif) {
             if ($user->role !== 'VERIFIKATOR') {
                 $user->update(['role' => 'VERIFIKATOR']);
                 $user->role = 'VERIFIKATOR';
             }
-        } elseif ($activeKoor) {
-            if ($user->role !== 'KOORDINATOR') {
-                $user->update(['role' => 'KOORDINATOR']);
-                $user->role = 'KOORDINATOR';
+        } else {
+            // Dosen tidak memiliki penugasan aktif apapun -> role null
+            if ($user->role !== null) {
+                $user->update(['role' => null]);
+                $user->role = null;
             }
         }
     }
@@ -141,15 +153,41 @@ class LoginController extends Controller
      */
     protected function redirectByRole($user)
     {
-        switch ($user->role) {
-            case 'SUPER_ADMIN':
-                return redirect()->route('superadmin.dashboard');
-            case 'VERIFIKATOR':
-                return redirect()->route('verifikator.dashboard');
-            case 'KOORDINATOR':
-            case 'DOSEN':
-            default:
-                return redirect()->route('koordinator.dashboard');
+        if ($user->role === 'SUPER_ADMIN') {
+            return redirect()->route('superadmin.dashboard');
         }
+
+        $dosen = $user->dosen;
+        if ($dosen) {
+            $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+            $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+
+            if ($hasActiveKoor) {
+                return redirect()->route('koordinator.dashboard');
+            } elseif ($hasActiveVerif) {
+                return redirect()->route('verifikator.dashboard');
+            } else {
+                // Dosen belum mendapatkan penugasan apapun
+                Auth::logout();
+                request()->session()->invalidate();
+                request()->session()->regenerateToken();
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Akun Anda (' . $dosen->nama_lengkap . ') saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin.',
+                ]);
+            }
+        }
+
+        if ($user->role === 'VERIFIKATOR') {
+            return redirect()->route('verifikator.dashboard');
+        } elseif ($user->role === 'KOORDINATOR') {
+            return redirect()->route('koordinator.dashboard');
+        }
+
+        Auth::logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect()->route('login')->withErrors([
+            'email' => 'Akun Anda belum memiliki role atau penugasan aktif. Silakan hubungi Super Admin.',
+        ]);
     }
 }

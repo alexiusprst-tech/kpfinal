@@ -600,6 +600,7 @@ class KelompokVerifikasiController extends Controller
             // End active assignments for this group
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
+            $this->syncAffectedDosenRoles();
 
             AuditLog::record(
                 $request->user()->id,
@@ -623,6 +624,7 @@ class KelompokVerifikasiController extends Controller
             // End active assignments for this group
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
+            $this->syncAffectedDosenRoles();
 
             AuditLog::record(
                 $request->user()->id,
@@ -649,6 +651,7 @@ class KelompokVerifikasiController extends Controller
             // End any assignments
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
+            $this->syncAffectedDosenRoles();
 
             $kelompokVerifikasi->delete();
 
@@ -696,10 +699,6 @@ class KelompokVerifikasiController extends Controller
                     'kelompok_id'    => $kelompok->id,
                     'status'         => 'ACTIVE',
                 ]);
-
-                if ($kmk->koordinator && $kmk->koordinator->user && $kmk->koordinator->user->role !== 'SUPER_ADMIN') {
-                    $kmk->koordinator->user->update(['role' => 'KOORDINATOR']);
-                }
             }
         } else {
             foreach ($koordinators as $k) {
@@ -718,10 +717,6 @@ class KelompokVerifikasiController extends Controller
                     'kelompok_id'    => $kelompok->id,
                     'status'         => 'ACTIVE',
                 ]);
-
-                if ($k->dosen && $k->dosen->user && $k->dosen->user->role !== 'SUPER_ADMIN') {
-                    $k->dosen->user->update(['role' => 'KOORDINATOR']);
-                }
 
                 if ($k->dosen && $k->dosen->user_id) {
                     Notification::create([
@@ -755,17 +750,6 @@ class KelompokVerifikasiController extends Controller
                 'status'         => 'ACTIVE',
             ]);
 
-            if ($kv->dosen && $kv->dosen->user && $kv->dosen->user->role !== 'SUPER_ADMIN') {
-                $hasActiveKoor = PenugasanKoordinator::where('dosen_id', $kv->dosen_id)
-                    ->where('periode_id', $periodeId)
-                    ->where('status', 'ACTIVE')
-                    ->exists();
-
-                if (!$hasActiveKoor) {
-                    $kv->dosen->user->update(['role' => 'VERIFIKATOR']);
-                }
-            }
-
             if ($kv->dosen && $kv->dosen->user_id) {
                 Notification::create([
                     'id'      => (string) Str::uuid(),
@@ -773,6 +757,39 @@ class KelompokVerifikasiController extends Controller
                     'title'   => 'Penugasan Verifikator Kelompok',
                     'message' => "Anda ditugaskan sebagai Verifikator MK " . ($kv->mataKuliah->nama_mk ?? 'Kelompok') . " dalam {$kelompok->nama}.",
                 ]);
+            }
+        }
+
+        // Synchronize all dosen user roles
+        $this->syncAffectedDosenRoles();
+    }
+
+    /**
+     * Recalculate and synchronize roles for all dosen based on active assignments
+     */
+    protected function syncAffectedDosenRoles(): void
+    {
+        $dosens = Dosen::with('user')->get();
+        foreach ($dosens as $dosen) {
+            if (!$dosen->user || $dosen->user->role === 'SUPER_ADMIN') {
+                continue;
+            }
+
+            $hasActiveKoor = PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+            $hasActiveVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+
+            if ($hasActiveKoor) {
+                if ($dosen->user->role !== 'KOORDINATOR') {
+                    $dosen->user->update(['role' => 'KOORDINATOR']);
+                }
+            } elseif ($hasActiveVerif) {
+                if ($dosen->user->role !== 'VERIFIKATOR') {
+                    $dosen->user->update(['role' => 'VERIFIKATOR']);
+                }
+            } else {
+                if ($dosen->user->role !== null) {
+                    $dosen->user->update(['role' => null]);
+                }
             }
         }
     }

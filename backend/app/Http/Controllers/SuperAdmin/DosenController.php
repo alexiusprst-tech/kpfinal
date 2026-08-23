@@ -70,7 +70,6 @@ class DosenController extends Controller
             'email'          => ['nullable', 'email', 'max:150'],
             'kategori_dosen' => ['nullable', 'string', 'max:50'],
             'create_user'    => ['boolean'],
-            'role'           => ['nullable', 'in:KOORDINATOR,VERIFIKATOR'],
         ]);
 
         $userId = null;
@@ -82,7 +81,7 @@ class DosenController extends Controller
                 'name'     => $validated['nama_lengkap'],
                 'email'    => $validated['email'],
                 'password' => Hash::make('password'),
-                'role'     => $request->role ?? 'KOORDINATOR',
+                'role'     => null, // Belum ada penugasan, role null
                 'status'   => 'ACTIVE',
             ]);
         }
@@ -215,7 +214,7 @@ class DosenController extends Controller
                 } elseif ($remainingVerif > 0) {
                     $dosen->user->update(['role' => 'VERIFIKATOR']);
                 } else {
-                    $dosen->user->update(['role' => 'DOSEN']);
+                    $dosen->user->update(['role' => null]);
                 }
             }
 

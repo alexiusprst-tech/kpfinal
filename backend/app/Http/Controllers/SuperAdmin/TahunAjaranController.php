@@ -27,7 +27,8 @@ class TahunAjaranController extends Controller
 
     private function buildIndexProps(Request $request): array
     {
-        $query = TahunAjaran::withCount('periodeVerifikasi');
+        $query = TahunAjaran::with(['periodeVerifikasi' => fn ($q) => $q->orderByDesc('tanggal_mulai')])
+            ->withCount('periodeVerifikasi');
 
         if ($search = $request->string('search')->trim()->value()) {
             $query->where('nama', 'ilike', "%{$search}%");

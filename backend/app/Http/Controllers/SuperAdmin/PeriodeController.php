@@ -30,7 +30,10 @@ class PeriodeController extends Controller
 
     private function buildIndexProps(Request $request): array
     {
-        $query = PeriodeVerifikasi::with('tahunAjaran');
+        $query = PeriodeVerifikasi::with('tahunAjaran')
+            ->withCount(['penugasanKoordinator as koordinator_count' => fn($q) => $q->where('status', 'ACTIVE')])
+            ->withCount(['penugasanVerifikator as verifikator_count' => fn($q) => $q->where('status', 'ACTIVE')])
+            ->withCount('soal as soal_count');
 
         if ($search = $request->string('search')->trim()->value()) {
             $query->where('nama', 'ilike', "%{$search}%");

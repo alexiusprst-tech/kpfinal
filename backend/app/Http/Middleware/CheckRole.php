@@ -36,10 +36,6 @@ class CheckRole
             return $next($request);
         }
 
-        if (in_array($user->role, $roles)) {
-            return $next($request);
-        }
-
         $dosen = $user->dosen;
         if ($dosen) {
             $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
@@ -52,6 +48,13 @@ class CheckRole
             if (in_array('KOORDINATOR', $roles) && $hasActiveKoor) {
                 return $next($request);
             }
+
+            // Dosen does not have active assignment for this role
+            abort(403, 'Anda belum memiliki penugasan aktif untuk mengakses halaman ini.');
+        }
+
+        if ($user->role && in_array($user->role, $roles)) {
+            return $next($request);
         }
 
         abort(403, 'Anda tidak memiliki akses ke halaman ini.');

@@ -3,7 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     Plus, Pencil, Trash2, AlertTriangle, X, Clock, CheckCircle2, Play, Lock,
-    Calendar, Search, Eye, MoreVertical, ChevronLeft, ChevronRight, ArrowLeft,
+    Calendar, Search, Eye, ChevronLeft, ChevronRight,
     Users, FileCheck, BookOpen, ListChecks, History, CalendarClock, Flag,
     CheckCircle, Square,
 } from 'lucide-react';
@@ -15,16 +15,15 @@ function Toast({ flash }) {
     return <FlashAlert type="toast" flash={flash} />;
 }
 
-
-function Modal({ open, onClose, title, children }) {
+function Modal({ open, onClose, title, children, maxWidth = 'max-w-lg' }) {
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${maxWidth} max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200`}>
                 <div className="flex items-center justify-between p-5 border-b border-gray-100">
                     <h2 className="text-base font-bold text-gray-800">{title}</h2>
-                    <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"><X className="w-4 h-4" /></button>
+                    <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="p-5">{children}</div>
             </div>
@@ -135,19 +134,25 @@ const relativeTime = (dateStr) => {
 const DETAIL_TABS = [
     { key: 'timeline',   label: 'Timeline',           icon: ListChecks },
     { key: 'penugasan',  label: 'Penugasan',          icon: Users },
-    { key: 'statistik',  label: 'Statistik',          icon: FileCheck },
-    { key: 'riwayat',    label: 'Riwayat',            icon: History },
+    { key: 'statistik',  label: 'Statistik Soal',     icon: FileCheck },
+    { key: 'riwayat',    label: 'Riwayat Perubahan',  icon: History },
 ];
 
 export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranActive, filters, selectedPeriode }) {
     const { flash } = usePage().props;
     const [showAdd, setShowAdd] = useState(false);
+    const [viewItem, setViewItem] = useState(selectedPeriode || null);
     const [editItem, setEditItem] = useState(null);
     const [deleteItem, setDeleteItem] = useState(null);
     const [processing, setProcessing] = useState(false);
-    const [openMenuId, setOpenMenuId] = useState(null);
     const [detailTab, setDetailTab] = useState('timeline');
     const [search, setSearch] = useState(filters?.search || '');
+
+    useEffect(() => {
+        if (selectedPeriode) {
+            setViewItem(selectedPeriode);
+        }
+    }, [selectedPeriode]);
 
     // Real-time reactive search with 300ms debounce
     useEffect(() => {
@@ -182,12 +187,22 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
 
     const handleEdit = (e) => {
         e.preventDefault(); setProcessing(true);
-        router.put(`/superadmin/periode/${editItem.id}`, form, { onFinish: () => { setProcessing(false); setEditItem(null); } });
+        router.put(`/superadmin/periode/${editItem.id}`, form, {
+            onFinish: () => {
+                setProcessing(false);
+                setEditItem(null);
+                if (viewItem && viewItem.periode?.id === editItem.id) {
+                    setViewItem(prev => ({
+                        ...prev,
+                        periode: { ...prev.periode, ...form }
+                    }));
+                }
+            }
+        });
     };
 
     const handleDelete = async (item = deleteItem) => {
         if (!item) return;
-        setOpenMenuId(null);
         const result = await showConfirm({
             title: 'Hapus Periode Verifikasi?',
             text: `Apakah Anda yakin ingin menghapus periode "${item?.nama}"? Tindakan ini bersifat permanen.`,
@@ -197,13 +212,17 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
         });
         if (result.isConfirmed) {
             router.delete(`/superadmin/periode/${item.id}`, {
-                onFinish: () => { setDeleteItem(null); },
+                onFinish: () => {
+                    setDeleteItem(null);
+                    if (viewItem && viewItem.periode?.id === item.id) {
+                        setViewItem(null);
+                    }
+                },
             });
         }
     };
 
     const activate = async (item) => {
-        setOpenMenuId(null);
         const result = await showConfirm({
             title: 'Aktifkan Periode Verifikasi?',
             text: `Aktifkan periode "${item.nama}"? Periode aktif lain pada tahun ajaran ini akan dinonaktifkan secara otomatis.`,
@@ -212,12 +231,21 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
             confirmButtonColor: '#059669',
         });
         if (result.isConfirmed) {
-            router.post(`/superadmin/periode/${item.id}/activate`, {}, { preserveScroll: true });
+            router.post(`/superadmin/periode/${item.id}/activate`, {}, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    if (viewItem && viewItem.periode?.id === item.id) {
+                        setViewItem(prev => ({
+                            ...prev,
+                            periode: { ...prev.periode, status: 'ACTIVE' }
+                        }));
+                    }
+                }
+            });
         }
     };
 
     const close = async (item) => {
-        setOpenMenuId(null);
         const result = await showConfirm({
             title: 'Tutup / Nonaktifkan Periode?',
             text: `Nonaktifkan periode "${item.nama}"? Verifikasi soal untuk periode ini tidak akan dapat diubah lagi.`,
@@ -226,10 +254,19 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
             confirmButtonColor: '#801720',
         });
         if (result.isConfirmed) {
-            router.post(`/superadmin/periode/${item.id}/close`, {}, { preserveScroll: true });
+            router.post(`/superadmin/periode/${item.id}/close`, {}, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    if (viewItem && viewItem.periode?.id === item.id) {
+                        setViewItem(prev => ({
+                            ...prev,
+                            periode: { ...prev.periode, status: 'CLOSED' }
+                        }));
+                    }
+                }
+            });
         }
     };
-
 
     const openEdit = (item) => {
         setForm({
@@ -242,10 +279,49 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
             catatan: item.catatan || '',
         });
         setEditItem(item);
-        setOpenMenuId(null);
     };
 
-
+    const openDetail = (item) => {
+        if (selectedPeriode?.periode?.id === item.id) {
+            setViewItem(selectedPeriode);
+        } else {
+            router.get(`/superadmin/periode/${item.id}`, {}, {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['selectedPeriode'],
+                onSuccess: (page) => {
+                    if (page.props.selectedPeriode) {
+                        setViewItem(page.props.selectedPeriode);
+                    }
+                }
+            });
+            // Initial responsive fallback object while async loads
+            setViewItem({
+                periode: item,
+                dibuat_oleh: '-',
+                timeline: {
+                    mulai_lewat: new Date() >= new Date(item.tanggal_mulai),
+                    deadline_lewat: item.deadline_upload ? new Date() >= new Date(item.deadline_upload) : false,
+                    selesai_lewat: new Date() >= new Date(item.tanggal_selesai),
+                },
+                penugasan: {
+                    koordinator: item.koordinator_count ?? 0,
+                    verifikator: item.verifikator_count ?? 0,
+                    mata_kuliah: 0,
+                },
+                statistik: {
+                    total: item.soal_count ?? 0,
+                    draft: 0,
+                    pending: 0,
+                    revisi: 0,
+                    approved: 0,
+                    rejected: 0,
+                    progress: 0,
+                },
+                riwayat: [],
+            });
+        }
+    };
 
     return (
         <AuthenticatedLayout title="Periode Verifikasi">
@@ -253,348 +329,382 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
             <Toast flash={flash} />
 
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
-                        <Clock className="w-6 h-6 text-[#801720]" /> Periode Verifikasi
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Kelola periode verifikasi soal pada setiap tahun ajaran.</p>
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
+                            <Clock className="w-6 h-6 text-[#801720]" /> Periode Verifikasi
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-0.5">Kelola periode verifikasi soal pada setiap tahun ajaran akademik.</p>
+                    </div>
+                    <button
+                        onClick={() => setShowAdd(true)}
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] transition-all shadow-sm cursor-pointer"
+                    >
+                        <Plus className="w-3.5 h-3.5" /> Tambah Periode
+                    </button>
                 </div>
 
-                <div className="grid lg:grid-cols-[1fr_380px] gap-6 items-start">
-                    {/* LEFT: List */}
-                    <div className="space-y-5 min-w-0">
-                        {/* Stats */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            <StatCard icon={Calendar} iconBg="bg-red-50" iconColor="text-[#801720]" value={stats.total} label="Total Periode" sublabel="Semua periode" />
-                            <StatCard icon={CheckCircle2} iconBg="bg-emerald-50" iconColor="text-emerald-600" value={stats.aktif} label="Periode Aktif" sublabel="Sedang berjalan" />
-                            <StatCard icon={Clock} iconBg="bg-orange-50" iconColor="text-orange-500" value={stats.akan_datang} label="Akan Datang" sublabel="Belum dimulai" />
-                            <StatCard icon={Square} iconBg="bg-blue-50" iconColor="text-blue-500" value={stats.selesai} label="Selesai" sublabel="Telah berakhir" />
-                        </div>
+                {/* 4 Stat Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <StatCard icon={Calendar} iconBg="bg-red-50" iconColor="text-[#801720]" value={stats.total} label="Total Periode" sublabel="Semua periode" />
+                    <StatCard icon={CheckCircle2} iconBg="bg-emerald-50" iconColor="text-emerald-600" value={stats.aktif} label="Periode Aktif" sublabel="Sedang berjalan" />
+                    <StatCard icon={Clock} iconBg="bg-orange-50" iconColor="text-orange-500" value={stats.akan_datang} label="Akan Datang" sublabel="Belum dimulai" />
+                    <StatCard icon={Square} iconBg="bg-blue-50" iconColor="text-blue-500" value={stats.selesai} label="Selesai" sublabel="Telah berakhir" />
+                </div>
 
-                        {/* Filters */}
-                        <div className="flex flex-wrap gap-2">
-                            <form onSubmit={e => e.preventDefault()} className="relative flex-1 min-w-[180px]">
-                                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input
-                                    value={search}
-                                    onChange={e => setSearch(e.target.value)}
-                                    placeholder="Cari periode..."
-                                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 bg-white"
-                                />
-                            </form>
-                            <select value={filters?.tahun_ajaran_id || ''} onChange={e => applyFilters({ tahun_ajaran_id: e.target.value })}
-                                className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20">
-                                <option value="">Semua Tahun Ajaran</option>
-                                {tahunAjaranAll.map(ta => <option key={ta.id} value={ta.id}>{ta.nama}</option>)}
-                            </select>
-                            <select value={filters?.status || ''} onChange={e => applyFilters({ status: e.target.value })}
-                                className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20">
-                                <option value="">Semua Status</option>
-                                <option value="DRAFT">Akan Datang</option>
-                                <option value="ACTIVE">Aktif</option>
-                                <option value="CLOSED">Selesai</option>
-                                <option value="INACTIVE">Nonaktif</option>
-                            </select>
-                            <select value={filters?.sort || 'terbaru'} onChange={e => applyFilters({ sort: e.target.value })}
-                                className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20">
-                                <option value="terbaru">Urutkan: Terbaru</option>
-                                <option value="terlama">Urutkan: Terlama</option>
-                                <option value="nama">Urutkan: Nama</option>
-                            </select>
-                        </div>
+                {/* Filters */}
+                <div className="flex flex-wrap gap-2">
+                    <form onSubmit={e => e.preventDefault()} className="relative flex-1 min-w-[200px]">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Cari periode..."
+                            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 bg-white"
+                        />
+                    </form>
+                    <select
+                        value={filters?.tahun_ajaran_id || ''}
+                        onChange={e => applyFilters({ tahun_ajaran_id: e.target.value })}
+                        className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                    >
+                        <option value="">Semua Tahun Ajaran</option>
+                        {tahunAjaranAll.map(ta => <option key={ta.id} value={ta.id}>{ta.nama}</option>)}
+                    </select>
+                    <select
+                        value={filters?.status || ''}
+                        onChange={e => applyFilters({ status: e.target.value })}
+                        className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                    >
+                        <option value="">Semua Status</option>
+                        <option value="DRAFT">Akan Datang</option>
+                        <option value="ACTIVE">Aktif</option>
+                        <option value="CLOSED">Selesai</option>
+                        <option value="INACTIVE">Nonaktif</option>
+                    </select>
+                    <select
+                        value={filters?.sort || 'terbaru'}
+                        onChange={e => applyFilters({ sort: e.target.value })}
+                        className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                    >
+                        <option value="terbaru">Urutkan: Terbaru</option>
+                        <option value="terlama">Urutkan: Terlama</option>
+                        <option value="nama">Urutkan: Nama</option>
+                    </select>
+                </div>
 
-                        {/* Table */}
-                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 border-b border-gray-100">
-                                        <tr>
-                                            <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">No</th>
-                                            <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Periode</th>
-                                            <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Tahun Ajaran</th>
-                                            <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Jenis</th>
-                                            <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Status</th>
-                                            <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Tanggal Mulai</th>
-                                            <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Tanggal Selesai</th>
-                                            <th className="text-right px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-50">
-                                        {list.data?.length === 0 && (
-                                            <tr><td colSpan={8} className="text-center py-14 text-gray-400 text-sm">Belum ada periode verifikasi yang cocok.</td></tr>
-                                        )}
-                                        {list.data?.map((item, idx) => (
-                                            <tr key={item.id}
-                                                className={`hover:bg-gray-50/50 cursor-pointer transition-colors ${selectedPeriode?.periode?.id === item.id ? 'bg-red-50/40' : ''}`}
-                                                onClick={() => router.get(`/superadmin/periode/${item.id}`, {}, { preserveScroll: true })}
-                                            >
-                                                <td className="px-4 py-3.5 text-xs text-gray-500">{(list.current_page - 1) * list.per_page + idx + 1}</td>
-                                                <td className="px-4 py-3.5 font-semibold text-gray-800 text-xs">{item.nama}</td>
-                                                <td className="px-4 py-3.5 text-xs text-gray-600">{item.tahun_ajaran?.nama}</td>
-                                                <td className="px-4 py-3.5 text-xs text-gray-600">{item.jenis_periode}</td>
-                                                <td className="px-4 py-3.5"><StatusBadge status={item.status} /></td>
-                                                <td className="px-4 py-3.5 text-xs text-gray-500">{formatDate(item.tanggal_mulai)}</td>
-                                                <td className="px-4 py-3.5 text-xs text-gray-500">{formatDate(item.tanggal_selesai)}</td>
-                                                <td className="px-4 py-3.5" onClick={e => e.stopPropagation()}>
-                                                    <div className="flex items-center justify-end gap-1 relative">
-                                                        <Link href={`/superadmin/periode/${item.id}`} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500">
-                                                            <Eye className="w-3.5 h-3.5" />
-                                                        </Link>
-                                                        <button onClick={() => setOpenMenuId(openMenuId === item.id ? null : item.id)}
-                                                            className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500">
-                                                            <MoreVertical className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        {openMenuId === item.id && (
-                                                            <>
-                                                                <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-                                                                <div className="absolute right-0 top-9 z-20 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 w-44">
-                                                                    {item.status === 'DRAFT' && (
-                                                                        <button onClick={() => activate(item)} className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-emerald-600 hover:bg-emerald-50">
-                                                                            <Play className="w-3.5 h-3.5" /> Aktifkan
-                                                                        </button>
-                                                                    )}
-                                                                    {item.status === 'ACTIVE' && (
-                                                                        <button onClick={() => close(item)} className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50">
-                                                                            <Lock className="w-3.5 h-3.5" /> Nonaktifkan
-                                                                        </button>
-                                                                    )}
-                                                                    {item.status !== 'ACTIVE' && (
-                                                                        <>
-                                                                             <button onClick={() => openEdit(item)} className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer">
-                                                                                 <Pencil className="w-3.5 h-3.5" /> Edit
-                                                                             </button>
-                                                                            <button onClick={() => handleDelete(item)} className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 cursor-pointer">
-                                                                                <Trash2 className="w-3.5 h-3.5" /> Hapus
-                                                                            </button>
-
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                            {list.data?.length > 0 && (
-                                <div className="px-4 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                                    <span>Menampilkan {list.from}–{list.to} dari {list.total} data</span>
-                                    <div className="flex gap-1">
-                                        {list.links?.map((link, i) => (
-                                            <button key={i} disabled={!link.url}
-                                                onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                                                className={`min-w-[28px] h-7 px-1.5 rounded-lg font-semibold flex items-center justify-center ${link.active ? 'bg-[#801720] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}>
-                                                {link.label.includes('Previous') ? <ChevronLeft className="w-3.5 h-3.5" /> : link.label.includes('Next') ? <ChevronRight className="w-3.5 h-3.5" /> : link.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* RIGHT: Detail Panel */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm sticky top-6">
-                        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-                            <h2 className="font-bold text-gray-800">Detail Periode</h2>
-                            <button onClick={() => setShowAdd(true)}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219]">
-                                <Plus className="w-3.5 h-3.5" /> Tambah Periode
-                            </button>
-                        </div>
-
-                        {!selectedPeriode ? (
-                            <div className="p-8 text-center">
-                                <Calendar className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                                <p className="text-sm text-gray-400">Pilih periode dari daftar untuk melihat detail lengkap.</p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="p-5 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <StatusBadge status={selectedPeriode.periode.status} />
-                                        <Link href="/superadmin/periode" className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></Link>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-11 h-11 rounded-xl bg-[#801720]/10 flex items-center justify-center flex-shrink-0">
-                                            <Calendar className="w-5 h-5 text-[#801720]" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="font-bold text-gray-800 leading-tight">{selectedPeriode.periode.nama}</p>
-                                            <p className="text-xs text-gray-400 mt-0.5">
-                                                Tahun Ajaran {selectedPeriode.periode.tahun_ajaran?.nama} · Periode {selectedPeriode.periode.jenis_periode}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2 text-xs pt-1">
-                                        {[
-                                            ['Tahun Ajaran', selectedPeriode.periode.tahun_ajaran?.nama],
-                                            ['Tanggal Mulai', formatDate(selectedPeriode.periode.tanggal_mulai)],
-                                            ['Tanggal Selesai', formatDate(selectedPeriode.periode.tanggal_selesai)],
-                                            ['Dibuat Pada', formatDateTime(selectedPeriode.periode.created_at)],
-                                            ['Dibuat Oleh', selectedPeriode.dibuat_oleh || '-'],
-                                            ['Terakhir Diubah', formatDateTime(selectedPeriode.periode.updated_at)],
-                                        ].map(([label, value]) => (
-                                            <div key={label} className="flex items-center justify-between py-1 border-b border-gray-50">
-                                                <span className="text-gray-400 font-semibold">{label}</span>
-                                                <span className="text-gray-700 font-bold text-right">{value}</span>
-                                            </div>
-                                        ))}
-                                        <div className="flex items-center justify-between py-1 border-b border-gray-50">
-                                            <span className="text-gray-400 font-semibold">Deadline Upload</span>
-                                            <span className="text-red-600 font-bold text-right">{formatDateTime(selectedPeriode.periode.deadline_upload)}</span>
-                                        </div>
-                                        {selectedPeriode.periode.catatan && (
-                                            <div className="pt-1">
-                                                <span className="text-gray-400 font-semibold block mb-1">Catatan</span>
-                                                <p className="text-gray-600 leading-relaxed">{selectedPeriode.periode.catatan}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Tabs */}
-                                <div className="border-t border-gray-100">
-                                    <div className="flex overflow-x-auto">
-                                        {DETAIL_TABS.map(t => {
-                                            const Icon = t.icon;
-                                            const active = detailTab === t.key;
-                                            return (
-                                                <button key={t.key} onClick={() => setDetailTab(t.key)}
-                                                    className={`flex items-center gap-1.5 px-3.5 py-3 text-[11px] font-bold whitespace-nowrap border-b-2 transition-colors ${
-                                                        active ? 'border-[#801720] text-[#801720]' : 'border-transparent text-gray-400 hover:text-gray-600'
-                                                    }`}>
-                                                    <Icon className="w-3.5 h-3.5" /> {t.label}
+                {/* Table */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">No</th>
+                                    <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Periode</th>
+                                    <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Tahun Ajaran</th>
+                                    <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Tanggal Mulai</th>
+                                    <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Tanggal Selesai</th>
+                                    <th className="text-left px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Deadline Upload</th>
+                                    <th className="text-right px-4 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {list.data?.length === 0 && (
+                                    <tr><td colSpan={8} className="text-center py-14 text-gray-400 text-sm">Belum ada periode verifikasi yang cocok.</td></tr>
+                                )}
+                                {list.data?.map((item, idx) => (
+                                    <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-4 py-3.5 text-xs text-gray-500">{(list.current_page - 1) * list.per_page + idx + 1}</td>
+                                        <td className="px-4 py-3.5 font-bold text-gray-800 text-xs">{item.nama}</td>
+                                        <td className="px-4 py-3.5 text-xs font-medium text-gray-600">{item.tahun_ajaran?.nama || '-'}</td>
+                                        <td className="px-4 py-3.5"><StatusBadge status={item.status} /></td>
+                                        <td className="px-4 py-3.5 text-xs text-gray-500">{formatDate(item.tanggal_mulai)}</td>
+                                        <td className="px-4 py-3.5 text-xs text-gray-500">{formatDate(item.tanggal_selesai)}</td>
+                                        <td className="px-4 py-3.5 text-xs text-red-600 font-semibold">{formatDate(item.deadline_upload)}</td>
+                                        <td className="px-4 py-3.5">
+                                            <div className="flex items-center justify-end gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openDetail(item)}
+                                                    className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
+                                                    title="Lihat Detail Periode"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5" />
                                                 </button>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <div className="p-5">
-                                        {detailTab === 'timeline' && (
-                                            <div className="space-y-5">
-                                                {[
-                                                    { label: 'Periode dimulai', date: selectedPeriode.periode.tanggal_mulai, desc: 'Periode verifikasi dimulai', done: selectedPeriode.timeline.mulai_lewat, icon: CheckCircle },
-                                                    { label: 'Deadline upload', date: selectedPeriode.periode.deadline_upload, desc: 'Batas akhir upload soal oleh koordinator MK', done: selectedPeriode.timeline.deadline_lewat, icon: CalendarClock },
-                                                    { label: 'Periode berakhir', date: selectedPeriode.periode.tanggal_selesai, desc: 'Periode verifikasi berakhir', done: selectedPeriode.timeline.selesai_lewat, icon: Flag },
-                                                ].map((step, i, arr) => {
-                                                    const Icon = step.icon;
-                                                    return (
-                                                        <div key={step.label} className="flex gap-3 relative">
-                                                            {i < arr.length - 1 && <div className="absolute left-[15px] top-8 bottom-[-20px] w-px bg-gray-100" />}
-                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
-                                                                <Icon className="w-4 h-4" />
-                                                            </div>
-                                                            <div className="min-w-0 pb-1">
-                                                                <p className="text-xs font-bold text-gray-800">{step.label}</p>
-                                                                <p className="text-[11px] text-gray-400">{formatDateTime(step.date)}</p>
-                                                                <p className="text-[11px] text-gray-500 mt-0.5">{step.desc}</p>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEdit(item)}
+                                                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                                                    title="Edit"
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                                {item.status === 'DRAFT' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => activate(item)}
+                                                        className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors cursor-pointer"
+                                                        title="Aktifkan Periode"
+                                                    >
+                                                        <Play className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                                {item.status === 'ACTIVE' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => close(item)}
+                                                        className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors cursor-pointer"
+                                                        title="Nonaktifkan Periode"
+                                                    >
+                                                        <Lock className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                                {item.status !== 'ACTIVE' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDelete(item)}
+                                                        className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg cursor-pointer transition-colors"
+                                                        title="Hapus"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
                                             </div>
-                                        )}
-
-                                        {detailTab === 'penugasan' && (
-                                            <div className="grid grid-cols-1 gap-3">
-                                                {[
-                                                    ['Koordinator Ditugaskan', selectedPeriode.penugasan.koordinator, Users],
-                                                    ['Verifikator Ditugaskan', selectedPeriode.penugasan.verifikator, FileCheck],
-                                                    ['Mata Kuliah Terlibat', selectedPeriode.penugasan.mata_kuliah, BookOpen],
-                                                ].map(([label, value, Icon]) => (
-                                                    <div key={label} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                                                        <Icon className="w-4 h-4 text-[#801720] flex-shrink-0" />
-                                                        <span className="text-xs font-semibold text-gray-600 flex-1">{label}</span>
-                                                        <span className="text-sm font-extrabold text-gray-800">{value}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {detailTab === 'statistik' && (
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-xs font-semibold text-gray-500">Progress Verifikasi</span>
-                                                        <span className="text-xs font-extrabold text-[#801720]">{selectedPeriode.statistik.progress}%</span>
-                                                    </div>
-                                                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${selectedPeriode.statistik.progress}%` }} />
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-3 gap-2 text-center">
-                                                    {[
-                                                        ['Total', selectedPeriode.statistik.total, 'text-gray-700'],
-                                                        ['Draft', selectedPeriode.statistik.draft, 'text-gray-500'],
-                                                        ['Pending', selectedPeriode.statistik.pending, 'text-blue-600'],
-                                                        ['Revisi', selectedPeriode.statistik.revisi, 'text-amber-600'],
-                                                        ['Approved', selectedPeriode.statistik.approved, 'text-emerald-600'],
-                                                        ['Rejected', selectedPeriode.statistik.rejected, 'text-red-500'],
-                                                    ].map(([label, value, color]) => (
-                                                        <div key={label} className="bg-gray-50 rounded-lg p-2.5">
-                                                            <p className={`text-lg font-extrabold ${color}`}>{value}</p>
-                                                            <p className="text-[10px] text-gray-400 font-semibold">{label}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {detailTab === 'riwayat' && (
-                                            selectedPeriode.riwayat.length === 0 ? (
-                                                <p className="text-xs text-gray-400 text-center py-6">Belum ada riwayat perubahan.</p>
-                                            ) : (
-                                                <div className="space-y-3">
-                                                    {selectedPeriode.riwayat.map(log => (
-                                                        <div key={log.id} className="flex items-start gap-2.5">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
-                                                            <div className="min-w-0">
-                                                                <p className="text-xs text-gray-700 font-semibold">{log.description}</p>
-                                                                <p className="text-[10px] text-gray-400">{log.user} · {relativeTime(log.created_at)}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="p-5 border-t border-gray-100 flex gap-2">
-                                    <button onClick={() => openEdit(selectedPeriode.periode)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50">
-                                        <Pencil className="w-3.5 h-3.5" /> Edit Periode
-                                    </button>
-                                    {selectedPeriode.periode.status === 'DRAFT' && (
-                                        <button onClick={() => activate(selectedPeriode.periode)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700">
-                                            <Play className="w-3.5 h-3.5" /> Aktifkan Periode
-                                        </button>
-                                    )}
-                                    {selectedPeriode.periode.status === 'ACTIVE' && (
-                                        <button onClick={() => close(selectedPeriode.periode)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50">
-                                            <Lock className="w-3.5 h-3.5" /> Nonaktifkan Periode
-                                        </button>
-                                    )}
-                                    {['CLOSED', 'INACTIVE'].includes(selectedPeriode.periode.status) && (
-                                        <button onClick={() => setDeleteItem(selectedPeriode.periode)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50">
-                                            <Trash2 className="w-3.5 h-3.5" /> Hapus Periode
-                                        </button>
-                                    )}
-                                </div>
-                            </>
-                        )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
+                    {list.data?.length > 0 && (
+                        <div className="px-4 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                            <span>Menampilkan {list.from}–{list.to} dari {list.total} data</span>
+                            <div className="flex gap-1">
+                                {list.links?.map((link, i) => (
+                                    <button key={i} disabled={!link.url}
+                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                                        className={`min-w-[28px] h-7 px-1.5 rounded-lg font-semibold flex items-center justify-center ${link.active ? 'bg-[#801720] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}>
+                                        {link.label.includes('Previous') ? <ChevronLeft className="w-3.5 h-3.5" /> : link.label.includes('Next') ? <ChevronRight className="w-3.5 h-3.5" /> : link.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
+            {/* View Detail Modal */}
+            <Modal open={!!viewItem} onClose={() => setViewItem(null)} title={`Detail Periode: ${viewItem?.periode?.nama || ''}`} maxWidth="max-w-2xl">
+                {viewItem && viewItem.periode && (
+                    <div className="space-y-5">
+                        {/* Info Ringkasan Card */}
+                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-red-50 text-[#801720] flex items-center justify-center flex-shrink-0">
+                                        <Calendar className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-base font-extrabold text-gray-800 leading-tight">{viewItem.periode.nama}</p>
+                                        <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                            Tahun Ajaran <span className="font-bold text-gray-700">{viewItem.periode.tahun_ajaran?.nama || '-'}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <StatusBadge status={viewItem.periode.status} />
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-200/60 text-xs">
+                                <div className="bg-white p-2.5 rounded-xl border border-gray-100">
+                                    <span className="text-gray-400 text-[10px] uppercase font-bold block">Tanggal Mulai</span>
+                                    <span className="text-gray-800 font-bold text-xs">{formatDate(viewItem.periode.tanggal_mulai)}</span>
+                                </div>
+                                <div className="bg-white p-2.5 rounded-xl border border-gray-100">
+                                    <span className="text-gray-400 text-[10px] uppercase font-bold block">Tanggal Selesai</span>
+                                    <span className="text-gray-800 font-bold text-xs">{formatDate(viewItem.periode.tanggal_selesai)}</span>
+                                </div>
+                                <div className="bg-white p-2.5 rounded-xl border border-gray-100">
+                                    <span className="text-gray-400 text-[10px] uppercase font-bold block">Deadline Upload</span>
+                                    <span className="text-red-600 font-extrabold text-xs">{formatDate(viewItem.periode.deadline_upload)}</span>
+                                </div>
+                                <div className="bg-white p-2.5 rounded-xl border border-gray-100">
+                                    <span className="text-gray-400 text-[10px] uppercase font-bold block">Dibuat Pada</span>
+                                    <span className="text-gray-700 font-semibold text-xs">{formatDate(viewItem.periode.created_at)}</span>
+                                </div>
+                            </div>
+
+                            {viewItem.periode.catatan && (
+                                <div className="bg-white p-2.5 rounded-xl border border-gray-100 text-xs">
+                                    <span className="text-gray-400 text-[10px] uppercase font-bold block mb-0.5">Catatan</span>
+                                    <p className="text-gray-600 leading-relaxed">{viewItem.periode.catatan}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-xs">
+                            <div className="flex overflow-x-auto border-b border-gray-100 bg-gray-50/70">
+                                {DETAIL_TABS.map(t => {
+                                    const Icon = t.icon;
+                                    const active = detailTab === t.key;
+                                    return (
+                                        <button
+                                            key={t.key}
+                                            onClick={() => setDetailTab(t.key)}
+                                            className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold whitespace-nowrap border-b-2 transition-colors cursor-pointer ${
+                                                active ? 'border-[#801720] text-[#801720] bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'
+                                            }`}
+                                        >
+                                            <Icon className="w-3.5 h-3.5" /> {t.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="p-4 bg-white">
+                                {detailTab === 'timeline' && viewItem.timeline && (
+                                    <div className="space-y-4">
+                                        {[
+                                            { label: 'Periode dimulai', date: viewItem.periode.tanggal_mulai, desc: 'Periode verifikasi dimulai dan penugasan aktif', done: viewItem.timeline.mulai_lewat, icon: CheckCircle },
+                                            { label: 'Deadline upload soal', date: viewItem.periode.deadline_upload, desc: 'Batas akhir pengunggahan draft soal oleh Koordinator MK', done: viewItem.timeline.deadline_lewat, icon: CalendarClock },
+                                            { label: 'Periode berakhir', date: viewItem.periode.tanggal_selesai, desc: 'Periode verifikasi resmi berakhir', done: viewItem.timeline.selesai_lewat, icon: Flag },
+                                        ].map((step, i, arr) => {
+                                            const Icon = step.icon;
+                                            return (
+                                                <div key={step.label} className="flex gap-3 relative">
+                                                    {i < arr.length - 1 && <div className="absolute left-[15px] top-8 bottom-[-16px] w-px bg-gray-200" />}
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${step.done ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                        <Icon className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="min-w-0 pb-1">
+                                                        <p className="text-xs font-bold text-gray-800">{step.label}</p>
+                                                        <p className="text-[11px] text-gray-400">{formatDateTime(step.date)}</p>
+                                                        <p className="text-[11px] text-gray-500 mt-0.5">{step.desc}</p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {detailTab === 'penugasan' && viewItem.penugasan && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        {[
+                                            ['Koordinator Ditugaskan', viewItem.penugasan.koordinator ?? 0, Users],
+                                            ['Verifikator Ditugaskan', viewItem.penugasan.verifikator ?? 0, FileCheck],
+                                            ['Mata Kuliah Terlibat', viewItem.penugasan.mata_kuliah ?? 0, BookOpen],
+                                        ].map(([label, value, Icon]) => (
+                                            <div key={label} className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                                <div className="w-9 h-9 rounded-lg bg-[#801720]/10 flex items-center justify-center flex-shrink-0 text-[#801720]">
+                                                    <Icon className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <span className="text-[11px] font-semibold text-gray-500 block">{label}</span>
+                                                    <span className="text-base font-extrabold text-gray-800">{value}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {detailTab === 'statistik' && viewItem.statistik && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <span className="text-xs font-bold text-gray-600">Progress Verifikasi Soal</span>
+                                                <span className="text-xs font-extrabold text-[#801720]">{viewItem.statistik.progress ?? 0}% Selesai</span>
+                                            </div>
+                                            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-emerald-500 rounded-full transition-all duration-300" style={{ width: `${viewItem.statistik.progress ?? 0}%` }} />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+                                            {[
+                                                ['Total', viewItem.statistik.total ?? 0, 'text-gray-700'],
+                                                ['Draft', viewItem.statistik.draft ?? 0, 'text-gray-500'],
+                                                ['Pending', viewItem.statistik.pending ?? 0, 'text-blue-600'],
+                                                ['Revisi', viewItem.statistik.revisi ?? 0, 'text-amber-600'],
+                                                ['Approved', viewItem.statistik.approved ?? 0, 'text-emerald-600'],
+                                                ['Rejected', viewItem.statistik.rejected ?? 0, 'text-red-500'],
+                                            ].map(([label, value, color]) => (
+                                                <div key={label} className="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                                                    <p className={`text-base font-extrabold ${color}`}>{value}</p>
+                                                    <p className="text-[10px] text-gray-400 font-semibold">{label}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {detailTab === 'riwayat' && (
+                                    !viewItem.riwayat || viewItem.riwayat.length === 0 ? (
+                                        <p className="text-xs text-gray-400 text-center py-6">Belum ada riwayat perubahan yang tercatat.</p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {viewItem.riwayat.map(log => (
+                                                <div key={log.id} className="flex items-start gap-2.5">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs text-gray-700 font-semibold">{log.description}</p>
+                                                        <p className="text-[10px] text-gray-400">{log.user} · {relativeTime(log.created_at)}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Footer Action Buttons */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-100">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const itm = viewItem.periode;
+                                        setViewItem(null);
+                                        openEdit(itm);
+                                    }}
+                                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    <Pencil className="w-3.5 h-3.5" /> Edit Periode
+                                </button>
+                                {viewItem.periode.status === 'DRAFT' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => activate(viewItem.periode)}
+                                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                        <Play className="w-3.5 h-3.5" /> Aktifkan Periode
+                                    </button>
+                                )}
+                                {viewItem.periode.status === 'ACTIVE' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => close(viewItem.periode)}
+                                        className="px-3.5 py-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                        <Lock className="w-3.5 h-3.5" /> Nonaktifkan Periode
+                                    </button>
+                                )}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setViewItem(null)}
+                                className="px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Add Modal */}
             <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Tambah Periode Verifikasi">
                 <PeriodeForm
                     form={form}
@@ -604,6 +714,8 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
                     editItem={null}
                 />
             </Modal>
+
+            {/* Edit Modal */}
             <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Edit Periode Verifikasi">
                 <PeriodeForm
                     form={form}
@@ -613,6 +725,8 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
                     editItem={editItem}
                 />
             </Modal>
+
+            {/* Delete Modal */}
             <Modal open={!!deleteItem} onClose={() => setDeleteItem(null)} title="Hapus Periode">
                 <div className="flex items-start gap-3 mb-5">
                     <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0"><AlertTriangle className="w-5 h-5 text-red-500" /></div>
@@ -622,8 +736,8 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
                     </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                    <button onClick={() => setDeleteItem(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50">Batal</button>
-                    <button onClick={handleDelete} disabled={processing} className="px-4 py-2 text-sm bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-60">
+                    <button onClick={() => setDeleteItem(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 cursor-pointer">Batal</button>
+                    <button onClick={handleDelete} disabled={processing} className="px-4 py-2 text-sm bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-60 cursor-pointer">
                         {processing ? 'Menghapus...' : 'Ya, Hapus'}
                     </button>
                 </div>

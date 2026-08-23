@@ -53,7 +53,6 @@ export default function Index({ dosenList, filters }) {
         email: '',
         kategori_dosen: 'Dosen Tetap',
         create_user: false,
-        role: 'KOORDINATOR',
     });
 
     const editForm = useForm({
@@ -460,20 +459,12 @@ export default function Index({ dosenList, filters }) {
                                 </label>
 
                                 {createForm.data.create_user && (
-                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 animate-in fade-in duration-200">
-                                        <p className="text-[10px] text-slate-500">
-                                            Password default: <code className="bg-white px-1 py-0.5 rounded text-[#801720] font-bold">password</code>
+                                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2 animate-in fade-in duration-200">
+                                        <p className="text-[11px] text-slate-500">
+                                            Password default: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[#801720] font-bold">password</code>
                                         </p>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">Role Akun</label>
-                                            <select 
-                                                value={createForm.data.role}
-                                                onChange={(e) => createForm.setData('role', e.target.value)}
-                                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:border-[#801720]"
-                                            >
-                                                <option value="KOORDINATOR">Koordinator</option>
-                                                <option value="VERIFIKATOR">Verifikator</option>
-                                            </select>
+                                        <div className="p-2.5 rounded-lg bg-blue-50/70 border border-blue-100 text-[11px] text-blue-700 leading-relaxed">
+                                            <strong>Catatan Role:</strong> Akun dosen dibuat dengan status <span className="font-bold">Belum Ditugaskan (Tanpa Role)</span>. Role Koordinator / Verifikator akan otomatis diberikan saat dosen ditugaskan pada Kelompok Verifikasi.
                                         </div>
                                     </div>
                                 )}

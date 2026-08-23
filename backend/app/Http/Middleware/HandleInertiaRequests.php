@@ -61,9 +61,15 @@ class HandleInertiaRequests extends Middleware
                     } elseif ($hasActiveKoor && !$hasActiveVerif && $user->role !== 'KOORDINATOR') {
                         $user->update(['role' => 'KOORDINATOR']);
                         $user->role = 'KOORDINATOR';
+                    } elseif (!$hasActiveKoor && !$hasActiveVerif) {
+                        // Tidak ada penugasan aktif sama sekali
+                        if ($user->role !== null) {
+                            $user->update(['role' => null]);
+                            $user->role = null;
+                        }
                     }
                 } else {
-                    $hasActiveKoor = ($user->role === 'KOORDINATOR' || $user->role === 'DOSEN');
+                    $hasActiveKoor = ($user->role === 'KOORDINATOR');
                     $hasActiveVerif = ($user->role === 'VERIFIKATOR');
                 }
             }

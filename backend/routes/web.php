@@ -19,23 +19,41 @@ Route::get('/', function () {
             $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
             $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
 
-            if ($hasActiveVerif && !$hasActiveKoor) {
-                if ($user->role !== 'VERIFIKATOR') {
-                    $user->update(['role' => 'VERIFIKATOR']);
-                    $user->role = 'VERIFIKATOR';
-                }
-                return redirect()->route('verifikator.dashboard');
-            } elseif ($hasActiveKoor) {
+            if ($hasActiveKoor) {
                 if ($user->role !== 'KOORDINATOR') {
                     $user->update(['role' => 'KOORDINATOR']);
                     $user->role = 'KOORDINATOR';
                 }
                 return redirect()->route('koordinator.dashboard');
+            } elseif ($hasActiveVerif) {
+                if ($user->role !== 'VERIFIKATOR') {
+                    $user->update(['role' => 'VERIFIKATOR']);
+                    $user->role = 'VERIFIKATOR';
+                }
+                return redirect()->route('verifikator.dashboard');
+            } else {
+                if ($user->role !== null) {
+                    $user->update(['role' => null]);
+                    $user->role = null;
+                }
+                Auth::logout();
+                request()->session()->invalidate();
+                request()->session()->regenerateToken();
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Akun Anda (' . $dosen->nama_lengkap . ') saat ini belum diberikan penugasan aktif (Koordinator/Verifikator).',
+                ]);
             }
         }
 
         if ($user->isVerifikator()) return redirect()->route('verifikator.dashboard');
-        return redirect()->route('koordinator.dashboard');
+        if ($user->isKoordinator()) return redirect()->route('koordinator.dashboard');
+
+        Auth::logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect()->route('login')->withErrors([
+            'email' => 'Akun Anda belum memiliki role atau penugasan aktif.',
+        ]);
     }
     return view('login');
 });
@@ -57,23 +75,41 @@ Route::get('/dashboard', function () {
         $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
         $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
 
-        if ($hasActiveVerif && !$hasActiveKoor) {
-            if ($user->role !== 'VERIFIKATOR') {
-                $user->update(['role' => 'VERIFIKATOR']);
-                $user->role = 'VERIFIKATOR';
-            }
-            return redirect()->route('verifikator.dashboard');
-        } elseif ($hasActiveKoor) {
+        if ($hasActiveKoor) {
             if ($user->role !== 'KOORDINATOR') {
                 $user->update(['role' => 'KOORDINATOR']);
                 $user->role = 'KOORDINATOR';
             }
             return redirect()->route('koordinator.dashboard');
+        } elseif ($hasActiveVerif) {
+            if ($user->role !== 'VERIFIKATOR') {
+                $user->update(['role' => 'VERIFIKATOR']);
+                $user->role = 'VERIFIKATOR';
+            }
+            return redirect()->route('verifikator.dashboard');
+        } else {
+            if ($user->role !== null) {
+                $user->update(['role' => null]);
+                $user->role = null;
+            }
+            Auth::logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+            return redirect()->route('login')->withErrors([
+                'email' => 'Akun Anda (' . $dosen->nama_lengkap . ') saat ini belum diberikan penugasan aktif (Koordinator/Verifikator).',
+            ]);
         }
     }
 
     if ($user->isVerifikator()) return redirect()->route('verifikator.dashboard');
-    return redirect()->route('koordinator.dashboard');
+    if ($user->isKoordinator()) return redirect()->route('koordinator.dashboard');
+
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect()->route('login')->withErrors([
+        'email' => 'Akun Anda belum memiliki role atau penugasan aktif.',
+    ]);
 })->middleware('auth');
 
 // ─── SuperAdmin Routes ────────────────────────────────────────────────────────
