@@ -29,8 +29,9 @@ class VerifikasiController extends Controller
         }
 
         $validated = $request->validate([
-            'action'  => ['required', 'in:APPROVED,REVISION,REJECTED'],
-            'catatan' => ['nullable', 'string', 'max:2000'],
+            'action'        => ['required', 'in:APPROVED,REVISION,REJECTED'],
+            'catatan'       => ['nullable', 'string', 'max:2000'],
+            'clo_feedback'  => ['nullable', 'array'],
         ]);
 
         $actionText = match ($validated['action']) {
@@ -53,6 +54,7 @@ class VerifikasiController extends Controller
                 'verifikator_id'  => $user->id,
                 'action'          => $validated['action'],
                 'catatan'         => $validated['catatan'] ?? null,
+                'clo_feedback'    => $validated['clo_feedback'] ?? null,
                 'created_at'      => now(),
             ]);
 

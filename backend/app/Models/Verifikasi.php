@@ -19,10 +19,12 @@ class Verifikasi extends Model
         'verifikator_id',
         'action',
         'catatan',
+        'clo_feedback',
         'created_at',
     ];
 
     protected $casts = [
+        'clo_feedback' => 'array',
         'created_at' => 'datetime',
     ];
 

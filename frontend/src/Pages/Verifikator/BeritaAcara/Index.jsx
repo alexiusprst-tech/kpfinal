@@ -3,7 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     FileText, BookOpen, Printer, Clock, CheckCircle2,
-    AlertCircle, Calendar, ArrowRight, Download, Award, ShieldCheck
+    AlertCircle, Calendar, Download, Award, ShieldCheck, Eye
 } from 'lucide-react';
 
 import FlashAlert from '@/Components/FlashAlert';
@@ -48,7 +48,7 @@ export default function BeritaAcaraIndex({ activePeriod, assignments = [], histo
                         </div>
                         <h2 className="text-lg font-black text-slate-800">Kapan BAP dapat dicetak?</h2>
                         <p className="text-xs text-slate-500 leading-relaxed">
-                            Berita Acara dapat dicetak ketika <strong>seluruh soal</strong> pada mata kuliah bersangkutan telah selesai ditinjau (tidak ada soal yang berstatus pending/menunggu keputusan). BAP merupakan bukti sah bahwa proses verifikasi akademik telah diselesaikan dengan benar.
+                            Berita Acara dapat dicetak untuk soal yang telah <strong>Disetujui (Approved)</strong> oleh Verifikator. Soal yang masih dalam proses (pending, revisi) tidak akan tercantum. Anda dapat mencetak BAP kapan saja selama terdapat minimal satu soal yang telah disetujui.
                         </p>
                     </div>
 
@@ -97,7 +97,7 @@ export default function BeritaAcaraIndex({ activePeriod, assignments = [], histo
                         ) : (
                             <div className="divide-y divide-slate-100">
                                 {assignments.map(a => {
-                                    const readyToPrint = a.total > 0 && a.pending === 0;
+                                    const readyToPrint = a.has_approved;
                                     return (
                                         <div key={a.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                             <div className="space-y-1">
@@ -115,18 +115,20 @@ export default function BeritaAcaraIndex({ activePeriod, assignments = [], histo
 
                                             <div className="flex items-center gap-3">
                                                 {/* Stats badges */}
-                                                <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
-                                                    {a.pending > 0 ? (
+                                                <div className="flex items-center gap-1.5 text-[11px] font-bold">
+                                                    {a.approved > 0 && (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                            <CheckCircle2 className="w-3 h-3" />
+                                                            {a.approved} Disetujui
+                                                        </span>
+                                                    )}
+                                                    {a.pending > 0 && (
                                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
                                                             <Clock className="w-3 h-3" />
                                                             {a.pending} Pending
                                                         </span>
-                                                    ) : a.total > 0 ? (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                                            <CheckCircle2 className="w-3 h-3" />
-                                                            Selesai
-                                                        </span>
-                                                    ) : (
+                                                    )}
+                                                    {a.total === 0 && (
                                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-slate-400 border border-slate-200">
                                                             Belum ada soal
                                                         </span>
@@ -135,18 +137,18 @@ export default function BeritaAcaraIndex({ activePeriod, assignments = [], histo
 
                                                 {/* Action Button */}
                                                 {readyToPrint ? (
-                                                    <a
+                                                    <Link
                                                         href={`/verifikator/mata-kuliah/${a.mata_kuliah_id}/berita-acara`}
-                                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+                                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold rounded-xl transition-all shadow-xs"
                                                     >
-                                                        <Printer className="w-3.5 h-3.5" />
-                                                        <span>Cetak BAP</span>
-                                                    </a>
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                        <span>Lihat BAP</span>
+                                                    </Link>
                                                 ) : (
                                                     <button
                                                         disabled
                                                         className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 text-slate-400 text-xs font-bold rounded-xl border border-slate-200 cursor-not-allowed"
-                                                        title="Selesaikan verifikasi semua soal terlebih dahulu"
+                                                        title="Belum ada soal yang disetujui untuk mata kuliah ini"
                                                     >
                                                         <Printer className="w-3.5 h-3.5" />
                                                         <span>Cetak BAP</span>
@@ -198,12 +200,12 @@ export default function BeritaAcaraIndex({ activePeriod, assignments = [], histo
                                             </div>
                                         </div>
 
-                                        <a
+                                        <Link
                                             href={`/verifikator/mata-kuliah/${h.mata_kuliah_id}/berita-acara`}
-                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#801720] hover:bg-red-50 text-[#801720] rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#801720] hover:bg-red-50 text-[#801720] rounded-xl text-[11px] font-bold transition-all"
                                         >
-                                            <Printer className="w-3 h-3" /> Unduh Ulang PDF
-                                        </a>
+                                            <Eye className="w-3 h-3" /> Lihat &amp; Unduh BAP
+                                        </Link>
                                     </div>
                                 ))}
                             </div>

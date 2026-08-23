@@ -53,15 +53,23 @@ class MataKuliahController extends Controller
         $total    = $soalList->count();
         $approved = $soalList->where('status', Soal::STATUS_APPROVED)->count();
 
+        $latestSoal = $soalList->first();
+        $status = 'BELUM_UPLOAD';
+        if ($latestSoal) {
+            if (in_array($latestSoal->status, [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED])) {
+                $status = 'IN_REVIEW';
+            } else {
+                $status = $latestSoal->status;
+            }
+        }
+
         $stats = [
             'total'      => $total,
-            'draft'      => $soalList->where('status', Soal::STATUS_DRAFT)->count(),
-            'submitted'  => $soalList->whereIn('status', [Soal::STATUS_SUBMITTED, Soal::STATUS_RESUBMITTED])->count(),
-            'in_review'  => $soalList->where('status', Soal::STATUS_IN_REVIEW)->count(),
+            'status'     => $status,
+            'in_review'  => $soalList->whereIn('status', [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED])->count(),
             'revision'   => $soalList->where('status', Soal::STATUS_REVISION)->count(),
             'approved'   => $approved,
             'rejected'   => $soalList->where('status', Soal::STATUS_REJECTED)->count(),
-            'progress'   => $total > 0 ? (int) round(($approved / $total) * 100) : 0,
         ];
 
         $verifikators = PenugasanVerifikator::with('dosen')
@@ -90,6 +98,14 @@ class MataKuliahController extends Controller
                 'created_at'  => $log->created_at,
             ]);
 
+        // Cek apakah koordinator sudah memiliki soal aktif (belum final) untuk MK & periode ini.
+        // Final statuses: APPROVED, REJECTED — koordinator bisa upload soal baru.
+        // Non-final: DRAFT, SUBMITTED, IN_REVIEW, RESUBMITTED, REVISION — harus tunggu keputusan.
+        $activeSoal = $soalList->first(fn ($s) => !in_array($s->status, [
+            Soal::STATUS_APPROVED,
+            Soal::STATUS_REJECTED,
+        ]));
+
         return Inertia::render('Koordinator/MataKuliah/Show', [
             'mataKuliah'    => $mataKuliah,
             'dosenPengampu' => $assignment->dosen?->nama_lengkap,
@@ -99,6 +115,8 @@ class MataKuliahController extends Controller
             'verifikators'  => $verifikators,
             'activity'      => $activity->values(),
             'uploadOpen'    => $assignment->periode?->isUploadOpen() ?? false,
+            'hasActiveSoal' => $activeSoal !== null,
+            'activeSoalStatus' => $activeSoal?->status,
         ]);
     }
 }

@@ -175,7 +175,9 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':VERIFIKATOR
 
         // Berita Acara Verifikasi
         Route::get('berita-acara', [\App\Http\Controllers\Verifikator\BeritaAcaraController::class, 'index'])->name('berita-acara.index');
-        Route::get('mata-kuliah/{mataKuliah}/berita-acara', [\App\Http\Controllers\Verifikator\BeritaAcaraController::class, 'cetak'])->name('berita-acara.cetak');
+        Route::get('mata-kuliah/{mataKuliah}/berita-acara', [\App\Http\Controllers\Verifikator\BeritaAcaraController::class, 'show'])->name('berita-acara.show');
+        Route::get('mata-kuliah/{mataKuliah}/berita-acara/download', [\App\Http\Controllers\Verifikator\BeritaAcaraController::class, 'cetak'])->name('berita-acara.cetak');
+        Route::get('soal/{soal}/berita-acara', [\App\Http\Controllers\Verifikator\BeritaAcaraController::class, 'cetakSoal'])->name('berita-acara.cetak-soal');
     });
 
 Route::middleware(['auth'])->group(function () {

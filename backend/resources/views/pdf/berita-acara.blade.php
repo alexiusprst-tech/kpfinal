@@ -132,13 +132,28 @@
     </thead>
     <tbody>
         @foreach ($soalList as $soal)
-        <tr>
-            <td>{{ $soal->kategori->nama ?? '-' }}</td>
-            <td>{{ $cloKode }}</td>
-            <td>{{ $soal->judul }}</td>
-            <td>{{ $soal->latestVerifikasi->catatan ?? '-' }}</td>
-            <td>{{ $rekomendasi($soal) }}</td>
-        </tr>
+            @php
+                $cloFeedback = $soal->latestVerifikasi?->clo_feedback;
+            @endphp
+            @if(is_array($cloFeedback) && count($cloFeedback) > 0)
+                @foreach($cloFeedback as $cKode => $cNote)
+                <tr>
+                    <td>{{ $soal->kategori->nama ?? '-' }}</td>
+                    <td>{{ $cKode }}</td>
+                    <td>{{ $soal->judul }}</td>
+                    <td>{{ $cNote ?: '-' }}</td>
+                    <td>{{ $rekomendasi($soal) }}</td>
+                </tr>
+                @endforeach
+            @else
+                <tr>
+                    <td>{{ $soal->kategori->nama ?? '-' }}</td>
+                    <td>{{ $cloKode }}</td>
+                    <td>{{ $soal->judul }}</td>
+                    <td>{{ $soal->latestVerifikasi->catatan ?? '-' }}</td>
+                    <td>{{ $rekomendasi($soal) }}</td>
+                </tr>
+            @endif
         @endforeach
     </tbody>
 </table>

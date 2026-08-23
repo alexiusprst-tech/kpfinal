@@ -23,7 +23,7 @@ class DashboardController extends Controller
         $totalMataKuliah= MataKuliah::where('status', 'ACTIVE')->count();
         $totalPlo       = Plo::count();
         $totalClo       = Clo::count();
-        $totalBankSoal  = Soal::count();
+        $totalBankSoal  = Soal::where('status', 'APPROVED')->count();
 
         $totalSoalPeriod = $activePeriod ? Soal::where('periode_id', $activePeriod->id)->count() : 0;
         $approvedPeriod  = $activePeriod ? Soal::where('periode_id', $activePeriod->id)->where('status', 'APPROVED')->count() : 0;

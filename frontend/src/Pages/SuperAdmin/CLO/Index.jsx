@@ -56,7 +56,7 @@ function Toast({ flash }) {
     return <FlashAlert type="toast" flash={flash} />;
 }
 
-// ─── CLO Form (tambah/edit manual) ───────────────────────────────────────────
+// ─── CLO Form (tambah/edit manual dengan alur berurutan) ────────────────────
 function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
     const [mkSearch, setMkSearch] = useState('');
     const filteredMk = allMk.filter(mk =>
@@ -64,10 +64,8 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
         mk.kode_mk.toLowerCase().includes(mkSearch.toLowerCase())
     );
 
-    const togglePlo = (id) => {
-        const current = form.plo_ids || [];
-        setForm(f => ({ ...f, plo_ids: current.includes(id) ? current.filter(x => x !== id) : [...current, id] }));
-    };
+    const selectedPloId = (form.plo_ids && form.plo_ids.length > 0) ? form.plo_ids[0] : '';
+    const isPloSelected = Boolean(selectedPloId);
 
     const toggleMk = (id) => {
         const current = form.mk_ids || [];
@@ -76,64 +74,155 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
 
     return (
         <form onSubmit={onSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-                <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Kode CLO <span className="text-red-500">*</span></label>
-                    <input type="text" value={form.kode_clo || ''} onChange={e => setForm(f => ({ ...f, kode_clo: e.target.value }))}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none"
-                        placeholder="Contoh: PLO02-CLO01" required />
-                </div>
-                <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Bloom Taxonomy <span className="text-red-500">*</span></label>
-                    <select value={form.bloom || ''} onChange={e => setForm(f => ({ ...f, bloom: e.target.value }))}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none bg-white" required>
-                        <option value="">Pilih Level Bloom...</option>
-                        {BLOOM_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                </div>
-            </div>
+            {/* 1. Pilih PLO Terlebih Dahulu */}
             <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Deskripsi CLO <span className="text-red-500">*</span></label>
-                <textarea rows={3} value={form.deskripsi || ''} onChange={e => setForm(f => ({ ...f, deskripsi: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none resize-none"
-                    placeholder="Deskripsi CLO..." required />
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                    <span>1. Pilih Program Learning Outcome (PLO) <span className="text-red-500">*</span></span>
+                    {isPloSelected && (
+                        <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> PLO Terpilih
+                        </span>
+                    )}
+                </label>
+                <select
+                    value={selectedPloId}
+                    onChange={e => {
+                        const val = e.target.value;
+                        setForm(f => ({ ...f, plo_ids: val ? [val] : [] }));
+                    }}
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none bg-white transition-all font-medium text-gray-800"
+                    required
+                >
+                    <option value="">-- Pilih PLO --</option>
+                    {allPlo.map(plo => (
+                        <option key={plo.id} value={plo.id}>
+                            {plo.kode_plo} {plo.deskripsi ? `— ${plo.deskripsi}` : ''}
+                        </option>
+                    ))}
+                </select>
+                <p className="text-[11px] text-gray-400 mt-1">Pilih capaian PLO yang menjadi acuan penyusunan CLO ini.</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-                <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-2">Mapping PLO</label>
-                    <div className="grid grid-cols-1 gap-1 max-h-36 overflow-y-auto border border-gray-200 rounded-xl p-2">
-                        {allPlo.map(plo => (
-                            <label key={plo.id} className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-gray-50 rounded-lg">
-                                <input type="checkbox" checked={(form.plo_ids || []).includes(plo.id)} onChange={() => togglePlo(plo.id)} className="accent-[#801720]" />
-                                <span className="text-xs font-medium text-gray-700">{plo.kode_plo}</span>
-                            </label>
-                        ))}
-                        {allPlo.length === 0 && <p className="text-xs text-gray-500 text-center py-2">Belum ada PLO</p>}
-                    </div>
+
+            {/* 2. Input Kode CLO */}
+            <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                    2. Kode CLO <span className="text-red-500">*</span>
+                </label>
+                <input
+                    type="text"
+                    value={form.kode_clo || ''}
+                    onChange={e => setForm(f => ({ ...f, kode_clo: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all"
+                    placeholder="Contoh: PLO02-CLO01"
+                    required
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Format penamaan standar: [KODE_PLO]-[KODE_CLO].</p>
+            </div>
+
+            {/* 3. Input Deskripsi CLO */}
+            <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                    3. Deskripsi CLO <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                    rows={3}
+                    value={form.deskripsi || ''}
+                    onChange={e => setForm(f => ({ ...f, deskripsi: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none resize-none transition-all"
+                    placeholder="Tuliskan deskripsi capaian pembelajaran mata kuliah (CLO)..."
+                    required
+                />
+            </div>
+
+            {/* 4. Pilih Bloom Taxonomy */}
+            <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                    4. Bloom Taxonomy <span className="text-red-500">*</span>
+                </label>
+                <select
+                    value={form.bloom || ''}
+                    onChange={e => setForm(f => ({ ...f, bloom: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none bg-white transition-all"
+                    required
+                >
+                    <option value="">Pilih Level Bloom Taxonomy...</option>
+                    {BLOOM_OPTIONS.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                    ))}
+                </select>
+            </div>
+
+            {/* 5. Terakhir, Pilih Mata Kuliah mana saja yang ingin dimasukkan */}
+            <div>
+                <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-gray-700">
+                        5. Mapping Mata Kuliah
+                    </label>
+                    <span className="text-[11px] font-semibold text-[#801720]">
+                        {(form.mk_ids || []).length} MK Dipilih
+                    </span>
                 </div>
-                <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-2">Mapping Mata Kuliah</label>
-                    <div className="border border-gray-200 rounded-xl overflow-hidden">
-                        <div className="p-1.5 border-b border-gray-100">
-                            <input value={mkSearch} onChange={e => setMkSearch(e.target.value)} placeholder="Cari MK..."
-                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded-lg outline-none focus:border-[#801720]" />
+
+                <div className="border border-gray-200 rounded-2xl overflow-hidden bg-slate-50/50">
+                    <div className="p-2 border-b border-gray-100 bg-white">
+                        <div className="relative">
+                            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                value={mkSearch}
+                                onChange={e => setMkSearch(e.target.value)}
+                                placeholder="Cari kode atau nama mata kuliah..."
+                                className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl outline-none focus:border-[#801720] focus:ring-1 focus:ring-[#801720]/20"
+                            />
                         </div>
-                        <div className="max-h-28 overflow-y-auto p-2 space-y-0.5">
-                            {filteredMk.map(mk => (
-                                <label key={mk.id} className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-gray-50 rounded-lg">
-                                    <input type="checkbox" checked={(form.mk_ids || []).includes(mk.id)} onChange={() => toggleMk(mk.id)} className="accent-[#801720]" />
-                                    <span className="text-xs font-medium text-gray-700 leading-tight">{mk.nama_mk}</span>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto p-2 space-y-1">
+                        {filteredMk.map(mk => {
+                            const isChecked = (form.mk_ids || []).includes(mk.id);
+                            return (
+                                <label
+                                    key={mk.id}
+                                    className={`flex items-center justify-between p-2 rounded-xl border transition-all cursor-pointer ${
+                                        isChecked
+                                            ? 'bg-red-50/50 border-[#801720]/30 text-gray-900 font-semibold'
+                                            : 'bg-white border-gray-100 text-gray-700 hover:bg-slate-100/60'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={() => toggleMk(mk.id)}
+                                            className="w-4 h-4 rounded text-[#801720] focus:ring-[#801720] accent-[#801720] cursor-pointer"
+                                        />
+                                        <span className="text-xs truncate">{mk.nama_mk}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-gray-400 flex-shrink-0 bg-gray-100 px-1.5 py-0.5 rounded">
+                                        {mk.kode_mk}
+                                    </span>
                                 </label>
-                            ))}
-                            {filteredMk.length === 0 && <p className="text-xs text-gray-500 text-center py-2">Tidak ditemukan</p>}
-                        </div>
+                            );
+                        })}
+                        {filteredMk.length === 0 && (
+                            <p className="text-xs text-gray-400 text-center py-4">Mata kuliah tidak ditemukan.</p>
+                        )}
                     </div>
                 </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-                <button type="submit" disabled={processing}
-                    className="px-5 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-60 transition-all">
-                    {processing ? 'Menyimpan...' : 'Simpan'}
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                    type="submit"
+                    disabled={processing}
+                    className="px-5 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-50 transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                >
+                    {processing ? (
+                        <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span>Menyimpan...</span>
+                        </>
+                    ) : (
+                        <span>Simpan</span>
+                    )}
                 </button>
             </div>
         </form>
@@ -174,6 +263,7 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
         return () => clearTimeout(timer);
     }, [search]);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [viewItem, setViewItem] = useState(null);
     const [editItem, setEditItem] = useState(null);
     const [deleteItem, setDeleteItem] = useState(null);
     const [processing, setProcessing] = useState(false);
@@ -442,19 +532,57 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
                                             </div>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <div className="flex flex-wrap gap-1">
-                                                {item.mataKuliah?.map(m => (
-                                                    <span key={m.id} className="px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded text-[10px] font-semibold">{m.nama_mk}</span>
-                                                ))}
-                                                {(!item.mataKuliah || item.mataKuliah.length === 0) && <span className="text-xs text-gray-400">—</span>}
+                                            <div className="flex flex-wrap items-center gap-1">
+                                                {item.mataKuliah && item.mataKuliah.length > 0 ? (
+                                                    <>
+                                                        {item.mataKuliah.slice(0, 2).map(m => (
+                                                            <span
+                                                                key={m.id}
+                                                                className="px-1.5 py-0.5 bg-violet-50 text-violet-700 border border-violet-200 rounded text-[10px] font-semibold"
+                                                            >
+                                                                {m.nama_mk}
+                                                            </span>
+                                                        ))}
+                                                        {item.mataKuliah.length > 2 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setViewItem(item)}
+                                                                className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold cursor-pointer transition-colors"
+                                                                title="Lihat semua mata kuliah"
+                                                            >
+                                                                +{item.mataKuliah.length - 2} MK
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">—</span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-5 py-4">
                                             <div className="flex items-center justify-end gap-1.5">
-                                                <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="Edit">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setViewItem(item)}
+                                                    className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
+                                                    title="Lihat Mata Kuliah & Detail CLO"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEdit(item)}
+                                                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                                                    title="Edit"
+                                                >
                                                     <Pencil className="w-3.5 h-3.5" />
                                                 </button>
-                                                <button onClick={() => setDeleteItem(item)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors" title="Hapus">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDeleteItem(item)}
+                                                    className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors cursor-pointer"
+                                                    title="Hapus"
+                                                >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
@@ -807,6 +935,113 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
                     </div>
                 </div>
             )}
+
+            {/* View Detail Modal */}
+            <Modal open={!!viewItem} onClose={() => setViewItem(null)} title={`Detail CLO: ${viewItem?.kode_clo || ''}`}>
+                <div className="space-y-5">
+                    {/* Ringkasan CLO */}
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                <span className="text-base font-extrabold text-[#801720]">{viewItem?.kode_clo}</span>
+                                {viewItem?.bloom && (
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${bloomColor(viewItem.bloom)}`}>
+                                        {viewItem.bloom}
+                                    </span>
+                                )}
+                            </div>
+                            {viewItem?.plo && viewItem.plo.length > 0 && (
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-xs text-gray-500 font-semibold">PLO:</span>
+                                    {viewItem.plo.map(p => (
+                                        <span key={p.id} className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md text-[11px] font-bold">
+                                            {p.kode_plo}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Deskripsi Capaian:</p>
+                            <p className="text-xs text-gray-800 leading-relaxed font-medium bg-white p-3 rounded-xl border border-gray-200/80">
+                                {viewItem?.deskripsi || 'Tidak ada deskripsi.'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Daftar Mata Kuliah */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2.5">
+                            <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                                <BookOpen className="w-4 h-4 text-[#801720]" />
+                                <span>Mata Kuliah Terkait ({viewItem?.mataKuliah?.length || 0})</span>
+                            </h3>
+                            <span className="text-[11px] text-gray-500 font-medium">
+                                Daftar mata kuliah yang menerapkan CLO ini
+                            </span>
+                        </div>
+
+                        {!viewItem?.mataKuliah || viewItem.mataKuliah.length === 0 ? (
+                            <div className="p-6 text-center rounded-2xl border border-dashed border-gray-200 bg-slate-50/50 space-y-2">
+                                <BookOpen className="w-8 h-8 text-gray-300 mx-auto" />
+                                <p className="text-xs font-bold text-gray-700">Belum Ada Mata Kuliah</p>
+                                <p className="text-[11px] text-gray-400 max-w-sm mx-auto">
+                                    CLO ini belum dipetakan ke mata kuliah mana pun. Anda dapat menambahkan pemetaan melalui tombol edit di bawah.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-xs">
+                                <div className="max-h-60 overflow-y-auto divide-y divide-gray-100">
+                                    {viewItem.mataKuliah.map((mk, i) => (
+                                        <div key={mk.id || i} className="p-3 bg-white hover:bg-slate-50/80 transition-colors flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <span className="w-6 h-6 rounded-lg bg-red-50 text-[#801720] text-xs font-bold flex items-center justify-center flex-shrink-0">
+                                                    {i + 1}
+                                                </span>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold text-gray-800 truncate">{mk.nama_mk}</p>
+                                                    <p className="text-[10px] text-gray-400 font-medium">
+                                                        Kode: <strong className="text-gray-600 font-semibold">{mk.kode_mk}</strong>
+                                                        {mk.sks && ` · ${mk.sks} SKS`}
+                                                        {mk.semester && ` · Semester ${mk.semester}`}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold flex-shrink-0">
+                                                Terpetakan
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer Action */}
+                    <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const itm = viewItem;
+                                setViewItem(null);
+                                openEdit(itm);
+                            }}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                            <Pencil className="w-3.5 h-3.5" /> Edit CLO & Pemetaan
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setViewItem(null)}
+                            className="px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Add Modal */}
             <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title="Tambah CLO">

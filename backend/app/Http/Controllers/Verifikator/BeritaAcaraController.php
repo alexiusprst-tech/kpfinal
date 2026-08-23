@@ -50,15 +50,17 @@ class BeritaAcaraController extends Controller
 
         $assignmentsWithStats = $assignments->map(function ($a) use ($soalList) {
             $mkSoal = $soalList->where('mata_kuliah_id', $a->mata_kuliah_id);
+            $approvedCount = $mkSoal->where('status', 'APPROVED')->count();
             return [
                 'id'             => $a->id,
                 'mata_kuliah_id' => $a->mata_kuliah_id,
                 'mata_kuliah'    => $a->mataKuliah,
                 'total'          => $mkSoal->count(),
                 'pending'        => $mkSoal->whereIn('status', ['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count(),
-                'approved'       => $mkSoal->where('status', 'APPROVED')->count(),
+                'approved'       => $approvedCount,
                 'revision'       => $mkSoal->where('status', 'REVISION')->count(),
                 'rejected'       => $mkSoal->where('status', 'REJECTED')->count(),
+                'has_approved'   => $approvedCount > 0,
             ];
         });
 
@@ -73,6 +75,78 @@ class BeritaAcaraController extends Controller
             'activePeriod' => $activePeriod,
             'assignments'  => $assignmentsWithStats,
             'history'      => $history,
+        ]);
+    }
+
+    /**
+     * Show the Berita Acara preview page for a given mata kuliah.
+     * Displays only APPROVED soals and the existing BA record if any.
+     */
+    public function show(Request $request, MataKuliah $mataKuliah)
+    {
+        $user  = $request->user();
+        $dosen = $user->dosen;
+
+        $activePeriod = PeriodeVerifikasi::with('tahunAjaran')->where('status', 'ACTIVE')->first();
+        if (!$activePeriod) {
+            return redirect()->route('verifikator.berita-acara.index')
+                ->with('error', 'Tidak ada periode verifikasi yang aktif.');
+        }
+
+        $isAssigned = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $mataKuliah->id)
+            ->where('periode_id', $activePeriod->id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+
+        if (!$isAssigned) {
+            return redirect()->route('verifikator.berita-acara.index')
+                ->with('error', 'Anda tidak ditugaskan sebagai verifikator untuk mata kuliah ini.');
+        }
+
+        // Only show APPROVED soals
+        $soalApproved = Soal::with(['kategori', 'latestVerifikasi.verifikator', 'uploadedBy'])
+            ->where('mata_kuliah_id', $mataKuliah->id)
+            ->where('periode_id', $activePeriod->id)
+            ->where('status', Soal::STATUS_APPROVED)
+            ->orderBy('created_at')
+            ->get();
+
+        $allSoal = Soal::where('mata_kuliah_id', $mataKuliah->id)
+            ->where('periode_id', $activePeriod->id)
+            ->get();
+
+        $koordinatorDosen = PenugasanKoordinator::with('dosen')
+            ->where('mata_kuliah_id', $mataKuliah->id)
+            ->where('periode_id', $activePeriod->id)
+            ->where('status', 'ACTIVE')
+            ->first()?->dosen;
+
+        // Check if a BA document has been generated previously
+        $existingBA = BeritaAcara::where('periode_id', $activePeriod->id)
+            ->where('mata_kuliah_id', $mataKuliah->id)
+            ->where('dibuat_oleh', $user->id)
+            ->first();
+
+        return Inertia::render('Verifikator/BeritaAcara/Show', [
+            'mataKuliah'       => $mataKuliah,
+            'activePeriod'     => $activePeriod,
+            'soalApproved'     => $soalApproved,
+            'stats'            => [
+                'total'    => $allSoal->count(),
+                'approved' => $soalApproved->count(),
+                'pending'  => $allSoal->whereIn('status', ['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count(),
+                'revision' => $allSoal->where('status', 'REVISION')->count(),
+                'rejected' => $allSoal->where('status', 'REJECTED')->count(),
+            ],
+            'koordinator'      => $koordinatorDosen ? [
+                'nama'       => $koordinatorDosen->nama_lengkap,
+                'kode_dosen' => $koordinatorDosen->kode_dosen,
+            ] : null,
+            'existingBA'       => $existingBA ? [
+                'nomor'    => $existingBA->nomor,
+                'tanggal'  => $existingBA->tanggal,
+            ] : null,
         ]);
     }
 
@@ -106,16 +180,14 @@ class BeritaAcaraController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        if ($soalList->isEmpty()) {
-            return redirect()->back()->with('error', 'Belum ada soal yang diunggah untuk mata kuliah ini pada periode aktif.');
+        // Hanya ambil soal yang sudah disetujui (APPROVED) untuk Berita Acara
+        $soalApproved = $soalList->where('status', 'APPROVED');
+
+        if ($soalApproved->isEmpty()) {
+            return redirect()->back()->with('error', 'Belum ada soal yang disetujui (APPROVED) untuk mata kuliah ini. Berita Acara hanya dapat dibuat untuk soal yang telah disetujui.');
         }
 
-        $belumSelesai = $soalList->whereIn('status', ['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count();
-        if ($belumSelesai > 0) {
-            return redirect()->back()->with('error', 'Masih ada soal yang belum selesai diverifikasi untuk mata kuliah ini.');
-        }
-
-        $jumlahApproved = $soalList->where('status', 'APPROVED')->count();
+        $jumlahApproved = $soalApproved->count();
         $jumlahRevision = $soalList->where('status', 'REVISION')->count();
         $jumlahRejected = $soalList->where('status', 'REJECTED')->count();
 
@@ -131,7 +203,7 @@ class BeritaAcaraController extends Controller
 
         $clos = $mataKuliah->clo()->with('plo')->get();
 
-        return DB::transaction(function () use ($user, $dosen, $activePeriod, $mataKuliah, $soalList, $clos, $koordinatorDosen, $jumlahApproved, $jumlahRevision, $jumlahRejected) {
+        return DB::transaction(function () use ($user, $dosen, $activePeriod, $mataKuliah, $soalList, $soalApproved, $clos, $koordinatorDosen, $jumlahApproved, $jumlahRevision, $jumlahRejected) {
             // Lock period to prevent race condition during serial number generation
             $lockedPeriod = PeriodeVerifikasi::where('id', $activePeriod->id)->lockForUpdate()->first();
 
@@ -156,9 +228,9 @@ class BeritaAcaraController extends Controller
                 'programStudi'             => config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi')),
                 'koordinatorNama'          => $koordinatorDosen->nama_lengkap,
                 'kaProdi'                  => config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
-                'soalList'                 => $soalList,
+                'soalList'                 => $soalApproved->values(), // Hanya soal APPROVED
                 'clos'                     => $clos,
-                'jumlahSoal'               => $soalList->count(),
+                'jumlahSoal'               => $soalApproved->count(),
                 'jumlahApproved'           => $jumlahApproved,
                 'jumlahRevision'           => $jumlahRevision,
                 'jumlahRejected'           => $jumlahRejected,
@@ -184,7 +256,7 @@ class BeritaAcaraController extends Controller
                 [
                     'nomor'            => $nomor,
                     'koordinator_id'   => $koordinatorDosen->id,
-                    'jumlah_soal'      => $soalList->count(),
+                    'jumlah_soal'      => $soalApproved->count(),
                     'jumlah_approved'  => $jumlahApproved,
                     'jumlah_revision'  => $jumlahRevision,
                     'jumlah_rejected'  => $jumlahRejected,
@@ -200,6 +272,127 @@ class BeritaAcaraController extends Controller
             ]);
 
             $filename = 'Berita-Acara-' . Str::slug($mataKuliah->kode_mk . '-' . $mataKuliah->nama_mk) . '.pdf';
+
+            return $pdf->download($filename);
+        });
+    }
+
+    /**
+     * Generate Berita Acara Verifikasi PDF for a specific approved Soal.
+     */
+    public function cetakSoal(Request $request, Soal $soal)
+    {
+        $user  = $request->user();
+        $dosen = $user->dosen;
+
+        if ($soal->status !== Soal::STATUS_APPROVED) {
+            return redirect()->back()->with('error', 'Soal ini belum disetujui (APPROVED). Berita Acara hanya dapat dibuat untuk soal yang telah disetujui.');
+        }
+
+        $soal->load(['mataKuliah.clo.plo', 'periode.tahunAjaran', 'kategori', 'latestVerifikasi.verifikator', 'uploadedBy']);
+
+        $mataKuliah = $soal->mataKuliah;
+        $periode = $soal->periode;
+
+        if (!$mataKuliah || !$periode) {
+            return redirect()->back()->with('error', 'Data mata kuliah atau periode soal tidak ditemukan.');
+        }
+
+        $isAssigned = ($dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $mataKuliah->id)
+            ->where('periode_id', $periode->id)
+            ->where('status', 'ACTIVE')
+            ->exists()) || $user->isSuperAdmin();
+
+        if (!$isAssigned) {
+            return redirect()->back()->with('error', 'Anda tidak ditugaskan sebagai verifikator untuk mata kuliah ini.');
+        }
+
+        $koordinatorDosen = PenugasanKoordinator::with('dosen')
+            ->where('mata_kuliah_id', $mataKuliah->id)
+            ->where('periode_id', $periode->id)
+            ->where('status', 'ACTIVE')
+            ->first()?->dosen;
+
+        if (!$koordinatorDosen) {
+            return redirect()->back()->with('error', 'Mata kuliah ini belum memiliki Dosen Koordinator aktif pada periode ini.');
+        }
+
+        $clos = $mataKuliah->clo()->with('plo')->get();
+        $soalList = collect([$soal]);
+
+        return DB::transaction(function () use ($user, $dosen, $periode, $mataKuliah, $soal, $soalList, $clos, $koordinatorDosen) {
+            // Lock period to prevent race condition during serial number generation
+            $lockedPeriod = PeriodeVerifikasi::where('id', $periode->id)->lockForUpdate()->first();
+
+            $existing = BeritaAcara::where('periode_id', $lockedPeriod->id)
+                ->where('mata_kuliah_id', $mataKuliah->id)
+                ->where('dibuat_oleh', $user->id)
+                ->lockForUpdate()
+                ->first();
+
+            $nomor = $existing?->nomor ?? $this->generateNomor($lockedPeriod, $mataKuliah);
+
+            $tanggal = now();
+
+            $data = [
+                'nomor'                     => $nomor,
+                'tanggal'                   => $tanggal,
+                'tanggalIndonesia'          => $this->formatTanggalIndonesia($tanggal),
+                'periode'                   => $lockedPeriod,
+                'mataKuliah'               => $mataKuliah,
+                'evaluatorNama'            => $user->name,
+                'evaluatorKode'            => $dosen->kode_dosen ?? '-',
+                'programStudi'             => config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi')),
+                'koordinatorNama'          => $koordinatorDosen->nama_lengkap,
+                'kaProdi'                  => config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
+                'soalList'                 => $soalList,
+                'clos'                     => $clos,
+                'jumlahSoal'               => 1,
+                'jumlahApproved'           => 1,
+                'jumlahRevision'           => 0,
+                'jumlahRejected'           => 0,
+                'tanda_tangan_evaluator'   => $dosen->tanda_tangan
+                    ? storage_path('app/public/' . $dosen->tanda_tangan)
+                    : null,
+                'tanda_tangan_koordinator' => $koordinatorDosen->tanda_tangan
+                    ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan)
+                    : null,
+            ];
+
+            $pdf = Pdf::loadView('pdf.berita-acara', $data)->setPaper('a4', 'portrait');
+
+            $relativePath = 'berita-acara/' . Str::uuid() . '.pdf';
+            Storage::disk('private')->put($relativePath, $pdf->output());
+
+            $beritaAcara = BeritaAcara::updateOrCreate(
+                [
+                    'periode_id'     => $lockedPeriod->id,
+                    'mata_kuliah_id' => $mataKuliah->id,
+                    'dibuat_oleh'    => $user->id,
+                ],
+                [
+                    'nomor'            => $nomor,
+                    'koordinator_id'   => $koordinatorDosen->id,
+                    'jumlah_soal'      => 1,
+                    'jumlah_approved'  => 1,
+                    'jumlah_revision'  => 0,
+                    'jumlah_rejected'  => 0,
+                    'file_path'        => $relativePath,
+                    'tanggal'          => $tanggal,
+                ]
+            );
+
+            AuditLog::record($user->id, 'BERITA_ACARA_SOAL_DOWNLOADED', 'Soal', $soal->id, null, [
+                'nomor'          => $nomor,
+                'soal_id'        => $soal->id,
+                'soal_judul'     => $soal->judul,
+                'mata_kuliah_id' => $mataKuliah->id,
+                'periode_id'     => $lockedPeriod->id,
+            ]);
+
+            $cleanTitle = Str::slug($mataKuliah->kode_mk . '-' . $soal->judul);
+            $filename = 'BAP-' . ($cleanTitle ?: 'soal') . '.pdf';
 
             return $pdf->download($filename);
         });

@@ -79,6 +79,19 @@ class SoalController extends Controller
             abort(403, 'Anda tidak memiliki akses ke mata kuliah ini.');
         }
 
+        // Blokir upload baru jika sudah ada soal aktif (belum diputuskan final) untuk MK + Periode ini.
+        if ($selectedMkId && $activePeriod) {
+            $nonFinalStatuses = [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED, Soal::STATUS_REVISION];
+            $existingActive = Soal::where('mata_kuliah_id', $selectedMkId)
+                ->where('periode_id', $activePeriod->id)
+                ->whereIn('status', $nonFinalStatuses)
+                ->exists();
+            if ($existingActive) {
+                return redirect()->route('koordinator.mata-kuliah.show', $selectedMkId)
+                    ->with('error', 'Anda sudah memiliki soal yang sedang dalam proses verifikasi untuk mata kuliah ini. Tunggu hingga verifikator memberikan keputusan sebelum mengunggah soal baru.');
+            }
+        }
+
         $categories = $this->getKategoriForPeriode($activePeriod);
         $defaultKategori = $categories->first();
 
@@ -107,11 +120,26 @@ class SoalController extends Controller
             'kategori_id'    => ['required', 'exists:kategori_soal,id'],
             'judul'          => ['required', 'string', 'max:255'],
             'file'           => ['required', 'file', 'mimes:pdf,doc,docx', 'min:1', 'max:20480'],
+            'plo_clo_data'   => ['required'],
         ], [
-            'file.min'       => 'Ukuran berkas naskah soal minimal 1 KB.',
-            'file.mimes'     => 'Format berkas harus berupa PDF, DOC, atau DOCX.',
-            'file.max'       => 'Ukuran berkas maksimal 20 MB.',
+            'file.min'          => 'Ukuran berkas naskah soal minimal 1 KB.',
+            'file.mimes'        => 'Format berkas harus berupa PDF, DOC, atau DOCX.',
+            'file.max'          => 'Ukuran berkas maksimal 20 MB.',
+            'plo_clo_data.required' => 'Konfigurasi PLO & CLO wajib diisi sebelum mengunggah soal.',
         ]);
+
+        // Decode and validate plo_clo_data structure
+        $ploCloRaw = $request->input('plo_clo_data');
+        $ploCloData = is_string($ploCloRaw) ? json_decode($ploCloRaw, true) : $ploCloRaw;
+
+        if (empty($ploCloData['plo']) || !is_array($ploCloData['plo'])) {
+            return redirect()->back()->with('error', 'Konfigurasi PLO & CLO tidak valid. Minimal tambahkan satu PLO dan satu CLO.');
+        }
+
+        $totalClo = collect($ploCloData['plo'])->sum(fn($plo) => count($plo['clo'] ?? []));
+        if ($totalClo === 0) {
+            return redirect()->back()->with('error', 'Setiap PLO harus memiliki minimal satu CLO sebelum mengunggah soal.');
+        }
 
         // Validate assignment: koordinator must actually be assigned to this MK for this periode.
         $assigned = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
@@ -122,6 +150,16 @@ class SoalController extends Controller
 
         if (!$assigned) {
             return redirect()->back()->with('error', 'Anda tidak memiliki penugasan untuk MK dan Periode yang dipilih.');
+        }
+
+        // Blokir upload soal baru jika sudah ada soal yang sedang aktif (belum final) untuk MK + Periode ini.
+        $nonFinalStatuses = [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED, Soal::STATUS_REVISION];
+        $existingActive = Soal::where('mata_kuliah_id', $request->mata_kuliah_id)
+            ->where('periode_id', $request->periode_id)
+            ->whereIn('status', $nonFinalStatuses)
+            ->exists();
+        if ($existingActive) {
+            return redirect()->back()->with('error', 'Anda sudah memiliki soal yang sedang dalam proses verifikasi. Tunggu keputusan verifikator sebelum mengunggah soal baru.');
         }
 
         $periode = PeriodeVerifikasi::find($request->periode_id);
@@ -146,6 +184,7 @@ class SoalController extends Controller
             'mime_type'      => $file->getMimeType(),
             'file_size'      => $file->getSize(),
             'status'         => $submitNow ? Soal::STATUS_SUBMITTED : Soal::STATUS_DRAFT,
+            'plo_clo_data'   => $ploCloData,
         ]);
 
         AuditLog::record($user->id, 'UPLOAD_SOAL', 'Soal', $soal->id, null, $soal->toArray());
@@ -203,8 +242,9 @@ class SoalController extends Controller
                 ->first();
 
             return Inertia::render('Koordinator/Soal/Revisi', [
-                'soal'       => $soal,
-                'catatan'    => $revisionNote?->catatan,
+                'soal'        => $soal,
+                'catatan'     => $revisionNote?->catatan,
+                'cloFeedback' => $revisionNote?->clo_feedback,
                 'verifikator' => $revisionNote?->verifikator?->name,
             ]);
         }

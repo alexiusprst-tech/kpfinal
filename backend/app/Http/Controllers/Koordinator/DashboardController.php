@@ -73,24 +73,42 @@ class DashboardController extends Controller
 
     private function buildStats(Collection $assignments, Collection $soalList): array
     {
+        $mkWithSoal = $soalList->pluck('mata_kuliah_id')->unique();
+        $belumUploadCount = $assignments->filter(fn ($a) => !$mkWithSoal->contains($a->mata_kuliah_id))->count();
+
+        $inReviewCount = $soalList->whereIn('status', [
+            Soal::STATUS_DRAFT,
+            Soal::STATUS_SUBMITTED,
+            Soal::STATUS_IN_REVIEW,
+            Soal::STATUS_RESUBMITTED,
+        ])->count();
+
         return [
-            'total_mk'            => $assignments->count(),
-            'total_soal'          => $soalList->count(),
-            'draft'               => $soalList->where('status', Soal::STATUS_DRAFT)->count(),
-            'menunggu_verifikasi' => $soalList->whereIn('status', [Soal::STATUS_SUBMITTED, Soal::STATUS_RESUBMITTED])->count(),
-            'dalam_review'        => $soalList->where('status', Soal::STATUS_IN_REVIEW)->count(),
-            'revisi'              => $soalList->where('status', Soal::STATUS_REVISION)->count(),
-            'approved'            => $soalList->where('status', Soal::STATUS_APPROVED)->count(),
-            'rejected'            => $soalList->where('status', Soal::STATUS_REJECTED)->count(),
+            'total_mk'     => $assignments->count(),
+            'total_soal'   => $soalList->count(),
+            'belum_upload' => $belumUploadCount,
+            'in_review'    => $inReviewCount,
+            'revisi'       => $soalList->where('status', Soal::STATUS_REVISION)->count(),
+            'approved'     => $soalList->where('status', Soal::STATUS_APPROVED)->count(),
+            'rejected'     => $soalList->where('status', Soal::STATUS_REJECTED)->count(),
         ];
     }
 
     private function buildMataKuliahList(Collection $assignments, Collection $soalList): array
     {
         return $assignments->map(function ($a) use ($soalList) {
-            $mkSoal   = $soalList->where('mata_kuliah_id', $a->mata_kuliah_id);
-            $total    = $mkSoal->count();
-            $approved = $mkSoal->where('status', Soal::STATUS_APPROVED)->count();
+            $mkSoal = $soalList->where('mata_kuliah_id', $a->mata_kuliah_id);
+            $total  = $mkSoal->count();
+
+            $latestSoal = $mkSoal->sortByDesc('updated_at')->first();
+            $status = 'BELUM_UPLOAD';
+            if ($latestSoal) {
+                if (in_array($latestSoal->status, [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED])) {
+                    $status = 'IN_REVIEW';
+                } else {
+                    $status = $latestSoal->status;
+                }
+            }
 
             return [
                 'id'         => $a->mata_kuliah_id,
@@ -99,12 +117,11 @@ class DashboardController extends Controller
                 'semester'   => $a->mataKuliah?->semester,
                 'sks'        => $a->mataKuliah?->sks,
                 'total_soal' => $total,
-                'approved'   => $approved,
-                'draft'      => $mkSoal->where('status', Soal::STATUS_DRAFT)->count(),
+                'status'     => $status,
+                'approved'   => $mkSoal->where('status', Soal::STATUS_APPROVED)->count(),
                 'revision'   => $mkSoal->where('status', Soal::STATUS_REVISION)->count(),
-                'pending'    => $mkSoal->whereIn('status', self::PENDING_STATUSES)->count(),
+                'in_review'  => $mkSoal->whereIn('status', [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED])->count(),
                 'rejected'   => $mkSoal->where('status', Soal::STATUS_REJECTED)->count(),
-                'progress'   => $total > 0 ? (int) round(($approved / $total) * 100) : 0,
                 'plo'        => $a->mataKuliah?->plo ? $a->mataKuliah->plo->map(fn ($p) => [
                     'id' => $p->id,
                     'kode_plo' => $p->kode_plo,

@@ -3,9 +3,12 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import axios from 'axios';
 import {
-    ArrowLeft, Upload, FileText, X, CheckCircle2, AlertTriangle, XCircle,
-    Plus, Trash2, Download, MoveUp, MoveDown, Sparkles
+    ArrowLeft, Upload, FileText, X, CheckCircle2, AlertTriangle,
+    Plus, Trash2, Download, Sparkles, BookOpen, Layers, Clock,
+    HelpCircle, ChevronDown, ChevronUp, FileCode
 } from 'lucide-react';
+import FlashAlert from '@/Components/FlashAlert';
+import { showToast, showAlert } from '@/Utils/sweetalert';
 
 const ALLOWED_EXT = ['pdf', 'doc', 'docx'];
 const MAX_SIZE_MB = 20;
@@ -16,25 +19,17 @@ function formatSize(bytes) {
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
 
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
-
 function Toast({ flash }) {
     return <FlashAlert type="toast" flash={flash} />;
 }
 
-
 export default function SoalCreate({ assignments, kategoriAll, defaultKategori, activePeriode, selectedMataKuliahId, uploadOpen }) {
     const { flash } = usePage().props;
-    const [activeTab, setActiveTab] = useState(() => {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('tab') === 'generator' ? 'generator' : 'upload';
-    });
     const [clientError, setClientError] = useState('');
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef(null);
 
-    // Determine the fixed category based on the active period (UTS during UTS period, UAS during UAS period)
+    // Determine default category based on active period
     const isUasPeriod = Boolean(
         activePeriode?.nama?.toLowerCase().includes('uas') ||
         activePeriode?.nama?.toLowerCase().includes('akhir')
@@ -48,7 +43,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
         return kategoriAll.find(k => k.nama.toLowerCase().includes('uts') || (k.deskripsi && k.deskripsi.toLowerCase().includes('tengah'))) || kategoriAll[0];
     })();
 
-    // Form data for the file uploader
+    // Main form state
     const { data, setData, post, processing, errors } = useForm({
         mata_kuliah_id: selectedMataKuliahId || (assignments[0]?.id ?? ''),
         periode_id: activePeriode?.id || '',
@@ -56,137 +51,60 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
         judul: '',
         file: null,
         submit_now: true,
+        plo_clo_data: null,
     });
-
-    useEffect(() => {
-        if (fixedCategory?.id && data.kategori_id !== fixedCategory.id) {
-            setData('kategori_id', fixedCategory.id);
-        }
-        if (activePeriode?.id && data.periode_id !== activePeriode.id) {
-            setData('periode_id', activePeriode.id);
-        }
-    }, [fixedCategory?.id, activePeriode?.id]);
 
     const selectedMk = assignments.find(a => a.id === data.mata_kuliah_id);
 
-    // --- Generator States ---
+    // Generator & PLO/CLO States
     const [generatorData, setGeneratorData] = useState(null);
     const [originalPloList, setOriginalPloList] = useState([]);
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
-    const [exportError, setExportError] = useState('');
+    const [showPetunjuk, setShowPetunjuk] = useState(false);
 
-    // Fetch generator course data (PLO/CLO) dynamically when tab or course changes
+    // Auto-suggest Judul Soal when MK or category changes
     useEffect(() => {
-        if (activeTab === 'generator' && data.mata_kuliah_id) {
+        if (selectedMk && fixedCategory && !data.judul) {
+            const kategoriName = fixedCategory.nama || 'Ujian';
+            setData('judul', `${kategoriName} - ${selectedMk.nama_mk}`);
+        }
+    }, [selectedMk?.id, fixedCategory?.id]);
+
+    // Fetch generator course data (PLO/CLO) dynamically when course changes
+    useEffect(() => {
+        if (data.mata_kuliah_id) {
             setIsLoadingData(true);
-            setExportError('');
             axios.get(`/koordinator/soal-generator/course-data?mata_kuliah_id=${data.mata_kuliah_id}`)
                 .then(res => {
                     const allPlos = res.data.plo || [];
                     setOriginalPloList(allPlos);
-                    // Display only 1 PLO initially, rest can be added by dosen as requested
+                    // Display 1 PLO initially by default if available, or all
                     const initialPlos = allPlos.length > 0 ? [JSON.parse(JSON.stringify(allPlos[0]))] : [];
-                    setGeneratorData({
+                    const initialGen = {
                         ...res.data,
                         plo: initialPlos
-                    });
+                    };
+                    setGeneratorData(initialGen);
                 })
                 .catch(err => {
                     console.error(err);
-                    setExportError('Gagal mengambil data PLO/CLO untuk mata kuliah ini.');
+                    showToast('error', 'Gagal memuat data PLO/CLO untuk mata kuliah ini.');
                 })
                 .finally(() => {
                     setIsLoadingData(false);
                 });
         }
-    }, [activeTab, data.mata_kuliah_id]);
+    }, [data.mata_kuliah_id]);
 
-    // --- File Upload Handlers ---
-    const validateFile = (file) => {
-        const ext = file.name.split('.').pop().toLowerCase();
-        if (!ALLOWED_EXT.includes(ext)) {
-            return 'Format file harus PDF, DOC, atau DOCX.';
+    // Keep generatorData in sync with form.plo_clo_data
+    useEffect(() => {
+        if (generatorData) {
+            setData('plo_clo_data', generatorData);
         }
-        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-            return `Ukuran file maksimal ${MAX_SIZE_MB} MB.`;
-        }
-        return null;
-    };
+    }, [generatorData]);
 
-    const handleFile = (file) => {
-        if (!file) return;
-        const err = validateFile(file);
-        if (err) {
-            setClientError(err);
-            return;
-        }
-        setClientError('');
-        setData('file', file);
-    };
-
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setDragOver(false);
-        handleFile(e.dataTransfer.files?.[0]);
-    };
-
-    const handleSubmitUpload = (e) => {
-        e?.preventDefault();
-        if (!data.mata_kuliah_id) return setClientError('Pilih mata kuliah terlebih dahulu.');
-        if (!data.kategori_id) return setClientError('Pilih kategori soal terlebih dahulu.');
-        if (!data.judul.trim()) return setClientError('Judul soal wajib diisi.');
-        if (!data.file) return setClientError('File soal wajib diunggah.');
-        setClientError('');
-        post('/koordinator/soal', { forceFormData: true });
-    };
-
-    // --- Generator Form Handlers ---
-    const handleHeaderChange = (field, value) => {
-        setGeneratorData(prev => prev ? { ...prev, [field]: value } : null);
-    };
-
-    const handlePetunjukChange = (index, value) => {
-        setGeneratorData(prev => {
-            if (!prev) return null;
-            const list = [...prev.petunjuk_pengerjaan];
-            list[index] = value;
-            return { ...prev, petunjuk_pengerjaan: list };
-        });
-    };
-
-    const addPetunjuk = () => {
-        setGeneratorData(prev => {
-            if (!prev) return null;
-            return {
-                ...prev,
-                petunjuk_pengerjaan: [...prev.petunjuk_pengerjaan, '']
-            };
-        });
-    };
-
-    const removePetunjuk = (index) => {
-        setGeneratorData(prev => {
-            if (!prev) return null;
-            const list = prev.petunjuk_pengerjaan.filter((_, i) => i !== index);
-            return { ...prev, petunjuk_pengerjaan: list };
-        });
-    };
-
-    const movePetunjuk = (index, direction) => {
-        setGeneratorData(prev => {
-            if (!prev) return null;
-            const list = [...prev.petunjuk_pengerjaan];
-            const targetIndex = index + direction;
-            if (targetIndex < 0 || targetIndex >= list.length) return prev;
-            
-            const temp = list[index];
-            list[index] = list[targetIndex];
-            list[targetIndex] = temp;
-            return { ...prev, petunjuk_pengerjaan: list };
-        });
-    };
-
+    // PLO & CLO helper functions
     const handlePloChange = (ploIndex, field, value) => {
         setGeneratorData(prev => {
             if (!prev) return null;
@@ -228,7 +146,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
         const currentPlo = generatorData.plo[ploIndex];
         const originalPlo = originalPloList.find(p => p.kode === currentPlo.kode);
         if (!originalPlo) return;
-        
+
         const targetClo = originalPlo.clo.find(c => c.kode === targetCloKode);
         if (targetClo) {
             setGeneratorData(prev => {
@@ -248,10 +166,9 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
 
     const addPlo = () => {
         if (!generatorData || !originalPloList.length) return;
-        
         const currentKodes = generatorData.plo.map(p => p.kode);
         const nextPlo = originalPloList.find(p => !currentKodes.includes(p.kode));
-        
+
         if (nextPlo) {
             setGeneratorData(prev => ({
                 ...prev,
@@ -272,14 +189,13 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
 
     const addClo = (ploIdx) => {
         if (!generatorData || !originalPloList.length) return;
-        
         const currentPlo = generatorData.plo[ploIdx];
         const originalPlo = originalPloList.find(p => p.kode === currentPlo.kode);
         if (!originalPlo) return;
-        
+
         const currentCloKodes = currentPlo.clo.map(c => c.kode);
         const nextClo = originalPlo.clo.find(c => !currentCloKodes.includes(c.kode));
-        
+
         if (nextClo) {
             setGeneratorData(prev => {
                 const plos = [...prev.plo];
@@ -293,7 +209,6 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
             showToast('info', 'Semua CLO untuk PLO ini sudah ditambahkan.');
         }
     };
-
 
     const removeClo = (ploIdx, cloIdx) => {
         setGeneratorData(prev => {
@@ -323,14 +238,14 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
     }, [generatorData?.plo]);
 
     const isWeightValid = useMemo(() => {
-        if (!plosWeightInfo || plosWeightInfo.length === 0) return false;
+        if (!plosWeightInfo || plosWeightInfo.length === 0) return true;
         return plosWeightInfo.every(p => p.isValid);
     }, [plosWeightInfo]);
 
+    // Handle template export
     const handleExport = (type) => {
         if (!generatorData) return;
         setIsExporting(true);
-        setExportError('');
         axios.post(`/koordinator/soal-generator/export-${type}`, generatorData, {
             responseType: 'blob'
         })
@@ -340,26 +255,99 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
             const link = document.createElement('a');
             link.href = url;
             const ext = type === 'pdf' ? 'pdf' : 'doc';
-            const cleanMk = generatorData.kode_nama_mk.replace(/[\/\\?%*:|"<>\s]+/g, '_');
-            link.setAttribute('download', `Lembar_Soal_${cleanMk}.${ext}`);
+            const cleanMk = (generatorData.kode_nama_mk || 'soal').replace(/[\/\\?%*:|"<>\s]+/g, '_');
+            link.setAttribute('download', `Template_Soal_${cleanMk}.${ext}`);
             document.body.appendChild(link);
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
+            showToast('success', `Template ${type.toUpperCase()} berhasil diunduh.`);
         })
         .catch(err => {
             console.error(err);
-            setExportError('Gagal melakukan ekspor dokumen. Pastikan semua data terisi dengan format benar.');
+            showAlert({
+                title: 'Gagal Ekspor Template',
+                text: 'Pastikan bobot LO pada masing-masing PLO berjumlah tepat 100% sebelum mengunduh template.',
+                icon: 'warning'
+            });
         })
         .finally(() => {
             setIsExporting(false);
         });
     };
 
-    let previewQuestionIndex = 1;
+    // File validation & handling
+    const validateFile = (file) => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!ALLOWED_EXT.includes(ext)) {
+            return 'Format file harus PDF, DOC, atau DOCX.';
+        }
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            return `Ukuran file maksimal ${MAX_SIZE_MB} MB.`;
+        }
+        return null;
+    };
 
-    // Dynamic width container based on active tab
-    const containerClass = activeTab === 'generator' ? 'max-w-[1600px]' : 'max-w-xl';
+    const handleFile = (file) => {
+        if (!file) return;
+        const err = validateFile(file);
+        if (err) {
+            setClientError(err);
+            return;
+        }
+        setClientError('');
+        setData('file', file);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setDragOver(false);
+        handleFile(e.dataTransfer.files?.[0]);
+    };
+
+    const handleSubmit = (e, submitDirect = true) => {
+        e?.preventDefault();
+        if (!data.mata_kuliah_id) return setClientError('Pilih mata kuliah terlebih dahulu.');
+        if (!data.kategori_id) return setClientError('Pilih kategori soal terlebih dahulu.');
+        if (!data.judul.trim()) return setClientError('Judul soal wajib diisi.');
+        if (!data.file) return setClientError('File naskah soal wajib diunggah.');
+
+        if (!isWeightValid) {
+            return showAlert({
+                title: 'Bobot LO Belum Tepat',
+                text: 'Total bobot LO untuk setiap PLO yang dipilih harus berjumlah tepat 100%.',
+                icon: 'warning',
+            });
+        }
+
+        // Validate PLO/CLO is configured
+        const ploCount = generatorData?.plo?.length || 0;
+        const totalClo = generatorData?.plo?.reduce((acc, p) => acc + (p.clo?.length || 0), 0) || 0;
+        if (ploCount === 0 || totalClo === 0) {
+            return showAlert({
+                title: 'Konfigurasi PLO & CLO Wajib',
+                text: 'Tambahkan minimal satu PLO dengan satu CLO sebelum mengunggah soal. Verifikator memerlukan data ini untuk memberikan catatan evaluasi.',
+                icon: 'warning',
+            });
+        }
+
+        setClientError('');
+        const formData = new FormData();
+        formData.append('mata_kuliah_id', data.mata_kuliah_id);
+        formData.append('periode_id', data.periode_id);
+        formData.append('kategori_id', data.kategori_id);
+        formData.append('judul', data.judul);
+        formData.append('submit_now', submitDirect ? '1' : '0');
+        formData.append('file', data.file);
+        if (generatorData) {
+            formData.append('plo_clo_data', JSON.stringify(generatorData));
+        }
+
+        post('/koordinator/soal', {
+            data: formData,
+            forceFormData: true
+        });
+    };
 
     if (!uploadOpen) {
         return (
@@ -380,769 +368,386 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
     }
 
     return (
-        <AuthenticatedLayout title="Kelola Lembar Soal">
-            <Head title="Kelola Lembar Soal" />
+        <AuthenticatedLayout title="Buat & Upload Lembar Soal">
+            <Head title="Buat & Upload Lembar Soal" />
             <Toast flash={flash} />
 
-            <div className={`${containerClass} mx-auto pt-4 pb-10 transition-all duration-350`}>
-                
-                {/* Upper Breadcrumbs */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                    <Link href={selectedMk ? `/koordinator/mata-kuliah/${selectedMk.id}` : '/koordinator/dashboard'}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#801720] transition-colors">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Detail Mata Kuliah
-                    </Link>
+            <div className="max-w-4xl mx-auto space-y-6 pb-12">
+                {/* Back link */}
+                <Link
+                    href={selectedMk ? `/koordinator/mata-kuliah/${selectedMk.id}` : '/koordinator/soal'}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors"
+                >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Daftar Soal
+                </Link>
 
-                    {activeTab === 'generator' && (
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ${
-                            isWeightValid ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'
-                        }`}>
-                            {isWeightValid ? (
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            ) : (
-                                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                            )}
-                            <span>
-                                {isWeightValid
-                                    ? 'Bobot per PLO: 100% (Valid)'
-                                    : `Bobot per PLO: ${plosWeightInfo.filter(p => p.isValid).length}/${plosWeightInfo.length} Valid (Harus 100% per PLO)`
-                                }
+                {/* Page Title Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-xl font-extrabold text-gray-800 flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-[#801720]" /> Buat & Upload Lembar Soal
+                        </h1>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                            Konfigurasi pemetaan PLO & CLO, unduh template resmi jika diperlukan, dan unggah naskah soal final untuk diverifikasi.
+                        </p>
+                    </div>
+                </div>
+
+                {clientError && (
+                    <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-semibold flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                        {clientError}
+                    </div>
+                )}
+
+                {/* SECTION 1: Informasi Mata Kuliah & Soal */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-[#801720]" /> 1. Informasi Mata Kuliah & Ujian
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        {/* Mata Kuliah */}
+                        <div>
+                            <label className="block font-semibold text-gray-700 mb-1.5">
+                                Mata Kuliah <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                value={data.mata_kuliah_id}
+                                onChange={(e) => setData('mata_kuliah_id', e.target.value)}
+                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all"
+                            >
+                                {assignments.map((a) => (
+                                    <option key={a.id} value={a.id}>
+                                        {a.kode_mk} - {a.nama_mk}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Judul Soal */}
+                        <div>
+                            <label className="block font-semibold text-gray-700 mb-1.5">
+                                Judul Naskah Soal <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={data.judul}
+                                onChange={(e) => setData('judul', e.target.value)}
+                                placeholder="Contoh: UTS - Pemrograman Web"
+                                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all"
+                            />
+                        </div>
+
+                        {/* Periode Info */}
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <div>
+                                <span className="text-[11px] text-gray-400 block">Periode Verifikasi</span>
+                                <span className="font-bold text-gray-800 text-xs">{activePeriode?.nama || '—'}</span>
+                            </div>
+                            <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold">
+                                Aktif
                             </span>
+                        </div>
+
+                        {/* Kategori Soal */}
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <div>
+                                <span className="text-[11px] text-gray-400 block">Kategori Evaluasi</span>
+                                <span className="font-bold text-gray-800 text-xs">{fixedCategory?.nama || 'UTS'}</span>
+                            </div>
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold">
+                                Otomatis
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* SECTION 2: Konfigurasi Pemetaan PLO & CLO + Download Template */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                <Layers className="w-4 h-4 text-[#801720]" /> 2. Pemetaan PLO &amp; CLO Soal
+                            </h2>
+                            <p className="text-[11px] text-gray-500 mt-0.5">
+                                Tentukan PLO dan CLO yang diuji pada naskah soal ini beserta bobot LO-nya (total 100% per PLO).
+                            </p>
+                        </div>
+
+                        {/* Quick Export Template Buttons */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                                type="button"
+                                onClick={() => handleExport('docx')}
+                                disabled={isExporting || isLoadingData}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+                                title="Unduh template Word dengan PLO/CLO yang telah dipilih"
+                            >
+                                <Download className="w-3.5 h-3.5" /> Template Word (.docx)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleExport('pdf')}
+                                disabled={isExporting || isLoadingData}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+                                title="Unduh template PDF dengan PLO/CLO yang telah dipilih"
+                            >
+                                <Download className="w-3.5 h-3.5" /> Template PDF (.pdf)
+                            </button>
+                        </div>
+                    </div>
+
+                    {isLoadingData ? (
+                        <div className="py-8 text-center text-xs text-gray-400">
+                            Memuat data PLO & CLO mata kuliah...
+                        </div>
+                    ) : !generatorData || generatorData.plo?.length === 0 ? (
+                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-700">
+                            Belum ada pemetaan PLO & CLO untuk mata kuliah ini di sistem.
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {/* PLO Cards List */}
+                            {generatorData.plo.map((ploItem, ploIdx) => {
+                                const ploWeight = getPloWeight(ploItem);
+                                const isThisPloValid = ploWeight === 100;
+                                const originalPlo = originalPloList.find(p => p.kode === ploItem.kode);
+                                const availableClos = originalPlo?.clo || [];
+
+                                return (
+                                    <div key={ploIdx} className="rounded-2xl border border-gray-200 bg-gray-50/50 p-4 space-y-3">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-200">
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                <span className="w-7 h-7 rounded-lg bg-[#801720] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                                    {ploIdx + 1}
+                                                </span>
+                                                <select
+                                                    value={ploItem.kode}
+                                                    onChange={(e) => handlePloSelect(ploIdx, e.target.value)}
+                                                    className="px-2.5 py-1.5 rounded-lg border border-gray-300 bg-white text-xs font-bold text-gray-800 outline-none"
+                                                >
+                                                    {originalPloList.map(p => (
+                                                        <option key={p.kode} value={p.kode}>
+                                                            {p.kode}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <p className="text-xs text-gray-500 truncate">{ploItem.deskripsi}</p>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                                    isThisPloValid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                    Total Bobot: {ploWeight}% {isThisPloValid ? '✓' : '(Harus 100%)'}
+                                                </span>
+                                                {generatorData.plo.length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removePlo(ploIdx)}
+                                                        className="p-1 text-gray-400 hover:text-red-500 rounded-lg"
+                                                        title="Hapus PLO ini"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* CLO Items inside this PLO */}
+                                        <div className="space-y-2">
+                                            {ploItem.clo.map((cloItem, cloIdx) => (
+                                                <div key={cloIdx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white rounded-xl border border-gray-200/80 shadow-2xs">
+                                                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                        <select
+                                                            value={cloItem.kode}
+                                                            onChange={(e) => handleCloSelect(ploIdx, cloIdx, e.target.value)}
+                                                            className="px-2 py-1 rounded-lg border border-gray-300 bg-gray-50 text-xs font-bold text-[#801720] outline-none"
+                                                        >
+                                                            {availableClos.map(c => (
+                                                                <option key={c.kode} value={c.kode}>
+                                                                    {c.kode}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <p className="text-xs text-gray-700 truncate flex-1">{cloItem.deskripsi}</p>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 self-end sm:self-center">
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-[11px] text-gray-400 font-medium">Bobot:</span>
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                max="100"
+                                                                value={parseInt(cloItem.bobot_lo) || ''}
+                                                                onChange={(e) => handleCloChange(ploIdx, cloIdx, 'bobot_lo', `${e.target.value}%`)}
+                                                                className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-xs font-bold text-center text-gray-800 outline-none focus:border-[#801720]"
+                                                            />
+                                                            <span className="text-xs font-bold text-gray-500">%</span>
+                                                        </div>
+                                                        {ploItem.clo.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeClo(ploIdx, cloIdx)}
+                                                                className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                                                title="Hapus CLO ini"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="pt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => addClo(ploIdx)}
+                                                className="inline-flex items-center gap-1 text-xs font-bold text-[#801720] hover:underline"
+                                            >
+                                                <Plus className="w-3 h-3" /> Tambah CLO ke {ploItem.kode}
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            <div className="flex items-center justify-between pt-2">
+                                <button
+                                    type="button"
+                                    onClick={addPlo}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold transition-all shadow-xs"
+                                >
+                                    <Plus className="w-3.5 h-3.5 text-[#801720]" /> Tambah PLO Lain
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPetunjuk(!showPetunjuk)}
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-800"
+                                >
+                                    <HelpCircle className="w-3.5 h-3.5" />
+                                    {showPetunjuk ? 'Sembunyikan Petunjuk Pengerjaan' : 'Atur Petunjuk Pengerjaan'}
+                                    {showPetunjuk ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                </button>
+                            </div>
+
+                            {/* Optional Petunjuk Pengerjaan Accordion */}
+                            {showPetunjuk && (
+                                <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-xs space-y-2">
+                                    <p className="font-bold text-gray-700">Petunjuk Pengerjaan Ujian (akan dicantumkan di template):</p>
+                                    {generatorData.petunjuk_pengerjaan?.map((item, idx) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                            <span className="text-gray-400 font-bold">{idx + 1}.</span>
+                                            <input
+                                                type="text"
+                                                value={item}
+                                                onChange={(e) => {
+                                                    const list = [...generatorData.petunjuk_pengerjaan];
+                                                    list[idx] = e.target.value;
+                                                    setGeneratorData(prev => ({ ...prev, petunjuk_pengerjaan: list }));
+                                                }}
+                                                className="flex-1 px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
 
-                {/* Unified Tab Selector */}
-                <div className="flex bg-slate-100/80 border border-slate-200/40 p-1 rounded-2xl mb-6 max-w-md mx-auto shadow-xs">
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('upload')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-extrabold rounded-xl transition-all select-none cursor-pointer ${
-                            activeTab === 'upload'
-                                ? 'bg-white text-slate-800 shadow-xs'
-                                : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                    >
-                        <Upload className="w-3.5 h-3.5" /> Upload File Soal
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('generator')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-extrabold rounded-xl transition-all select-none cursor-pointer ${
-                            activeTab === 'generator'
-                                ? 'bg-white text-slate-800 shadow-xs'
-                                : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                    >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Generator Lembar Soal
-                    </button>
-                </div>
+                {/* SECTION 3: Upload Berkas Soal */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                        <Upload className="w-4 h-4 text-[#801720]" /> 3. Unggah Berkas Naskah Soal
+                    </h2>
+                    <p className="text-[11px] text-gray-500">
+                        Unggah naskah soal yang telah selesai disusun (format PDF, DOC, atau DOCX, maksimal 20 MB).
+                    </p>
 
-                {/* TAB CONTENT: UPLOAD */}
-                {activeTab === 'upload' && (
-                    <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden max-w-xl mx-auto">
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-                            <div>
-                                <h2 className="text-base font-extrabold text-slate-800">Upload Soal Baru</h2>
-                                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                    Pastikan berkas soal yang diunggah telah sesuai dengan format template lembar soal yang dibuat.
-                                </p>
+                    <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                        onDragLeave={() => setDragOver(false)}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${
+                            dragOver
+                                ? 'border-[#801720] bg-red-50/40'
+                                : data.file
+                                ? 'border-emerald-400 bg-emerald-50/30'
+                                : 'border-gray-300 hover:border-[#801720]/50 hover:bg-gray-50/60'
+                        }`}
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            className="hidden"
+                            onChange={(e) => handleFile(e.target.files?.[0])}
+                        />
+
+                        {data.file ? (
+                            <div className="flex items-center justify-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                    <FileText className="w-5 h-5" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-xs font-bold text-gray-800 truncate max-w-sm">{data.file.name}</p>
+                                    <p className="text-[11px] text-gray-400">{formatSize(data.file.size)}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setData('file', null);
+                                    }}
+                                    className="p-1 hover:bg-red-50 text-red-500 rounded-lg transition-colors ml-2"
+                                    title="Hapus file terpilih"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
                             </div>
-                            <Link
-                                href={selectedMk ? `/koordinator/mata-kuliah/${selectedMk.id}` : '/koordinator/dashboard'}
-                                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </Link>
-                        </div>
-
-                        {/* Form Body */}
-                        <form onSubmit={handleSubmitUpload} className="p-6 space-y-4">
-                            
-                            {/* Info Banner Template Reminder */}
-                            <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-3.5 flex items-start gap-3 text-xs">
-                                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                                <div className="space-y-0.5">
-                                    <p className="font-bold text-amber-900">Petunjuk Format Berkas</p>
-                                    <p className="text-amber-700/90 text-[11px] leading-relaxed">
-                                        Pastikan lembar soal ujian telah mengikuti format template baku yang digenerate dari tab <strong>Generator Lembar Soal</strong> agar proses verifikasi berjalan lancar.
+                        ) : (
+                            <div className="space-y-2">
+                                <div className="w-10 h-10 rounded-2xl bg-red-100/70 border border-red-200/60 flex items-center justify-center mx-auto text-[#801720]">
+                                    <Upload className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-gray-700">
+                                        Klik untuk memilih file atau seret file ke area ini
+                                    </p>
+                                    <p className="text-[11px] text-gray-400 mt-0.5">
+                                        Format berkas: PDF, DOC, DOCX (Maksimal 20 MB)
                                     </p>
                                 </div>
                             </div>
-                            
-                            {/* Mata Kuliah Field */}
-                            <div>
-                                <label className="text-[13px] font-bold text-slate-700 block mb-1.5">
-                                    Mata Kuliah <span className="text-red-500">*</span>
-                                </label>
-                                {assignments.length > 1 ? (
-                                    <div className="relative">
-                                        <select
-                                            value={data.mata_kuliah_id}
-                                            onChange={e => setData('mata_kuliah_id', e.target.value)}
-                                            className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20 transition-all cursor-pointer appearance-none font-medium"
-                                            style={{
-                                                backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                                                backgroundPosition: 'right 0.85rem center',
-                                                backgroundSize: '1.25rem',
-                                                backgroundRepeat: 'no-repeat',
-                                                paddingRight: '2.5rem'
-                                            }}
-                                        >
-                                            {assignments.map(a => (
-                                                <option key={a.id} value={a.id}>{a.kode_mk ? `${a.kode_mk} - ` : ''}{a.nama_mk}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-between border border-slate-200 bg-slate-50/80 rounded-xl px-3.5 py-2.5">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <span className="text-xs font-bold text-slate-800 truncate">
-                                                {assignments[0]?.nama_mk || 'Tidak ada mata kuliah'}
-                                            </span>
-                                            {assignments[0]?.kode_mk && (
-                                                <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-200/80 text-slate-700 rounded-md">
-                                                    {assignments[0].kode_mk}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <span className="text-[11px] font-semibold text-slate-400">Koordinator MK</span>
-                                    </div>
-                                )}
-                                {errors.mata_kuliah_id && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.mata_kuliah_id}</p>}
-                            </div>
-
-                            {/* Periode Field (Fixed real-time following academic calendar) */}
-                            <div>
-                                <label className="text-[13px] font-bold text-slate-700 block mb-1.5">
-                                    Periode <span className="text-red-500">*</span>
-                                </label>
-                                <div className="flex items-center justify-between border border-slate-200 bg-slate-50/80 rounded-xl px-3.5 py-2.5">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="text-xs font-semibold text-slate-800 truncate">
-                                            {activePeriode?.nama || 'Tidak ada periode aktif'}
-                                        </span>
-                                        {activePeriode?.status === 'ACTIVE' && (
-                                            <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded-md">
-                                                Aktif
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span className="text-[11px] font-semibold text-slate-400">Kalender Akademik</span>
-                                </div>
-                                {errors.periode_id && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.periode_id}</p>}
-                            </div>
-
-                            {/* Kategori Soal Field (Fixed following active period: UTS / UAS) */}
-                            <div>
-                                <label className="text-[13px] font-bold text-slate-700 block mb-1.5">
-                                    Kategori Soal <span className="text-red-500">*</span>
-                                </label>
-                                <div className="flex items-center justify-between border border-slate-200 bg-slate-50/80 rounded-xl px-3.5 py-2.5">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="text-xs font-bold text-slate-800">
-                                            {isUasPeriod ? 'Ujian Akhir Semester (UAS)' : 'Ujian Tengah Semester (UTS)'}
-                                        </span>
-                                    </div>
-                                    <span className="px-2 py-0.5 text-[10px] font-bold bg-[#801720]/10 text-[#801720] rounded-md flex-shrink-0">
-                                        Sesuai Periode ({isUasPeriod ? 'UAS' : 'UTS'})
-                                    </span>
-                                </div>
-                                {errors.kategori_id && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.kategori_id}</p>}
-                            </div>
-
-                            {/* Judul Soal Field */}
-                            <div>
-                                <label className="text-[13px] font-bold text-slate-700 block mb-1.5">
-                                    Judul Soal <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={data.judul}
-                                    onChange={e => setData('judul', e.target.value)}
-                                    placeholder={
-                                        activePeriode?.nama?.toLowerCase().includes('uas')
-                                            ? `Contoh: Soal UAS ${selectedMk?.nama_mk || 'Mata Kuliah'}`
-                                            : `Contoh: Soal UTS ${selectedMk?.nama_mk || 'Mata Kuliah'}`
-                                    }
-                                    className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 transition-all font-medium"
-                                />
-                                {errors.judul && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.judul}</p>}
-                            </div>
-
-                            {/* File Soal Zone */}
-                            <div>
-                                <label className="text-[13px] font-bold text-slate-700 block">
-                                    File Soal <span className="text-red-500">*</span>
-                                </label>
-                                <div
-                                    onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                                    onDragLeave={() => setDragOver(false)}
-                                    onDrop={handleDrop}
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className={`mt-1.5 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                                        dragOver ? 'border-[#801720] bg-[#801720]/5' : 'border-slate-200 hover:border-slate-350 bg-slate-50/40'
-                                    }`}
-                                >
-                                    <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden"
-                                        onChange={e => handleFile(e.target.files?.[0])} />
-                                    {data.file ? (
-                                        <div className="flex items-center justify-center gap-3">
-                                            <FileText className="w-8 h-8 text-[#801720] flex-shrink-0" />
-                                            <div className="text-left min-w-0">
-                                                <p className="text-xs font-bold text-slate-800 truncate max-w-[240px]">{data.file.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-semibold">{formatSize(data.file.size)}</p>
-                                            </div>
-                                            <button type="button" onClick={(e) => { e.stopPropagation(); setData('file', null); }}
-                                                className="p-1 rounded-lg hover:bg-slate-200/50 transition-colors">
-                                                <X className="w-4 h-4 text-slate-450" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center py-2 text-slate-500">
-                                            <Upload className="w-6 h-6 text-slate-400 mb-2" />
-                                            <p className="text-xs font-semibold text-slate-600">Klik untuk pilih file PDF/DOC/DOCX (maks. 20MB)</p>
-                                        </div>
-                                    )}
-                                </div>
-                                {errors.file && <p className="text-[10px] text-red-500 mt-1 font-semibold">{errors.file}</p>}
-                            </div>
-
-                            {/* Error Alert Banner */}
-                            {clientError && (
-                                <div className="flex items-center gap-2 text-[11px] text-red-700 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5">
-                                    <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {clientError}
-                                </div>
-                            )}
-
-                            {/* Bottom Actions Row */}
-                            <div className="flex justify-end pt-3">
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="px-6 py-2.5 rounded-xl bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold shadow-sm transition-all disabled:opacity-50 select-none cursor-pointer"
-                                >
-                                    {processing ? 'Mengunggah...' : 'Upload Soal'}
-                                </button>
-                            </div>
-                        </form>
+                        )}
                     </div>
-                )}
+                </div>
 
-                {/* TAB CONTENT: GENERATOR */}
-                {activeTab === 'generator' && (
-                    <>
-                        {exportError && (
-                            <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                                {exportError}
-                            </div>
-                        )}
-
-                        {isLoadingData ? (
-                            <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-16 text-center max-w-xl mx-auto">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#801720] mx-auto mb-4"></div>
-                                <p className="text-xs text-slate-500 font-bold">Mengambil data PLO &amp; CLO mata kuliah...</p>
-                            </div>
-                        ) : generatorData ? (
-                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-                                
-                                {/* Left Column: Form Editor (xl:span-5) */}
-                                <div className="xl:col-span-5 space-y-5 max-h-[80vh] overflow-y-auto pr-1">
-                                    
-                                    {/* Box 1: Informasi Ujian */}
-                                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-                                        <h2 className="text-xs font-extrabold text-gray-800 flex items-center gap-2 border-b border-gray-100 pb-2">
-                                            <Sparkles className="w-4 h-4 text-amber-500" /> Informasi Lembar Ujian
-                                        </h2>
-                                        
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                            <div className="sm:col-span-2">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Mata Kuliah</label>
-                                                {assignments.length > 1 ? (
-                                                    <select
-                                                        value={data.mata_kuliah_id}
-                                                        onChange={e => setData('mata_kuliah_id', e.target.value)}
-                                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20 bg-white font-medium cursor-pointer"
-                                                    >
-                                                        {assignments.map(a => (
-                                                            <option key={a.id} value={a.id}>{a.kode_mk ? `${a.kode_mk} - ` : ''}{a.nama_mk}</option>
-                                                        ))}
-                                                    </select>
-                                                ) : (
-                                                    <div className="mt-1 flex items-center justify-between border border-gray-100 bg-gray-50 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
-                                                        <span>{assignments[0]?.nama_mk || '-'}</span>
-                                                        {assignments[0]?.kode_mk && (
-                                                            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gray-200 text-gray-700 rounded">
-                                                                {assignments[0].kode_mk}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="sm:col-span-2">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nama Evaluasi</label>
-                                                <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
-                                                    <span>{generatorData.nama_evaluasi || (activePeriode?.nama?.toLowerCase().includes('uas') ? 'Ujian Akhir Semester (UAS)' : 'Ujian Tengah Semester (UTS)')}</span>
-                                                    <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#801720]/10 text-[#801720] rounded flex-shrink-0">
-                                                        Sesuai Periode ({activePeriode?.nama?.toLowerCase().includes('uas') ? 'UAS' : 'UTS'})
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Kode Dosen</label>
-                                                <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
-                                                    <span>{generatorData.kode_dosen || '-'}</span>
-                                                    <span className="text-[9px] font-bold text-gray-400">Paten</span>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tipe Ujian</label>
-                                                <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
-                                                    <span>{generatorData.tipe_ujian || (activePeriode?.nama?.toLowerCase().includes('uas') ? 'UAS' : 'UTS')}</span>
-                                                    <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#801720]/10 text-[#801720] rounded flex-shrink-0">
-                                                        {generatorData.tipe_ujian || (activePeriode?.nama?.toLowerCase().includes('uas') ? 'UAS' : 'UTS')}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tanggal &amp; Durasi</label>
-                                                <input
-                                                    type="text"
-                                                    value={generatorData.tanggal_evaluasi}
-                                                    onChange={e => handleHeaderChange('tanggal_evaluasi', e.target.value)}
-                                                    className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20 font-medium"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sifat Ujian</label>
-                                                <input
-                                                    type="text"
-                                                    value={generatorData.tipe_soal}
-                                                    onChange={e => handleHeaderChange('tipe_soal', e.target.value)}
-                                                    className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20 font-medium"
-                                                />
-                                            </div>
-
-                                            <div className="sm:col-span-2">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">No Form</label>
-                                                <input
-                                                    type="text"
-                                                    value={generatorData.form_no}
-                                                    onChange={e => handleHeaderChange('form_no', e.target.value)}
-                                                    className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20 font-medium"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Box 2: Petunjuk Pengerjaan */}
-                                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-                                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                            <h2 className="text-xs font-extrabold text-gray-800 flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-[#801720]" /> Petunjuk Pengerjaan
-                                            </h2>
-                                            <button
-                                                type="button"
-                                                onClick={addPetunjuk}
-                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100/80 px-2.5 py-1 rounded-lg transition-colors cursor-pointer select-none"
-                                            >
-                                                <Plus className="w-3.5 h-3.5" /> Tambah
-                                            </button>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            {generatorData.petunjuk_pengerjaan.map((item, idx) => (
-                                                <div key={idx} className="flex items-start gap-2 bg-gray-50 border border-gray-100 p-2 rounded-xl">
-                                                    <div className="flex flex-col gap-1 mt-1 text-gray-400">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => movePetunjuk(idx, -1)}
-                                                            disabled={idx === 0}
-                                                            className="hover:text-gray-650 disabled:opacity-30 cursor-pointer"
-                                                        >
-                                                            <MoveUp className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => movePetunjuk(idx, 1)}
-                                                            disabled={idx === generatorData.petunjuk_pengerjaan.length - 1}
-                                                            className="hover:text-gray-650 disabled:opacity-30 cursor-pointer"
-                                                        >
-                                                            <MoveDown className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-                                                    <span className="text-xs font-bold text-gray-400 mt-2">({idx + 1})</span>
-                                                    <textarea
-                                                        value={item}
-                                                        onChange={e => handlePetunjukChange(idx, e.target.value)}
-                                                        rows={2}
-                                                        className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#801720]/20 resize-none bg-white font-medium"
-                                                        placeholder="Masukkan petunjuk pengerjaan..."
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removePetunjuk(idx)}
-                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg mt-1 transition-colors cursor-pointer"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            ))}
-
-                                            {generatorData.petunjuk_pengerjaan.length === 0 && (
-                                                <p className="text-xs text-gray-400 text-center py-2">Belum ada petunjuk. Klik tambah di kanan atas.</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Box 3: PLO & CLO Structure */}
-                                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-                                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                            <h2 className="text-xs font-extrabold text-gray-800 flex items-center gap-2">
-                                                <Sparkles className="w-4 h-4 text-[#801720]" /> Struktur PLO &amp; CLO Mata Kuliah
-                                            </h2>
-                                            <button
-                                                type="button"
-                                                onClick={addPlo}
-                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100/80 px-2.5 py-1 rounded-lg transition-colors cursor-pointer select-none"
-                                                title="Tambah PLO dari Kurikulum MK"
-                                            >
-                                                <Plus className="w-3.5 h-3.5" /> Tambah PLO
-                                            </button>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            {generatorData.plo.map((ploItem, ploIdx) => (
-                                                <div key={ploIdx} className="border border-slate-100 rounded-2xl p-4 bg-slate-50/20 space-y-4 shadow-sm">
-                                                    
-                                                    {/* PLO Header Row */}
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="flex-1 flex gap-3">
-                                                            <div className="flex-shrink-0">
-                                                                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Kode PLO</label>
-                                                                <select
-                                                                    value={ploItem.kode}
-                                                                    onChange={e => handlePloSelect(ploIdx, e.target.value)}
-                                                                    className="px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-350 focus:border-[#801720] rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none min-w-[90px] cursor-pointer shadow-xs"
-                                                                >
-                                                                    {originalPloList.map(p => (
-                                                                        <option key={p.kode} value={p.kode}>{p.kode}</option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center justify-between mb-1">
-                                                                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Deskripsi PLO</label>
-                                                                    {(() => {
-                                                                        const ploWeight = getPloWeight(ploItem);
-                                                                        const isPloValid = ploWeight === 100;
-                                                                        return (
-                                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black border ${
-                                                                                isPloValid
-                                                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                                                                    : 'bg-amber-50 border-amber-200 text-amber-700'
-                                                                            }`}>
-                                                                                {isPloValid ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <AlertTriangle className="w-3 h-3 text-amber-600" />}
-                                                                                Bobot {ploItem.kode}: {ploWeight}% / 100%
-                                                                            </span>
-                                                                        );
-                                                                    })()}
-                                                                </div>
-                                                                <div className="w-full bg-slate-50 text-slate-700 p-2.5 rounded-xl border border-slate-100 text-xs font-semibold leading-relaxed whitespace-pre-wrap">
-                                                                    {ploItem.deskripsi || <span className="text-gray-400 italic">Tidak ada deskripsi PLO</span>}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removePlo(ploIdx)}
-                                                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer mt-5 self-start"
-                                                            title="Hapus PLO"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-
-                                                    {/* Nested CLOs */}
-                                                    <div className="pl-6 border-l-2 border-slate-200 space-y-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-[10px] font-bold text-gray-455 uppercase">Course Learning Outcomes ({ploItem.clo.length})</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => addClo(ploIdx)}
-                                                                className="inline-flex items-center gap-0.5 text-[9px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/80 px-2.5 py-0.5 rounded transition-colors cursor-pointer select-none"
-                                                                title="Tambah CLO dari Kurikulum MK"
-                                                            >
-                                                                <Plus className="w-3.5 h-3" /> Tambah CLO
-                                                            </button>
-                                                        </div>
-
-                                                        {ploItem.clo.map((cloItem, cloIdx) => (
-                                                            <div key={cloIdx} className="flex items-start justify-between gap-3 bg-white border border-slate-100/80 p-3.5 rounded-2xl shadow-[0_2px_6px_rgba(0,0,0,0.015)]">
-                                                                <div className="flex-1 flex gap-3">
-                                                                    <div className="flex-shrink-0">
-                                                                        <label className="text-[8px] font-bold text-gray-455 uppercase tracking-wider block mb-1.5">Kode CLO</label>
-                                                                        <select
-                                                                            value={cloItem.kode}
-                                                                            onChange={e => handleCloSelect(ploIdx, cloIdx, e.target.value)}
-                                                                            className="px-2.5 py-1.5 bg-white border border-blue-100 hover:border-blue-300 focus:border-blue-500 rounded-lg text-xs font-extrabold text-blue-800 focus:outline-none min-w-[80px] cursor-pointer shadow-xs"
-                                                                        >
-                                                                            {(() => {
-                                                                                const origPlo = originalPloList.find(p => p.kode === ploItem.kode);
-                                                                                const availableClos = origPlo ? origPlo.clo : [];
-                                                                                return availableClos.map(c => (
-                                                                                    <option key={c.kode} value={c.kode}>{c.kode}</option>
-                                                                                ));
-                                                                            })()}
-                                                                        </select>
-                                                                    </div>
-                                                                    <div className="flex-1">
-                                                                        <label className="text-[8px] font-bold text-gray-455 uppercase tracking-wider block mb-1">Deskripsi CLO</label>
-                                                                        <div className="w-full bg-slate-50/50 text-slate-700 p-2.5 rounded-xl border border-slate-100 text-xs font-semibold leading-relaxed whitespace-pre-wrap">
-                                                                            {cloItem.deskripsi || <span className="text-gray-400 italic">Tidak ada deskripsi CLO</span>}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="w-24">
-                                                                        <label className="text-[8px] font-bold text-gray-455 uppercase tracking-wider block mb-1">Bobot LO (%)</label>
-                                                                        <input
-                                                                            type="text"
-                                                                            value={cloItem.bobot_lo}
-                                                                            onChange={e => handleCloChange(ploIdx, cloIdx, 'bobot_lo', e.target.value)}
-                                                                            placeholder="e.g. 20%"
-                                                                            className="w-full border border-slate-200 hover:border-slate-350 focus:border-[#801720] rounded-lg px-2.5 py-1.5 text-xs text-right focus:outline-none focus:ring-2 focus:ring-[#801720]/10 font-bold bg-white transition-all shadow-xs"
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeClo(ploIdx, cloIdx)}
-                                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer mt-4 self-start"
-                                                                    title="Hapus CLO"
-                                                                >
-                                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                                </button>
-                                                            </div>
-                                                        ))}
-
-                                                        {ploItem.clo.length === 0 && (
-                                                            <p className="text-[10px] text-gray-400 italic py-1">Belum ada CLO di PLO ini.</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-
-                                            {generatorData.plo.length === 0 && (
-                                                <p className="text-xs text-gray-400 text-center py-4">Mata kuliah ini belum memiliki pemetaan PLO di database.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Right Column: Live A4 Preview (xl:span-7) */}
-                                <div className="xl:col-span-7 space-y-4">
-                                    
-                                    {/* Sticky Export Panel */}
-                                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sticky top-3 z-10">
-                                        <div>
-                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cetak Dokumen Lembar Soal</h3>
-                                            <p className={`text-[10px] font-semibold ${isWeightValid ? 'text-gray-400' : 'text-amber-600'}`}>
-                                                {isWeightValid 
-                                                    ? 'Bobot LO per PLO valid (masing-masing 100%). Dokumen siap dicetak.' 
-                                                    : (() => {
-                                                        const invalidPlos = plosWeightInfo.filter(p => !p.isValid);
-                                                        const infoStr = invalidPlos.map(p => `${p.kode}: ${p.weight}%`).join(', ');
-                                                        return `Pastikan total bobot LO per PLO adalah 100%. (Perlu penyesuaian: ${infoStr})`;
-                                                    })()
-                                                }
-                                            </p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handleExport('pdf')}
-                                                disabled={isExporting || !isWeightValid}
-                                                className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 select-none cursor-pointer disabled:cursor-not-allowed"
-                                                title={!isWeightValid ? "Total bobot LO setiap PLO harus 100% untuk mengaktifkan ekspor" : ""}
-                                            >
-                                                <FileText className="w-3.5 h-3.5" /> {isExporting ? 'Proses Ekspor...' : 'Ekspor PDF'}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* A4 Container */}
-                                    <div className="bg-slate-200/70 p-6 rounded-2xl border border-slate-300/40 max-h-[75vh] overflow-y-auto flex justify-center items-start shadow-inner">
-                                        
-                                        {/* A4 Paper Mockup */}
-                                        <div className="w-[21cm] bg-white shadow-xl p-[1.5cm] box-border text-black select-none text-[11px] relative leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
-                                            
-                                            {/* Form No */}
-                                            <div className="text-[9.5px] text-left mb-1.5">
-                                                Form No : {generatorData.form_no}
-                                            </div>
-
-                                            {/* Header Table */}
-                                            <table className="w-full border-collapse border-[1.5px] border-black text-[10px]">
-                                                <tbody>
-                                                    <tr>
-                                                        <td rowSpan={4} className="border-[1.5px] border-black p-2 text-center align-middle w-[22%]">
-                                                            <img
-                                                                src="/images/logo-telkom.png"
-                                                                alt="Logo Telkom"
-                                                                className="max-h-[42px] max-w-full mx-auto block"
-                                                                onError={(e) => {
-                                                                    e.target.style.display = 'none';
-                                                                    e.target.insertAdjacentHTML('afterend', '<strong style="font-size:11px;">Telkom<br>University</strong>');
-                                                                }}
-                                                            />
-                                                        </td>
-                                                        <td colSpan={4} className="border-[1.5px] border-black p-2 text-center align-middle font-bold text-[13px] uppercase tracking-wide bg-gray-50/50">
-                                                            LEMBAR SOAL
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="border-[1.5px] border-black px-2 py-1 w-[16%] font-normal text-gray-700 bg-gray-50/30">Nama Evaluasi</td>
-                                                        <td className="border-[1.5px] border-black px-2 py-1 w-[32%]">{generatorData.nama_evaluasi}</td>
-                                                        <td className="border-[1.5px] border-black px-2 py-1 w-[14%] font-normal text-gray-700 bg-gray-50/30">Kode dosen</td>
-                                                        <td className="border-[1.5px] border-black px-2 py-1 w-[16%]">{generatorData.kode_dosen || '-'}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="border-[1.5px] border-black px-2 py-1 font-normal text-gray-700 bg-gray-50/30">Kode/Nama MK</td>
-                                                        <td className="border-[1.5px] border-black px-2 py-1">{generatorData.kode_nama_mk}</td>
-                                                        <td className="border-[1.5px] border-black px-2 py-1 font-normal text-gray-700 bg-gray-50/30">Tipe Ujian</td>
-                                                        <td className="border-[1.5px] border-black px-2 py-1">{generatorData.tipe_ujian}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="border-[1.5px] border-black px-2 py-1 font-normal text-gray-700 bg-gray-50/30">Tanggal Evaluasi</td>
-                                                        <td className="border-[1.5px] border-black px-2 py-1">{generatorData.tanggal_evaluasi}</td>
-                                                        <td className="border-[1.5px] border-black px-2 py-1 font-normal text-gray-700 bg-gray-50/30">Tipe Soal</td>
-                                                        <td className="border-[1.5px] border-black px-2 py-1 font-bold">{generatorData.tipe_soal}</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-
-                                            {/* Petunjuk Box */}
-                                            <table className="w-full border-collapse border-[1.5px] border-black mt-2.5 text-[10px]">
-                                                <tbody>
-                                                    <tr>
-                                                        <td className="border-[1.5px] border-black p-2 text-center align-middle font-bold w-[22%] bg-gray-50/50 leading-normal">
-                                                            Petunjuk<br />Pengerjaan
-                                                        </td>
-                                                        <td className="border-[1.5px] border-black p-2 align-middle">
-                                                            {generatorData.petunjuk_pengerjaan.map((item, idx) => (
-                                                                <div key={idx} className="mb-0.5">
-                                                                    ({idx + 1}) {item || '...'}
-                                                                </div>
-                                                            ))}
-                                                            {generatorData.petunjuk_pengerjaan.length === 0 && (
-                                                                <div className="text-gray-400 italic">Belum ada petunjuk pengerjaan.</div>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-
-                                            {/* Reset sequential question tags globally in render */}
-                                            {(() => { previewQuestionIndex = 1; return null; })()}
-
-                                            {/* Loop PLOs */}
-                                            {generatorData.plo.map((ploItem, ploIdx) => (
-                                                <div key={ploIdx} className="mt-2.5 select-none">
-                                                    
-                                                    {/* PLO Row */}
-                                                    <table className="w-full border-collapse border-[1.5px] border-black text-[10px]">
-                                                        <tbody>
-                                                            <tr>
-                                                                <td className="border-[1.5px] border-black p-2 text-center align-middle font-bold w-[22%] bg-gray-50/50 leading-normal">
-                                                                    Program<br />Learning<br />Outcomes
-                                                                </td>
-                                                                <td className="border-[1.5px] border-black p-2 align-middle font-bold">
-                                                                    {ploItem.kode} – {ploItem.deskripsi || '...'}
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-
-                                                    {/* Loop CLOs inside PLO */}
-                                                    {ploItem.clo.map((cloItem, cloIdx) => {
-                                                        const currentQuestionNum = previewQuestionIndex;
-                                                        previewQuestionIndex++;
-
-                                                        return (
-                                                            <div key={cloIdx} className="mt-2.5 select-none">
-                                                                
-                                                                {/* CLO Header */}
-                                                                <table className="w-full border-collapse border-[1.5px] border-black text-[10px]">
-                                                                    <thead>
-                                                                        <tr className="bg-gray-50/50 font-bold">
-                                                                            <th className="border-[1.5px] border-black p-1.5 text-left w-[85%]">Course Learning outcomes</th>
-                                                                            <th className="border-[1.5px] border-black p-1.5 text-right w-[15%]">Bobot LO</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        <tr>
-                                                                            <td className="border-[1.5px] border-black p-2 align-middle">
-                                                                                <span className="font-bold mr-3">{cloItem.kode}</span>
-                                                                                <span>{cloItem.deskripsi || '...'}</span>
-                                                                            </td>
-                                                                            <td className="border-[1.5px] border-black p-2 text-right font-bold align-middle">
-                                                                                {cloItem.bobot_lo}
-                                                                            </td>
-                                                                        </tr>
-                                                                    </tbody>
-                                                                </table>
-
-                                                                {/* Question label */}
-                                                                <div className="text-center my-2">
-                                                                    <span className="bg-yellow-300 border border-black/10 px-2 py-0.5 text-[10px] font-bold">
-                                                                        Soal LO{currentQuestionNum}
-                                                                    </span>
-                                                                </div>
-
-                                                                {/* Bordered Question Area */}
-                                                                <div className="border-[1.5px] border-black h-[140px] flex items-center justify-center text-gray-300 font-sans text-[11px] italic bg-gray-50/10">
-                                                                    [ AREA SOAL UNTUK {cloItem.kode} ]
-                                                                </div>
-
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ))}
-
-                                            {generatorData.plo.length === 0 && (
-                                                <div className="text-center text-gray-400 italic py-8 border border-dashed border-gray-300 mt-2.5 rounded-lg">
-                                                    Belum ada PLO &amp; CLO yang ditambahkan.
-                                                </div>
-                                            )}
-
-                                            {/* Footer */}
-                                            <div className="border-t border-gray-100 mt-8 pt-2 text-[9px] text-gray-400 font-sans select-none">
-                                                Fakultas Rekayasa Industri – S1 Sistem Informasi
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-10 text-center max-w-xl mx-auto">
-                                <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
-                                <p className="text-sm text-slate-650 font-bold">Gagal memuat data generator.</p>
-                                <button
-                                    onClick={() => setActiveTab('upload')}
-                                    className="mt-4 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold"
-                                >
-                                    Kembali ke Upload
-                                </button>
-                            </div>
-                        )}
-                    </>
-                )}
+                {/* SECTION 4: Action Buttons */}
+                <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+                    <button
+                        type="button"
+                        onClick={(e) => handleSubmit(e, false)}
+                        disabled={processing || !data.file}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50 disabled:opacity-50 transition-all cursor-pointer"
+                    >
+                        Simpan sebagai Draft
+                    </button>
+                    <button
+                        type="button"
+                        onClick={(e) => handleSubmit(e, true)}
+                        disabled={processing || !data.file}
+                        className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold shadow-sm shadow-[#801720]/25 disabled:opacity-50 transition-all cursor-pointer"
+                    >
+                        {processing ? 'Menyimpan & Mengirim...' : 'Submit Soal untuk Verifikasi'}
+                    </button>
+                </div>
             </div>
         </AuthenticatedLayout>
     );

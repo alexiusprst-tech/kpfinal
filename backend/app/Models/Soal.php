@@ -25,10 +25,12 @@ class Soal extends Model
         'mime_type',
         'file_size',
         'status',
+        'plo_clo_data',
     ];
 
     protected $casts = [
         'file_size' => 'integer',
+        'plo_clo_data' => 'array',
     ];
 
     // ─── Status constants ───────────────────────────────────────────────────────

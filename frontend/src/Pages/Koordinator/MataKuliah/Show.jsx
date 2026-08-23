@@ -14,31 +14,23 @@ function Toast({ flash }) {
 
 
 const STATUS_CONFIG = {
-    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
-    APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
+    BELUM_UPLOAD: { label: 'Belum Upload', color: 'bg-slate-100 text-slate-700 border border-slate-200', dot: 'bg-slate-400' },
+    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
+    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
+    REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700 border border-amber-200',   dot: 'bg-amber-400' },
+    APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
+    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600 border border-red-200',         dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }) {
-    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IN_REVIEW;
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.BELUM_UPLOAD;
     return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${cfg.color}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
             {cfg.label}
         </span>
-    );
-}
-
-function ProgressBar({ percent, colorClass = 'bg-emerald-500' }) {
-    const p = Math.max(0, Math.min(100, percent));
-    return (
-        <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-            <div className={`h-full ${colorClass} rounded-full transition-all`} style={{ width: `${p}%` }} />
-        </div>
     );
 }
 
@@ -97,7 +89,7 @@ function SoalActions({ soal, onSubmit }) {
     }
 }
 
-export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, stats, soalList, verifikators, activity, uploadOpen }) {
+export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, stats, soalList, verifikators, activity, uploadOpen, hasActiveSoal, activeSoalStatus }) {
     const { flash } = usePage().props;
     const [tab, setTab] = useState('soal');
     const [confirmSoal, setConfirmSoal] = useState(null);
@@ -131,16 +123,41 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                         <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Dashboard
                     </Link>
                     <div className="flex items-center gap-2">
-                        {uploadOpen ? (
-                            <Link href={`/koordinator/soal/create?mata_kuliah_id=${mataKuliah.id}`}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] shadow-sm transition-all duration-200">
-                                <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
-                            </Link>
-                        ) : (
-                            <span className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 text-gray-400 rounded-xl text-xs font-semibold cursor-not-allowed" title="Periode verifikasi tidak aktif atau deadline sudah lewat">
-                                <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
-                            </span>
-                        )}
+                        {(() => {
+                            const canUpload = uploadOpen && !hasActiveSoal;
+                            const statusLabels = {
+                                DRAFT: 'Draft',
+                                SUBMITTED: 'menunggu verifikasi',
+                                IN_REVIEW: 'sedang diverifikasi',
+                                RESUBMITTED: 'menunggu verifikasi ulang',
+                                REVISION: 'perlu revisi',
+                            };
+                            const statusLabel = statusLabels[activeSoalStatus] || 'diproses';
+
+                            if (canUpload) {
+                                return (
+                                    <Link
+                                        href={`/koordinator/soal/create?mata_kuliah_id=${mataKuliah.id}`}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] shadow-sm transition-all duration-200"
+                                    >
+                                        <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
+                                    </Link>
+                                );
+                            }
+
+                            const tooltipText = !uploadOpen
+                                ? 'Periode verifikasi tidak aktif atau deadline sudah lewat'
+                                : `Soal Anda sedang ${statusLabel}. Tunggu keputusan verifikator sebelum mengunggah soal baru.`;
+
+                            return (
+                                <span
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 text-gray-400 rounded-xl text-xs font-semibold cursor-not-allowed select-none"
+                                    title={tooltipText}
+                                >
+                                    <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
+                                </span>
+                            );
+                        })()}
                     </div>
                 </div>
 
@@ -159,28 +176,22 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                 <GraduationCap className="w-4 h-4 text-gray-400" /> Dosen Pengampu: <strong>{dosenPengampu || '-'}</strong>
                             </p>
                         </div>
-                        <div className="w-full md:w-64">
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-semibold text-gray-500">Progress Verifikasi</span>
-                                <span className="text-sm font-extrabold text-[#801720]">{stats.progress}%</span>
-                            </div>
-                            <ProgressBar percent={stats.progress} />
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl">
+                            <span className="text-xs font-semibold text-gray-500">Status Soal:</span>
+                            <StatusBadge status={stats.status} />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
                         {[
-                            ['Total', stats.total, 'text-gray-700'],
-                            ['Draft', stats.draft, 'text-gray-500'],
-                            ['Submitted', stats.submitted, 'text-blue-600'],
-                            ['In Review', stats.in_review, 'text-purple-600'],
-                            ['Revision', stats.revision, 'text-amber-600'],
-                            ['Approved', stats.approved, 'text-emerald-600'],
-                            ['Rejected', stats.rejected, 'text-red-500'],
+                            ['In Review', stats.in_review, 'text-purple-600 bg-purple-50/60 border-purple-100'],
+                            ['Perlu Revisi', stats.revision, 'text-amber-600 bg-amber-50/60 border-amber-100'],
+                            ['Disetujui', stats.approved, 'text-emerald-600 bg-emerald-50/60 border-emerald-100'],
+                            ['Ditolak', stats.rejected, 'text-red-600 bg-red-50/60 border-red-100'],
                         ].map(([label, value, color]) => (
-                            <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
-                                <p className={`text-xl font-extrabold ${color}`}>{value}</p>
-                                <p className="text-[10px] text-gray-500 font-semibold mt-0.5">{label}</p>
+                            <div key={label} className={`rounded-xl p-3 text-center border ${color}`}>
+                                <p className="text-xl font-extrabold">{value}</p>
+                                <p className="text-[10px] font-semibold mt-0.5">{label}</p>
                             </div>
                         ))}
                     </div>
