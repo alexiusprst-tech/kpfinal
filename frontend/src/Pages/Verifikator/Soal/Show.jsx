@@ -242,7 +242,7 @@ export default function VerifikatorSoalShow({ soal }) {
 
                                     <div className="grid grid-cols-1 gap-2 pt-1">
                                         {plo.clo?.map((clo, cIdx) => (
-                                            <div key={cIdx} className="p-2.5 rounded-lg bg-white border border-gray-200/80 text-xs">
+                                            <div key={cIdx} className="p-2.5 rounded-lg bg-white border border-gray-200/80 text-xs space-y-1.5">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2 min-w-0">
                                                         <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px]">
@@ -254,6 +254,15 @@ export default function VerifikatorSoalShow({ soal }) {
                                                         Bobot: {clo.bobot_lo}
                                                     </span>
                                                 </div>
+
+                                                {clo.soal && (
+                                                    <div className="mt-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-800 space-y-1">
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                                                            Teks / Pertanyaan Soal:
+                                                        </span>
+                                                        <p className="whitespace-pre-line leading-relaxed text-gray-700">{clo.soal}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

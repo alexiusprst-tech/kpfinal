@@ -214,10 +214,17 @@ class BeritaAcaraController extends Controller
                 ->first();
 
             $nomor = $existing?->nomor ?? $this->generateNomor($lockedPeriod, $mataKuliah);
-
             $tanggal = now();
 
-            $data = [
+            $logoPath = public_path('images/logo-telkom.png');
+            $logoBase64 = '';
+            if (file_exists($logoPath)) {
+                $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+                $logoData = file_get_contents($logoPath);
+                $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($logoData);
+            }
+
+            $baseData = [
                 'nomor'                     => $nomor,
                 'tanggal'                   => $tanggal,
                 'tanggalIndonesia'          => $this->formatTanggalIndonesia($tanggal),
@@ -228,12 +235,12 @@ class BeritaAcaraController extends Controller
                 'programStudi'             => config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi')),
                 'koordinatorNama'          => $koordinatorDosen->nama_lengkap,
                 'kaProdi'                  => config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
-                'soalList'                 => $soalApproved->values(), // Hanya soal APPROVED
                 'clos'                     => $clos,
-                'jumlahSoal'               => $soalApproved->count(),
-                'jumlahApproved'           => $jumlahApproved,
+                'jumlahSoal'               => 1,
+                'jumlahApproved'           => 1,
                 'jumlahRevision'           => $jumlahRevision,
                 'jumlahRejected'           => $jumlahRejected,
+                'logo_base64'              => $logoBase64,
                 'tanda_tangan_evaluator'   => $dosen->tanda_tangan
                     ? storage_path('app/public/' . $dosen->tanda_tangan)
                     : null,
@@ -242,10 +249,71 @@ class BeritaAcaraController extends Controller
                     : null,
             ];
 
-            $pdf = Pdf::loadView('pdf.berita-acara', $data)->setPaper('a4', 'portrait');
+            // If only 1 approved soal exists, download its single BAP PDF
+            if ($soalApproved->count() === 1) {
+                $singleSoal = $soalApproved->first();
+                $singleData = $baseData;
+                $singleData['soalList'] = collect([$singleSoal]);
 
-            $relativePath = 'berita-acara/' . Str::uuid() . '.pdf';
-            Storage::disk('private')->put($relativePath, $pdf->output());
+                $pdf = Pdf::loadView('pdf.berita-acara', $singleData)->setPaper('a4', 'portrait');
+
+                $relativePath = 'berita-acara/' . Str::uuid() . '.pdf';
+                Storage::disk('private')->put($relativePath, $pdf->output());
+
+                $beritaAcara = BeritaAcara::updateOrCreate(
+                    [
+                        'periode_id'     => $lockedPeriod->id,
+                        'mata_kuliah_id' => $mataKuliah->id,
+                        'dibuat_oleh'    => $user->id,
+                    ],
+                    [
+                        'nomor'            => $nomor,
+                        'koordinator_id'   => $koordinatorDosen->id,
+                        'jumlah_soal'      => 1,
+                        'jumlah_approved'  => 1,
+                        'jumlah_revision'  => $jumlahRevision,
+                        'jumlah_rejected'  => $jumlahRejected,
+                        'file_path'        => $relativePath,
+                        'tanggal'          => $tanggal,
+                    ]
+                );
+
+                AuditLog::record($user->id, 'BERITA_ACARA_CREATED', 'BeritaAcara', $beritaAcara->id, null, [
+                    'nomor'          => $nomor,
+                    'mata_kuliah_id' => $mataKuliah->id,
+                    'periode_id'     => $lockedPeriod->id,
+                ]);
+
+                $cleanTitle = Str::slug($mataKuliah->kode_mk . '-' . $singleSoal->judul);
+                $filename = 'BAP-' . ($cleanTitle ?: 'soal') . '.pdf';
+
+                return $pdf->download($filename);
+            }
+
+            // If multiple approved soals exist, generate separate BAP PDF for each and package into a ZIP archive
+            $zipFilename = 'BAP-' . Str::slug($mataKuliah->kode_mk . '-' . $mataKuliah->nama_mk) . '.zip';
+            $tempZipDir = storage_path('app/temp');
+            if (!file_exists($tempZipDir)) {
+                mkdir($tempZipDir, 0755, true);
+            }
+            $tempZipPath = $tempZipDir . '/bap_' . Str::uuid() . '.zip';
+
+            $zip = new \ZipArchive();
+            if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                foreach ($soalApproved as $index => $soalItem) {
+                    $itemData = $baseData;
+                    $itemData['soalList'] = collect([$soalItem]);
+
+                    $pdf = Pdf::loadView('pdf.berita-acara', $itemData)->setPaper('a4', 'portrait');
+                    $pdfContent = $pdf->output();
+
+                    $cleanTitle = Str::slug($mataKuliah->kode_mk . '-' . $soalItem->judul);
+                    $pdfName = 'BAP-' . ($cleanTitle ?: ('soal-' . ($index + 1))) . '.pdf';
+
+                    $zip->addFromString($pdfName, $pdfContent);
+                }
+                $zip->close();
+            }
 
             $beritaAcara = BeritaAcara::updateOrCreate(
                 [
@@ -260,20 +328,19 @@ class BeritaAcaraController extends Controller
                     'jumlah_approved'  => $jumlahApproved,
                     'jumlah_revision'  => $jumlahRevision,
                     'jumlah_rejected'  => $jumlahRejected,
-                    'file_path'        => $relativePath,
+                    'file_path'        => null,
                     'tanggal'          => $tanggal,
                 ]
             );
 
-            AuditLog::record($user->id, 'BERITA_ACARA_CREATED', 'BeritaAcara', $beritaAcara->id, null, [
+            AuditLog::record($user->id, 'BERITA_ACARA_ALL_DOWNLOADED', 'BeritaAcara', $beritaAcara->id, null, [
                 'nomor'          => $nomor,
                 'mata_kuliah_id' => $mataKuliah->id,
                 'periode_id'     => $lockedPeriod->id,
+                'total_soal'     => $soalApproved->count(),
             ]);
 
-            $filename = 'Berita-Acara-' . Str::slug($mataKuliah->kode_mk . '-' . $mataKuliah->nama_mk) . '.pdf';
-
-            return $pdf->download($filename);
+            return response()->download($tempZipPath, $zipFilename)->deleteFileAfterSend(true);
         });
     }
 
@@ -335,6 +402,14 @@ class BeritaAcaraController extends Controller
 
             $tanggal = now();
 
+            $logoPath = public_path('images/logo-telkom.png');
+            $logoBase64 = '';
+            if (file_exists($logoPath)) {
+                $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+                $logoData = file_get_contents($logoPath);
+                $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($logoData);
+            }
+
             $data = [
                 'nomor'                     => $nomor,
                 'tanggal'                   => $tanggal,
@@ -352,6 +427,7 @@ class BeritaAcaraController extends Controller
                 'jumlahApproved'           => 1,
                 'jumlahRevision'           => 0,
                 'jumlahRejected'           => 0,
+                'logo_base64'              => $logoBase64,
                 'tanda_tangan_evaluator'   => $dosen->tanda_tangan
                     ? storage_path('app/public/' . $dosen->tanda_tangan)
                     : null,

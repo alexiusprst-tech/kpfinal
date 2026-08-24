@@ -38,11 +38,14 @@
         .logo-cell {
             width: 22%;
             text-align: center;
-            padding: 8px !important;
+            padding: 4px 6px !important;
+            vertical-align: middle;
         }
         .logo-img {
-            max-height: 48px;
-            max-width: 100%;
+            max-height: 80px;
+            max-width: 95%;
+            width: auto;
+            height: auto;
             display: block;
             margin: 0 auto;
         }
@@ -146,11 +149,14 @@
             margin-bottom: 15px;
         }
         .area-soal-td {
-            height: 250px;
+            min-height: 120px;
             border: 1.5px solid #000000;
             background-color: #ffffff;
-            vertical-align: middle;
-            text-align: center;
+            vertical-align: top;
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 11px;
+            line-height: 1.5;
         }
 
         /* Keep blocks together, avoid splitting CLO details and its area */
@@ -275,7 +281,11 @@
                 <table class="area-soal-table">
                     <tr>
                         <td class="area-soal-td">
-                            &nbsp;
+                            @if(!empty($cloItem['soal']))
+                                {!! nl2br(e($cloItem['soal'])) !!}
+                            @else
+                                &nbsp;
+                            @endif
                         </td>
                     </tr>
                 </table>

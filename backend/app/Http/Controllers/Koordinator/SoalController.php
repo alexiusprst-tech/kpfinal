@@ -290,6 +290,11 @@ class SoalController extends Controller
             $data['file_size'] = $file->getSize();
         }
 
+        if ($request->filled('plo_clo_data')) {
+            $ploCloRaw = $request->input('plo_clo_data');
+            $data['plo_clo_data'] = is_string($ploCloRaw) ? json_decode($ploCloRaw, true) : $ploCloRaw;
+        }
+
         $soal->update($data);
         AuditLog::record($user->id, 'UPDATE_SOAL', 'Soal', $soal->id, null, $data);
 

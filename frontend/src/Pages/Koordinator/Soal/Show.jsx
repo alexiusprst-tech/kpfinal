@@ -202,6 +202,15 @@ export default function SoalShow({ soal }) {
                                                         </span>
                                                     </div>
 
+                                                    {clo.soal && (
+                                                        <div className="mt-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-800 space-y-1">
+                                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                                                                Teks / Pertanyaan Soal:
+                                                            </span>
+                                                            <p className="whitespace-pre-line leading-relaxed text-gray-700">{clo.soal}</p>
+                                                        </div>
+                                                    )}
+
                                                     {cloNote && (
                                                         <div className="flex items-start gap-1.5 p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[11px]">
                                                             <MessageSquare className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />

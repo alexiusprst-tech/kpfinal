@@ -19,13 +19,18 @@ class DashboardController extends Controller
     private const DEADLINE_WARNING_DAYS = 7;
 
     private static array $activityLabels = [
-        'UPLOAD_SOAL'         => 'mengunggah soal baru',
-        'SUBMIT_SOAL'         => 'men-submit soal untuk verifikasi',
-        'UPLOAD_REVISI'       => 'mengunggah revisi soal',
-        'DELETE_SOAL'         => 'menghapus soal',
-        'VERIFIKASI_APPROVED' => 'menyetujui soal',
-        'VERIFIKASI_REVISION' => 'meminta revisi atas soal',
-        'VERIFIKASI_REJECTED' => 'menolak soal',
+        'UPLOAD_SOAL'                 => 'mengunggah soal baru',
+        'SUBMIT_SOAL'                 => 'men-submit soal untuk verifikasi',
+        'UPLOAD_REVISI'               => 'mengunggah revisi soal',
+        'UPDATE_SOAL'                 => 'memperbarui data soal',
+        'DELETE_SOAL'                 => 'menghapus soal',
+        'CHANGE_PASSWORD'             => 'mengubah kata sandi akun',
+        'VERIFIKASI_APPROVED'         => 'menyetujui soal',
+        'VERIFIKASI_REVISION'         => 'meminta revisi atas soal',
+        'VERIFIKASI_REJECTED'         => 'menolak soal',
+        'BERITA_ACARA_CREATED'        => 'mengunduh berita acara verifikasi',
+        'BERITA_ACARA_ALL_DOWNLOADED' => 'mengunduh semua berita acara',
+        'BERITA_ACARA_SOAL_DOWNLOADED'=> 'mengunduh berita acara soal',
     ];
 
     public function index(Request $request)
@@ -67,7 +72,7 @@ class DashboardController extends Controller
             'attention'      => $this->buildAttentionList($soalList),
             'verifikators'   => $this->buildVerifikatorList($verifikatorAssignments, $soalList),
             'cloPloOverview' => $this->buildCloPloOverview($assignments),
-            'activity'       => $this->buildActivity($soalList->pluck('id')),
+            'activity'       => $this->buildActivity($user->id),
         ]);
     }
 
@@ -214,21 +219,16 @@ class DashboardController extends Controller
         })->values()->all();
     }
 
-    private function buildActivity(Collection $soalIds): array
+    private function buildActivity(int $userId): array
     {
-        if ($soalIds->isEmpty()) {
-            return [];
-        }
-
         return AuditLog::with('user')
-            ->where('model_type', 'Soal')
-            ->whereIn('model_id', $soalIds)
+            ->where('user_id', $userId)
             ->orderByDesc('created_at')
             ->take(8)
             ->get()
             ->map(fn ($log) => [
                 'id'          => $log->id,
-                'description' => ($log->user?->name ?? 'Sistem') . ' ' . (self::$activityLabels[$log->action] ?? strtolower(str_replace('_', ' ', $log->action))),
+                'description' => ($log->user?->name ?? 'Anda') . ' ' . (self::$activityLabels[$log->action] ?? strtolower(str_replace('_', ' ', $log->action))),
                 'created_at'  => $log->created_at,
             ])
             ->all();

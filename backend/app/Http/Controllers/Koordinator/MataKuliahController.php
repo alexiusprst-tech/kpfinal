@@ -14,13 +14,18 @@ use Inertia\Inertia;
 class MataKuliahController extends Controller
 {
     private static array $activityLabels = [
-        'UPLOAD_SOAL'         => 'mengunggah soal baru',
-        'SUBMIT_SOAL'         => 'men-submit soal untuk verifikasi',
-        'UPLOAD_REVISI'       => 'mengunggah revisi soal',
-        'DELETE_SOAL'         => 'menghapus soal',
-        'VERIFIKASI_APPROVED' => 'menyetujui soal',
-        'VERIFIKASI_REVISION' => 'meminta revisi atas soal',
-        'VERIFIKASI_REJECTED' => 'menolak soal',
+        'UPLOAD_SOAL'                 => 'mengunggah soal baru',
+        'SUBMIT_SOAL'                 => 'men-submit soal untuk verifikasi',
+        'UPLOAD_REVISI'               => 'mengunggah revisi soal',
+        'UPDATE_SOAL'                 => 'memperbarui data soal',
+        'DELETE_SOAL'                 => 'menghapus soal',
+        'CHANGE_PASSWORD'             => 'mengubah kata sandi akun',
+        'VERIFIKASI_APPROVED'         => 'menyetujui soal',
+        'VERIFIKASI_REVISION'         => 'meminta revisi atas soal',
+        'VERIFIKASI_REJECTED'         => 'menolak soal',
+        'BERITA_ACARA_CREATED'        => 'mengunduh berita acara verifikasi',
+        'BERITA_ACARA_ALL_DOWNLOADED' => 'mengunduh semua berita acara',
+        'BERITA_ACARA_SOAL_DOWNLOADED'=> 'mengunduh berita acara soal',
     ];
 
     public function show(Request $request, MataKuliah $mataKuliah)
@@ -85,16 +90,14 @@ class MataKuliahController extends Controller
             ])
             ->values();
 
-        $soalIds  = $soalList->pluck('id');
-        $activity = $soalIds->isEmpty() ? collect() : AuditLog::with('user')
-            ->where('model_type', 'Soal')
-            ->whereIn('model_id', $soalIds)
+        $activity = AuditLog::with('user')
+            ->where('user_id', $user->id)
             ->orderByDesc('created_at')
             ->take(15)
             ->get()
             ->map(fn ($log) => [
                 'id'          => $log->id,
-                'description' => ($log->user?->name ?? 'Sistem') . ' ' . (self::$activityLabels[$log->action] ?? strtolower(str_replace('_', ' ', $log->action))),
+                'description' => ($log->user?->name ?? 'Anda') . ' ' . (self::$activityLabels[$log->action] ?? strtolower(str_replace('_', ' ', $log->action))),
                 'created_at'  => $log->created_at,
             ]);
 

@@ -556,47 +556,69 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                         </div>
 
                                         {/* CLO Items inside this PLO */}
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             {ploItem.clo.map((cloItem, cloIdx) => (
-                                                <div key={cloIdx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white rounded-xl border border-gray-200/80 shadow-2xs">
-                                                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                                        <select
-                                                            value={cloItem.kode}
-                                                            onChange={(e) => handleCloSelect(ploIdx, cloIdx, e.target.value)}
-                                                            className="px-2 py-1 rounded-lg border border-gray-300 bg-gray-50 text-xs font-bold text-[#801720] outline-none"
-                                                        >
-                                                            {availableClos.map(c => (
-                                                                <option key={c.kode} value={c.kode}>
-                                                                    {c.kode}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        <p className="text-xs text-gray-700 truncate flex-1">{cloItem.deskripsi}</p>
+                                                <div key={cloIdx} className="p-3.5 bg-white rounded-xl border border-gray-200/80 shadow-2xs space-y-2.5">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                            <select
+                                                                value={cloItem.kode}
+                                                                onChange={(e) => handleCloSelect(ploIdx, cloIdx, e.target.value)}
+                                                                className="px-2 py-1 rounded-lg border border-gray-300 bg-gray-50 text-xs font-bold text-[#801720] outline-none"
+                                                            >
+                                                                {availableClos.map(c => (
+                                                                    <option key={c.kode} value={c.kode}>
+                                                                        {c.kode}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <p className="text-xs text-gray-700 truncate flex-1">{cloItem.deskripsi}</p>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 self-end sm:self-center">
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-[11px] text-gray-400 font-medium">Bobot:</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    max="100"
+                                                                    value={parseInt(cloItem.bobot_lo) || ''}
+                                                                    onChange={(e) => handleCloChange(ploIdx, cloIdx, 'bobot_lo', `${e.target.value}%`)}
+                                                                    className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-xs font-bold text-center text-gray-800 outline-none focus:border-[#801720]"
+                                                                />
+                                                                <span className="text-xs font-bold text-gray-500">%</span>
+                                                            </div>
+                                                            {ploItem.clo.length > 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeClo(ploIdx, cloIdx)}
+                                                                    className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                                                    title="Hapus CLO ini"
+                                                                >
+                                                                    <X className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
 
-                                                    <div className="flex items-center gap-2 self-end sm:self-center">
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="text-[11px] text-gray-400 font-medium">Bobot:</span>
-                                                            <input
-                                                                type="number"
-                                                                min="1"
-                                                                max="100"
-                                                                value={parseInt(cloItem.bobot_lo) || ''}
-                                                                onChange={(e) => handleCloChange(ploIdx, cloIdx, 'bobot_lo', `${e.target.value}%`)}
-                                                                className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-xs font-bold text-center text-gray-800 outline-none focus:border-[#801720]"
-                                                            />
-                                                            <span className="text-xs font-bold text-gray-500">%</span>
+                                                    {/* Textarea Isi / Pertanyaan Soal */}
+                                                    <div className="pt-2 border-t border-gray-100">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <label className="text-[11px] font-bold text-gray-700 flex items-center gap-1.5">
+                                                                <FileText className="w-3.5 h-3.5 text-[#801720]" />
+                                                                Pertanyaan / Isi Soal ({cloItem.kode})
+                                                            </label>
+                                                            <span className="text-[10px] text-gray-400">
+                                                                Dicantumkan pada Lembar Soal BAP
+                                                            </span>
                                                         </div>
-                                                        {ploItem.clo.length > 1 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removeClo(ploIdx, cloIdx)}
-                                                                className="p-1 text-gray-400 hover:text-red-500 rounded"
-                                                                title="Hapus CLO ini"
-                                                            >
-                                                                <X className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        )}
+                                                        <textarea
+                                                            value={cloItem.soal || ''}
+                                                            onChange={(e) => handleCloChange(ploIdx, cloIdx, 'soal', e.target.value)}
+                                                            rows={3}
+                                                            placeholder={`Tuliskan teks pertanyaan / deskripsi soal untuk ${cloItem.kode} di sini...`}
+                                                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all resize-y bg-gray-50/50 hover:bg-white focus:bg-white"
+                                                        />
                                                     </div>
                                                 </div>
                                             ))}

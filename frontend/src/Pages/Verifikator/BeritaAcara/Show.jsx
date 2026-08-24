@@ -70,10 +70,10 @@ export default function BeritaAcaraShow({ mataKuliah, activePeriod, soalApproved
                         <a
                             href={downloadUrl}
                             className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
-                            title="Unduh satu dokumen BAP gabungan untuk semua soal yang disetujui"
+                            title="Unduh seluruh berkas BAP untuk mata kuliah ini"
                         >
-                            <Printer className="w-4 h-4" />
-                            Unduh Semua BAP (PDF)
+                            <Download className="w-4 h-4" />
+                            Unduh Semua BAP {soalApproved.length > 1 ? '(ZIP)' : '(PDF)'}
                         </a>
                     )}
                 </div>
@@ -219,25 +219,6 @@ export default function BeritaAcaraShow({ mataKuliah, activePeriod, soalApproved
                         </div>
                     )}
                 </div>
-
-                {/* Bottom Download CTA */}
-                {soalApproved.length > 0 && (
-                    <div className="bg-gradient-to-r from-[#801720] to-[#a31f2e] rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
-                        <div className="text-white">
-                            <h3 className="font-extrabold text-base">Unduh Semua Berita Acara Sekaligus?</h3>
-                            <p className="text-xs text-red-100 mt-1">
-                                Dokumen PDF gabungan akan memuat seluruh {soalApproved.length} soal yang telah disetujui untuk <strong>{mataKuliah.nama_mk}</strong>.
-                            </p>
-                        </div>
-                        <a
-                            href={downloadUrl}
-                            className="inline-flex items-center gap-2 px-5 py-3 bg-white text-[#801720] text-sm font-extrabold rounded-2xl hover:bg-red-50 transition-all duration-200 shadow-sm whitespace-nowrap flex-shrink-0"
-                        >
-                            <Download className="w-4 h-4" />
-                            Unduh Semua BAP (PDF)
-                        </a>
-                    </div>
-                )}
             </div>
         </AuthenticatedLayout>
     );
