@@ -219,7 +219,7 @@ class DashboardController extends Controller
         })->values()->all();
     }
 
-    private function buildActivity(int $userId): array
+    private function buildActivity(string|int $userId): array
     {
         return AuditLog::with('user')
             ->where('user_id', $userId)
