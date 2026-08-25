@@ -54,7 +54,7 @@ class DosenController extends Controller
             $query->where('kategori_dosen', $request->kategori);
         }
 
-        $dosenList = $query->orderBy('kode_dosen', 'asc')->paginate(15)->withQueryString();
+        $dosenList = $query->orderBy('kode_dosen', 'asc')->paginate(10)->withQueryString();
 
         return Inertia::render('SuperAdmin/Dosen/Index', [
             'dosenList' => $dosenList,

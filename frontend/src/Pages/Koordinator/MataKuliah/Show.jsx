@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
@@ -49,7 +49,7 @@ function relativeTime(dateStr) {
 
 const TABS = [
     { key: 'soal',      label: 'Soal',      icon: FileText },
-    { key: 'clo-plo',   label: 'CLO / PLO', icon: Target },
+    { key: 'plo-clo',   label: 'PLO / CLO', icon: Target },
     { key: 'aktivitas', label: 'Aktivitas', icon: ActivityIcon },
 ];
 
@@ -93,6 +93,54 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
     const { flash } = usePage().props;
     const [tab, setTab] = useState('soal');
     const [confirmSoal, setConfirmSoal] = useState(null);
+
+    const ploGroups = useMemo(() => {
+        const plosMap = new Map();
+
+        // From direct mataKuliah.plo
+        if (mataKuliah.plo && Array.isArray(mataKuliah.plo)) {
+            mataKuliah.plo.forEach(p => {
+                plosMap.set(p.id, {
+                    id: p.id,
+                    kode_plo: p.kode_plo,
+                    deskripsi: p.deskripsi,
+                    clos: [],
+                });
+            });
+        }
+
+        // Map CLOs to their respective PLOs
+        if (mataKuliah.clo && Array.isArray(mataKuliah.clo)) {
+            mataKuliah.clo.forEach(clo => {
+                if (clo.plo && Array.isArray(clo.plo) && clo.plo.length > 0) {
+                    clo.plo.forEach(p => {
+                        if (!plosMap.has(p.id)) {
+                            plosMap.set(p.id, {
+                                id: p.id,
+                                kode_plo: p.kode_plo,
+                                deskripsi: p.deskripsi,
+                                clos: [],
+                            });
+                        }
+                        const group = plosMap.get(p.id);
+                        if (!group.clos.some(c => c.id === clo.id)) {
+                            group.clos.push(clo);
+                        }
+                    });
+                }
+            });
+        }
+
+        const sorted = Array.from(plosMap.values()).sort((a, b) => 
+            (a.kode_plo || '').localeCompare(b.kode_plo || '', undefined, { numeric: true })
+        );
+
+        sorted.forEach(g => {
+            g.clos.sort((a, b) => (a.kode_clo || '').localeCompare(b.kode_clo || '', undefined, { numeric: true }));
+        });
+
+        return sorted;
+    }, [mataKuliah]);
 
     const handleSubmit = async (soal = confirmSoal) => {
         if (!soal) return;
@@ -256,19 +304,47 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                             )
                         )}
 
-                        {tab === 'clo-plo' && (
-                            (!mataKuliah.clo || mataKuliah.clo.length === 0) ? (
-                                <p className="text-sm text-gray-400 text-center py-10">Belum ada CLO yang terpetakan untuk mata kuliah ini.</p>
+                        {tab === 'plo-clo' && (
+                            ploGroups.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-10">Belum ada pemetaan PLO &amp; CLO untuk mata kuliah ini.</p>
                             ) : (
                                 <div className="grid md:grid-cols-2 gap-4">
-                                    {mataKuliah.clo.map(clo => (
-                                        <div key={clo.id} className="border border-gray-100 rounded-xl p-4">
-                                            <p className="text-sm font-bold text-gray-800">{clo.kode_clo}</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">{clo.deskripsi}</p>
-                                            <div className="flex flex-wrap gap-1 mt-2">
-                                                {clo.plo.map(plo => (
-                                                    <span key={plo.id} className="px-2 py-0.5 rounded-full bg-[#801720]/10 text-[#801720] text-[10px] font-bold">{plo.kode_plo}</span>
-                                                ))}
+                                    {ploGroups.map(plo => (
+                                        <div key={plo.id} className="border border-gray-100 rounded-2xl p-5 bg-slate-50/50 hover:bg-white hover:border-[#801720]/20 transition-all space-y-3.5 shadow-xs">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1.5">
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-[#801720]/10 text-[#801720] text-xs font-black border border-[#801720]/20">
+                                                        {plo.kode_plo}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs font-bold text-gray-800 leading-snug">
+                                                    {plo.deskripsi || '-'}
+                                                </p>
+                                            </div>
+
+                                            <div className="pt-2.5 border-t border-gray-100/80 space-y-2">
+                                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 block">
+                                                    Target CLO Terkait ({plo.clos.length})
+                                                </span>
+                                                {plo.clos.length === 0 ? (
+                                                    <p className="text-[11px] text-gray-400 italic">Belum ada CLO yang dihubungkan ke PLO ini.</p>
+                                                ) : (
+                                                    <div className="space-y-1.5">
+                                                        {plo.clos.map(clo => (
+                                                            <div key={clo.id} className="p-2.5 rounded-xl bg-white border border-gray-200/70 text-xs space-y-1">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="font-extrabold text-slate-800 text-[11px]">{clo.kode_clo}</span>
+                                                                    {clo.bloom && (
+                                                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">
+                                                                            Bloom: {clo.bloom}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-[11px] text-gray-600 leading-relaxed">{clo.deskripsi}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

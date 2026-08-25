@@ -96,9 +96,59 @@ class PeriodeController extends Controller
         $verifikatorCount = PenugasanVerifikator::where('periode_id', $periode->id)->where('status', 'ACTIVE')->count();
         $mkCount = PenugasanKoordinator::where('periode_id', $periode->id)->where('status', 'ACTIVE')->distinct('mata_kuliah_id')->count('mata_kuliah_id');
 
+        $penugasanKoordinator = PenugasanKoordinator::where('periode_id', $periode->id)
+            ->where('status', 'ACTIVE')
+            ->with(['dosen', 'mataKuliah'])
+            ->get()
+            ->map(fn ($pk) => [
+                'id'          => $pk->id,
+                'dosen_id'    => $pk->dosen_id,
+                'dosen_nama'  => $pk->dosen?->nama_lengkap ?? $pk->dosen?->nama ?? '-',
+                'dosen_kode'  => $pk->dosen?->kode_dosen ?? '-',
+                'mk_id'       => $pk->mata_kuliah_id,
+                'mk_nama'     => $pk->mataKuliah?->nama_mk ?? '-',
+                'mk_kode'     => $pk->mataKuliah?->kode_mk ?? '-',
+            ]);
+
+        $penugasanVerifikator = PenugasanVerifikator::where('periode_id', $periode->id)
+            ->where('status', 'ACTIVE')
+            ->with(['dosen', 'mataKuliah'])
+            ->get()
+            ->map(fn ($pv) => [
+                'id'          => $pv->id,
+                'dosen_id'    => $pv->dosen_id,
+                'dosen_nama'  => $pv->dosen?->nama_lengkap ?? $pv->dosen?->nama ?? '-',
+                'dosen_kode'  => $pv->dosen?->kode_dosen ?? '-',
+                'mk_id'       => $pv->mata_kuliah_id,
+                'mk_nama'     => $pv->mataKuliah?->nama_mk ?? '-',
+                'mk_kode'     => $pv->mataKuliah?->kode_mk ?? '-',
+            ]);
+
+        $uniqueKoordinator = $penugasanKoordinator->groupBy('dosen_id')->map(function ($items) {
+            $first = $items->first();
+            return [
+                'dosen_id'   => $first['dosen_id'],
+                'dosen_nama' => $first['dosen_nama'],
+                'dosen_kode' => $first['dosen_kode'],
+                'mata_kuliah'=> $items->map(fn ($i) => ['kode' => $i['mk_kode'], 'nama' => $i['mk_nama']])->values(),
+            ];
+        })->values();
+
+        $uniqueVerifikator = $penugasanVerifikator->groupBy('dosen_id')->map(function ($items) {
+            $first = $items->first();
+            return [
+                'dosen_id'   => $first['dosen_id'],
+                'dosen_nama' => $first['dosen_nama'],
+                'dosen_kode' => $first['dosen_kode'],
+                'mata_kuliah'=> $items->map(fn ($i) => ['kode' => $i['mk_kode'], 'nama' => $i['mk_nama']])->values(),
+            ];
+        })->values();
+
         $soalByStatus = Soal::where('periode_id', $periode->id)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
         $soalTotal = (int) $soalByStatus->sum();
         $soalApproved = (int) ($soalByStatus['APPROVED'] ?? 0);
+        $soalInReview = (int) ($soalByStatus['SUBMITTED'] ?? 0) + (int) ($soalByStatus['IN_REVIEW'] ?? 0) + (int) ($soalByStatus['RESUBMITTED'] ?? 0);
+        $activeReviewTarget = $soalApproved + $soalInReview;
 
         return [
             'periode' => $periode,
@@ -109,18 +159,22 @@ class PeriodeController extends Controller
                 'selesai_lewat'  => now()->gte($periode->tanggal_selesai),
             ],
             'penugasan' => [
-                'koordinator'  => $koordinatorCount,
-                'verifikator'  => $verifikatorCount,
-                'mata_kuliah'  => $mkCount,
+                'koordinator'      => $koordinatorCount,
+                'verifikator'      => $verifikatorCount,
+                'mata_kuliah'      => $mkCount,
+                'koordinator_list' => $uniqueKoordinator,
+                'verifikator_list' => $uniqueVerifikator,
             ],
             'statistik' => [
                 'total'    => $soalTotal,
                 'draft'    => (int) ($soalByStatus['DRAFT'] ?? 0),
-                'pending'  => (int) ($soalByStatus['SUBMITTED'] ?? 0) + (int) ($soalByStatus['IN_REVIEW'] ?? 0) + (int) ($soalByStatus['RESUBMITTED'] ?? 0),
+                'pending'  => $soalInReview,
                 'revisi'   => (int) ($soalByStatus['REVISION'] ?? 0),
                 'approved' => $soalApproved,
                 'rejected' => (int) ($soalByStatus['REJECTED'] ?? 0),
-                'progress' => $soalTotal > 0 ? (int) round(($soalApproved / $soalTotal) * 100) : 0,
+                'in_review'=> $soalInReview,
+                'active_review_target' => $activeReviewTarget,
+                'progress' => $activeReviewTarget > 0 ? (int) round(($soalApproved / $activeReviewTarget) * 100) : 0,
             ],
             'riwayat' => $history,
         ];

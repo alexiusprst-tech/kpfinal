@@ -47,7 +47,7 @@ class MataKuliahController extends Controller
             abort(403, 'Anda tidak memiliki akses ke mata kuliah ini.');
         }
 
-        $mataKuliah->load(['clo.plo']);
+        $mataKuliah->load(['clo.plo', 'plo.clo']);
 
         $soalList = Soal::with(['uploadedBy', 'kategori', 'latestVerifikasi.verifikator'])
             ->where('mata_kuliah_id', $mataKuliah->id)
@@ -90,16 +90,28 @@ class MataKuliahController extends Controller
             ])
             ->values();
 
-        $activity = AuditLog::with('user')
-            ->where('user_id', $user->id)
+        $soalIds = Soal::where('mata_kuliah_id', $mataKuliah->id)->pluck('id');
+
+        $rawActivities = AuditLog::with(['user.dosen'])
+            ->where(function ($q) use ($mataKuliah, $soalIds) {
+                $q->where(function ($sub) use ($soalIds) {
+                    $sub->where('model_type', 'Soal')
+                        ->whereIn('model_id', $soalIds);
+                })->orWhere(function ($sub) use ($mataKuliah) {
+                    $sub->where('model_type', 'MataKuliah')
+                        ->where('model_id', $mataKuliah->id);
+                });
+            })
+            ->whereNotIn('action', [
+                'BERITA_ACARA_CREATED',
+                'BERITA_ACARA_SOAL_DOWNLOADED',
+                'BERITA_ACARA_ALL_DOWNLOADED',
+            ])
             ->orderByDesc('created_at')
             ->take(15)
-            ->get()
-            ->map(fn ($log) => [
-                'id'          => $log->id,
-                'description' => ($log->user?->name ?? 'Anda') . ' ' . (self::$activityLabels[$log->action] ?? strtolower(str_replace('_', ' ', $log->action))),
-                'created_at'  => $log->created_at,
-            ]);
+            ->get();
+
+        $activity = AuditLog::formatLogs($rawActivities);
 
         // Cek apakah koordinator sudah memiliki soal aktif (belum final) untuk MK & periode ini.
         // Final statuses: APPROVED, REJECTED — koordinator bisa upload soal baru.

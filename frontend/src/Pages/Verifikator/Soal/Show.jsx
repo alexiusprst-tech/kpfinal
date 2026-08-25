@@ -132,7 +132,7 @@ export default function VerifikatorSoalShow({ soal }) {
             <Head title={`Review: ${soal.judul}`} />
             <Toast flash={flash} />
 
-            <div className="max-w-3xl mx-auto space-y-6">
+            <div className="w-full space-y-6 pb-12">
                 {/* Back Link */}
                 <Link
                     href="/verifikator/soal"

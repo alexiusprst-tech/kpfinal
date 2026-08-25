@@ -372,7 +372,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
             <Head title="Buat & Upload Lembar Soal" />
             <Toast flash={flash} />
 
-            <div className="max-w-4xl mx-auto space-y-6 pb-12">
+            <div className="w-full space-y-6 pb-12">
                 {/* Back link */}
                 <Link
                     href={selectedMk ? `/koordinator/mata-kuliah/${selectedMk.id}` : '/koordinator/soal'}
@@ -479,18 +479,9 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                         <div className="flex items-center gap-2 flex-wrap">
                             <button
                                 type="button"
-                                onClick={() => handleExport('docx')}
-                                disabled={isExporting || isLoadingData}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-all shadow-xs disabled:opacity-50"
-                                title="Unduh template Word dengan PLO/CLO yang telah dipilih"
-                            >
-                                <Download className="w-3.5 h-3.5" /> Template Word (.docx)
-                            </button>
-                            <button
-                                type="button"
                                 onClick={() => handleExport('pdf')}
                                 disabled={isExporting || isLoadingData}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
                                 title="Unduh template PDF dengan PLO/CLO yang telah dipilih"
                             >
                                 <Download className="w-3.5 h-3.5" /> Template PDF (.pdf)

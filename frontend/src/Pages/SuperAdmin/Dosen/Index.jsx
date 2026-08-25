@@ -249,7 +249,7 @@ export default function Index({ dosenList, filters }) {
                 {/* Active Filter Indicators & Total Count */}
                 <div className="flex items-center justify-between text-xs text-slate-500 font-semibold pt-1 border-t border-slate-100">
                     <div>
-                        Menampilkan <strong className="text-[#801720] font-extrabold">{dosenList.total}</strong> data dosen
+                        Menampilkan <strong className="text-[#801720] font-extrabold">{dosenList.from || 0} - {dosenList.to || 0}</strong> dari <strong className="text-slate-800 font-extrabold">{dosenList.total}</strong> data dosen
                         {(search || kategori || status) && <span className="text-slate-400 font-normal"> (hasil filter)</span>}
                     </div>
                 </div>

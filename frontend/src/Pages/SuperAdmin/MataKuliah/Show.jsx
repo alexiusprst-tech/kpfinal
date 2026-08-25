@@ -223,9 +223,9 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
 
             {/* Tab Content Panels */}
             {activeTab === 'plo' ? (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                     {/* Left Panel: Select PLO */}
-                    <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs">
+                    <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs flex flex-col h-full">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xs font-extrabold text-slate-800">PLO (Program Learning Outcome)</h2>
                             <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
@@ -246,7 +246,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                         </div>
 
                         {/* Scrollable PLO list */}
-                        <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+                        <div className="space-y-2 flex-1 max-h-[480px] min-h-[380px] overflow-y-auto pr-1">
                             {filteredPlos.length > 0 ? (
                                 filteredPlos.map((plo) => {
                                     const isSelected = selectedPloIds.includes(plo.id);
@@ -287,66 +287,67 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                     </div>
 
                     {/* Right Panel: Selected PLO Table */}
-                    <div className="lg:col-span-7 space-y-4">
-                        <div className="bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xs font-extrabold text-slate-800">PLO yang Dipilih untuk Mata Kuliah Ini</h2>
-                                <span className="text-[10px] font-bold text-slate-400 bg-slate-105 px-2 py-0.5 rounded">
-                                    {selectedPloIds.length} item
-                                </span>
-                            </div>
+                    <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs flex flex-col h-full">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xs font-extrabold text-slate-800">PLO yang Dipilih untuk Mata Kuliah Ini</h2>
+                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                                {selectedPloIds.length} item
+                            </span>
+                        </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="border-b border-slate-100">
-                                            <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-20">Kode PLO</th>
-                                            <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Deskripsi PLO</th>
-                                            <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-16 text-center">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {selectedPlosDetails.length > 0 ? (
-                                            selectedPlosDetails.map((plo) => (
-                                                <tr key={plo.id} className="hover:bg-slate-50/40 transition-colors">
-                                                    <td className="py-3 pr-2 align-top">
-                                                        <span className="px-2 py-0.5 rounded bg-[#801720]/5 text-[#801720] border border-[#801720]/10 font-bold text-[10px]">
-                                                            {plo.kode_plo}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-3 pr-4 text-xs font-semibold text-slate-600 leading-relaxed align-top">
-                                                        {plo.deskripsi}
-                                                    </td>
-                                                    <td className="py-3 text-center align-top">
-                                                        <button
-                                                            onClick={() => removePlo(plo.id)}
-                                                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan="3" className="py-8 text-center text-slate-400 text-xs font-bold italic">
-                                                    Belum ada PLO yang dipilih. Centang daftar di sebelah kiri.
+                        <div className="flex-1 overflow-x-auto max-h-[480px] min-h-[380px] overflow-y-auto pr-1">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-100">
+                                        <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-20">Kode PLO</th>
+                                        <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Deskripsi PLO</th>
+                                        <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-16 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {selectedPlosDetails.length > 0 ? (
+                                        selectedPlosDetails.map((plo) => (
+                                            <tr key={plo.id} className="hover:bg-slate-50/40 transition-colors">
+                                                <td className="py-3 pr-2 align-top">
+                                                    <span className="px-2 py-0.5 rounded bg-[#801720]/5 text-[#801720] border border-[#801720]/10 font-bold text-[10px]">
+                                                        {plo.kode_plo}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 pr-4 text-xs font-semibold text-slate-600 leading-relaxed align-top">
+                                                    {plo.deskripsi}
+                                                </td>
+                                                <td className="py-3 text-center align-top">
+                                                    <button
+                                                        onClick={() => removePlo(plo.id)}
+                                                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </td>
                                             </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="3" className="py-8 text-center text-slate-400 text-xs font-bold italic">
+                                                Belum ada PLO yang dipilih. Centang daftar di sebelah kiri.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-bold mt-4 pt-3 border-t border-slate-100">
+                            Menampilkan {selectedPlosDetails.length} dari {selectedPloIds.length} data terpilih
                         </div>
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                     {/* Left Panel: Select CLO */}
-                    <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs">
+                    <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs flex flex-col h-full">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xs font-extrabold text-slate-800">CLO (Course Learning Outcome)</h2>
-                            <span className="text-[10px] font-bold text-slate-400 bg-slate-105 px-2 py-0.5 rounded">
+                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
                                 {selectedCloIds.length} dipilih
                             </span>
                         </div>
@@ -364,7 +365,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                         </div>
 
                         {/* Scrollable CLO list */}
-                        <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+                        <div className="space-y-2 flex-1 max-h-[480px] min-h-[380px] overflow-y-auto pr-1">
                             {filteredClos.length > 0 ? (
                                 filteredClos.map((clo) => {
                                     const isSelected = selectedCloIds.includes(clo.id);
@@ -390,7 +391,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                                             <div className="flex-1 flex items-start gap-2.5">
                                                 <div className="flex flex-col gap-1.5 flex-shrink-0">
                                                     <span className={`px-2 py-0.5 rounded font-extrabold text-[10px] self-start ${
-                                                        isSelected ? 'bg-[#801720] text-white' : 'bg-slate-105 text-slate-650'
+                                                        isSelected ? 'bg-[#801720] text-white' : 'bg-slate-100 text-slate-650'
                                                     }`}>
                                                         {clo.kode_clo}
                                                     </span>
@@ -415,15 +416,15 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                     </div>
 
                     {/* Right Panel: Selected CLO Table */}
-                    <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs">
+                    <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/70 p-5 shadow-xs flex flex-col h-full">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xs font-extrabold text-slate-800">CLO yang Dipilih untuk Mata Kuliah Ini</h2>
-                            <span className="text-[10px] font-bold text-slate-400 bg-slate-105 px-2 py-0.5 rounded">
+                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
                                 {selectedCloIds.length} item
                             </span>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        <div className="flex-1 overflow-x-auto max-h-[480px] min-h-[380px] overflow-y-auto pr-1">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-slate-100">
@@ -480,13 +481,17 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
 
                         {/* Note block at bottom of CLO table */}
                         {selectedClosDetails.length > 0 && (
-                            <div className="mt-5 pt-4 border-t border-slate-100 flex items-start gap-2 bg-[#FFFBEB] p-3 rounded-xl border border-amber-200">
+                            <div className="mt-4 mb-2 flex items-start gap-2 bg-[#FFFBEB] p-2.5 rounded-xl border border-amber-200">
                                 <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                                 <div className="text-[10px] leading-relaxed text-amber-700 font-bold">
                                     Catatan: Bobot LO menunjukkan kontribusi setiap CLO terhadap evaluasi. Total bobot LO dihitung merata agar berjumlah tepat 100%.
                                 </div>
                             </div>
                         )}
+
+                        <div className="text-[10px] text-slate-400 font-bold mt-4 pt-3 border-t border-slate-100">
+                            Menampilkan {selectedClosDetails.length} dari {selectedCloIds.length} data terpilih
+                        </div>
                     </div>
                 </div>
             )}

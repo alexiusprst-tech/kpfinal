@@ -221,17 +221,13 @@ class DashboardController extends Controller
 
     private function buildActivity(string|int $userId): array
     {
-        return AuditLog::with('user')
+        $raw = AuditLog::with(['user.dosen'])
             ->where('user_id', $userId)
             ->orderByDesc('created_at')
             ->take(8)
-            ->get()
-            ->map(fn ($log) => [
-                'id'          => $log->id,
-                'description' => ($log->user?->name ?? 'Anda') . ' ' . (self::$activityLabels[$log->action] ?? strtolower(str_replace('_', ' ', $log->action))),
-                'created_at'  => $log->created_at,
-            ])
-            ->all();
+            ->get();
+
+        return AuditLog::formatLogs($raw)->all();
     }
 
     private function buildDeadlineInfo(?PeriodeVerifikasi $activePeriod): ?array

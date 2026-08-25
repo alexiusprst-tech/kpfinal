@@ -23,18 +23,15 @@ class SoalController extends Controller
         $query = Soal::with(['mataKuliah', 'periode', 'kategori', 'uploadedBy', 'latestVerifikasi'])
             ->whereIn('mata_kuliah_id', $assignments);
 
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             if ($request->status === 'IN_REVIEW') {
-                $query->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED', 'DRAFT']);
-            } elseif (!empty($request->status)) {
+                $query->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED']);
+            } else {
                 $query->where('status', $request->status);
             }
-        } else {
-            // Default: show pending review
-            $query->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED']);
         }
 
-        $soalList = $query->orderBy('updated_at', 'asc')->paginate(10)->withQueryString();
+        $soalList = $query->orderBy('updated_at', 'desc')->paginate(10)->withQueryString();
 
         return Inertia::render('Verifikator/Soal/Index', [
             'soalList' => $soalList,

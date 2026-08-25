@@ -73,7 +73,7 @@ export default function SoalShow({ soal }) {
             <Head title={soal.judul} />
             <Toast flash={flash} />
 
-            <div className="max-w-3xl mx-auto space-y-6">
+            <div className="w-full space-y-6 pb-12">
                 <Link href={`/koordinator/mata-kuliah/${soal.mata_kuliah_id}`}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720]">
                     <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke {soal.mata_kuliah?.nama_mk}

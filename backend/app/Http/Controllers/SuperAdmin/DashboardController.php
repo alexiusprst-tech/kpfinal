@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Clo;
 use App\Models\Dosen;
+use App\Models\KelompokMataKuliah;
 use App\Models\MataKuliah;
+use App\Models\PenugasanKoordinator;
+use App\Models\PenugasanVerifikator;
 use App\Models\PeriodeVerifikasi;
 use App\Models\Plo;
 use App\Models\Soal;
@@ -37,18 +40,109 @@ class DashboardController extends Controller
             'REJECTED'  => Soal::where('status', 'REJECTED')->count(),
         ];
 
-        // Recent Audit Logs / Activities
-        $recentActivities = AuditLog::with('user')
+        // Recent Audit Logs / Activities with human-readable description
+        $rawActivities = AuditLog::with(['user.dosen'])
             ->orderBy('created_at', 'desc')
-            ->take(6)
+            ->take(8)
             ->get();
 
-        // High priority items (e.g. pending questions waiting for review > 3 days)
-        $urgentSoal = Soal::with(['mataKuliah', 'periode', 'kategori'])
-            ->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])
-            ->orderBy('created_at', 'asc')
-            ->take(5)
-            ->get();
+        $recentActivities = AuditLog::formatLogs($rawActivities);
+
+        // Mata kuliah yang dipilih/ditugaskan oleh Super Admin pada periode aktif yang soalnya belum disetujui
+        $urgentMataKuliah = [];
+
+        if ($activePeriod) {
+            // Ambil ID mata kuliah yang dipilih/ditugaskan pada periode ini
+            $kelompokMkIds = KelompokMataKuliah::whereHas('kelompok', fn ($q) => $q->where('periode_id', $activePeriod->id))
+                ->pluck('mata_kuliah_id');
+            $penugasanKoordMkIds = PenugasanKoordinator::where('periode_id', $activePeriod->id)
+                ->where('status', 'ACTIVE')
+                ->pluck('mata_kuliah_id');
+            $penugasanVerifMkIds = PenugasanVerifikator::where('periode_id', $activePeriod->id)
+                ->where('status', 'ACTIVE')
+                ->pluck('mata_kuliah_id');
+
+            $assignedMkIds = $kelompokMkIds
+                ->merge($penugasanKoordMkIds)
+                ->merge($penugasanVerifMkIds)
+                ->unique()
+                ->filter();
+
+            if ($assignedMkIds->isNotEmpty()) {
+                $mataKuliahList = MataKuliah::whereIn('id', $assignedMkIds)
+                    ->with([
+                        'soal' => fn ($q) => $q->where('periode_id', $activePeriod->id),
+                        'penugasanKoordinator' => fn ($q) => $q->where('periode_id', $activePeriod->id)->where('status', 'ACTIVE')->with('dosen'),
+                        'penugasanVerifikator' => fn ($q) => $q->where('periode_id', $activePeriod->id)->where('status', 'ACTIVE')->with('dosen'),
+                    ])
+                    ->get();
+
+                $urgentMataKuliah = $mataKuliahList
+                    ->filter(function ($mk) {
+                        $approvedSoal = $mk->soal->where('status', 'APPROVED');
+                        // Jika belum ada soal yang disetujui (APPROVED == 0), maka belum bisa mencetak berita acara (perlu perhatian)
+                        return $approvedSoal->isEmpty();
+                    })
+                    ->map(function ($mk) {
+                        $soals = $mk->soal;
+                        $koordinator = $mk->penugasanKoordinator->first()?->dosen?->nama_lengkap;
+                        $verifikator = $mk->penugasanVerifikator->first()?->dosen?->nama_lengkap;
+
+                        if ($soals->isEmpty()) {
+                            $status = 'BELUM_UPLOAD';
+                            $statusLabel = 'Belum Upload';
+                            $keterangan = 'Belum ada berkas soal diunggah';
+                            $priority = 3;
+                        } elseif ($soals->contains('status', 'REVISION')) {
+                            $status = 'REVISION';
+                            $statusLabel = 'Perlu Revisi';
+                            $keterangan = 'Soal memerlukan revisi dari koordinator';
+                            $priority = 1;
+                        } elseif ($soals->contains('status', 'REJECTED')) {
+                            $status = 'REJECTED';
+                            $statusLabel = 'Ditolak';
+                            $keterangan = 'Soal ditolak verifikator';
+                            $priority = 2;
+                        } elseif ($soals->contains(fn ($s) => in_array($s->status, ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED']))) {
+                            $status = 'IN_REVIEW';
+                            $statusLabel = 'Menunggu Verifikasi';
+                            $keterangan = 'Soal sedang menunggu verifikasi';
+                            $priority = 4;
+                        } elseif ($soals->contains('status', 'DRAFT')) {
+                            $status = 'DRAFT';
+                            $statusLabel = 'Draft';
+                            $keterangan = 'Soal masih berstatus draf';
+                            $priority = 5;
+                        } else {
+                            $status = 'BELUM_DISETUJUI';
+                            $statusLabel = 'Belum Disetujui';
+                            $keterangan = 'Belum ada soal yang disetujui';
+                            $priority = 6;
+                        }
+
+                        $latestDate = $soals->sortByDesc('updated_at')->first()?->updated_at ?? $mk->updated_at;
+
+                        return [
+                            'id'           => $mk->id,
+                            'kode_mk'      => $mk->kode_mk,
+                            'nama_mk'      => $mk->nama_mk,
+                            'semester'     => $mk->semester,
+                            'sks'          => $mk->sks,
+                            'total_soal'   => $soals->count(),
+                            'koordinator'  => $koordinator,
+                            'verifikator'  => $verifikator,
+                            'status'       => $status,
+                            'status_label' => $statusLabel,
+                            'keterangan'   => $keterangan,
+                            'priority'     => $priority,
+                            'created_at'   => $latestDate,
+                        ];
+                    })
+                    ->sortBy(fn ($item) => [$item['priority'], $item['nama_mk']])
+                    ->values()
+                    ->all();
+            }
+        }
 
         // Get last 7 days metrics via bulk aggregation (2 queries instead of 21)
         $startDate = now()->subDays(6)->startOfDay();
@@ -111,7 +205,8 @@ class DashboardController extends Controller
             'progressPct'      => $progressPct,
             'statusCounts'     => $statusCounts,
             'recentActivities' => $recentActivities,
-            'urgentSoal'       => $urgentSoal,
+            'urgentMataKuliah' => $urgentMataKuliah,
+            'urgentSoal'       => $urgentMataKuliah,
             'trendData'        => [
                 'labels'    => $dates,
                 'menunggu'  => $menungguData,

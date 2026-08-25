@@ -211,7 +211,6 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
 
                         <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1">
                             <span>{progress.mkWithSoal} dari {progress.totalMk} MK telah memiliki soal</span>
-                            <span className="font-bold text-gray-700">{progress.totalSoal} Total Berkas Soal</span>
                         </div>
                     </div>
 
@@ -224,7 +223,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                 </div>
                                 <div>
                                     <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider">Progress Verifikasi</h3>
-                                    <p className="text-[11px] text-gray-500">Soal yang telah disetujui (Approved) oleh verifikator</p>
+                                    <p className="text-[11px] text-gray-500">Soal yang telah disetujui (Approved) dari soal yang direview</p>
                                 </div>
                             </div>
                             <span className="text-xl font-black text-gray-900">{progress.verification}%</span>
@@ -239,7 +238,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1">
-                            <span>{progress.approvedSoal} dari {progress.totalSoal} soal disetujui</span>
+                            <span>{progress.approvedSoal} dari {progress.reviewedSoal ?? progress.totalSoal} soal disetujui</span>
                             <span className="font-bold text-emerald-700">{progress.approvedSoal} Selesai</span>
                         </div>
                     </div>
@@ -444,11 +443,12 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                 <div key={act.id} className="flex items-start gap-3 text-xs text-gray-700">
                                     <div className="w-2 h-2 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
                                     <div className="flex-1">
-                                        <span className="font-bold text-gray-900">{act.user_name}</span>{' '}
-                                        <span className="text-gray-600">melakukan aksi</span>{' '}
-                                        <span className="font-mono font-bold text-[#801720] bg-[#801720]/5 px-1.5 py-0.5 rounded">
-                                            {act.action}
-                                        </span>
+                                        <p className="font-medium text-gray-800 leading-snug">
+                                            {act.description || act.action}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400 mt-0.5">
+                                            {act.user?.name || act.user_name || 'Sistem'}
+                                        </p>
                                     </div>
                                     <span className="text-[10px] text-gray-400 whitespace-nowrap">
                                         {act.created_at ? formatDateTime(act.created_at) : '—'}

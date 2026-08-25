@@ -496,7 +496,7 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
             </div>
 
             {/* View Detail Modal */}
-            <Modal open={!!viewItem} onClose={() => setViewItem(null)} title={`Detail Periode: ${viewItem?.periode?.nama || ''}`} maxWidth="max-w-2xl">
+            <Modal open={!!viewItem} onClose={() => setViewItem(null)} title={`Detail Periode: ${viewItem?.periode?.nama || ''}`} maxWidth="max-w-3xl">
                 {viewItem && viewItem.periode && (
                     <div className="space-y-5">
                         {/* Info Ringkasan Card */}
@@ -563,7 +563,7 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
                                 })}
                             </div>
 
-                            <div className="p-4 bg-white">
+                            <div className="p-4 sm:p-5 bg-white h-[390px] overflow-y-auto flex flex-col justify-start">
                                 {detailTab === 'timeline' && viewItem.timeline && (
                                     <div className="space-y-4">
                                         {[
@@ -590,22 +590,103 @@ export default function PeriodeIndex({ list, stats, tahunAjaranAll, tahunAjaranA
                                 )}
 
                                 {detailTab === 'penugasan' && viewItem.penugasan && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        {[
-                                            ['Koordinator Ditugaskan', viewItem.penugasan.koordinator ?? 0, Users],
-                                            ['Verifikator Ditugaskan', viewItem.penugasan.verifikator ?? 0, FileCheck],
-                                            ['Mata Kuliah Terlibat', viewItem.penugasan.mata_kuliah ?? 0, BookOpen],
-                                        ].map(([label, value, Icon]) => (
-                                            <div key={label} className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                                                <div className="w-9 h-9 rounded-lg bg-[#801720]/10 flex items-center justify-center flex-shrink-0 text-[#801720]">
-                                                    <Icon className="w-4 h-4" />
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            {[
+                                                ['Koordinator Ditugaskan', viewItem.penugasan.koordinator ?? 0, Users],
+                                                ['Verifikator Ditugaskan', viewItem.penugasan.verifikator ?? 0, FileCheck],
+                                                ['Mata Kuliah Terlibat', viewItem.penugasan.mata_kuliah ?? 0, BookOpen],
+                                            ].map(([label, value, Icon]) => (
+                                                <div key={label} className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                                    <div className="w-9 h-9 rounded-lg bg-[#801720]/10 flex items-center justify-center flex-shrink-0 text-[#801720]">
+                                                        <Icon className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-[11px] font-semibold text-gray-500 block">{label}</span>
+                                                        <span className="text-base font-extrabold text-gray-800">{value}</span>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <span className="text-[11px] font-semibold text-gray-500 block">{label}</span>
-                                                    <span className="text-base font-extrabold text-gray-800">{value}</span>
+                                            ))}
+                                        </div>
+
+                                        {/* Daftar Dosen Penugasan */}
+                                        <div className="grid md:grid-cols-2 gap-4 pt-1">
+                                            {/* Koordinator List */}
+                                            <div className="border border-slate-200/80 rounded-2xl p-4 bg-white space-y-3 shadow-2xs">
+                                                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                                    <div className="flex items-center gap-2">
+                                                        <Users className="w-4 h-4 text-[#801720]" />
+                                                        <h4 className="text-xs font-bold text-slate-800">Dosen Koordinator MK</h4>
+                                                    </div>
+                                                    <span className="px-2 py-0.5 rounded-full bg-red-50 text-[#801720] text-[10px] font-extrabold">
+                                                        {viewItem.penugasan.koordinator_list?.length || 0} Dosen
+                                                    </span>
                                                 </div>
+
+                                                {(!viewItem.penugasan.koordinator_list || viewItem.penugasan.koordinator_list.length === 0) ? (
+                                                    <p className="text-xs text-slate-400 italic py-4 text-center">Belum ada dosen koordinator yang ditugaskan.</p>
+                                                ) : (
+                                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                                        {viewItem.penugasan.koordinator_list.map((d, i) => (
+                                                            <div key={d.dosen_id || i} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 hover:bg-slate-100/60 transition-colors">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="text-xs font-bold text-slate-800 leading-snug">{d.dosen_nama}</span>
+                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white text-slate-600 border border-slate-200 flex-shrink-0">
+                                                                        {d.dosen_kode}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {d.mata_kuliah?.map((mk, mkIdx) => (
+                                                                        <span key={mkIdx} className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200/80" title={mk.nama}>
+                                                                            <span className="font-bold text-[#801720]">{mk.kode}</span>
+                                                                            <span className="truncate max-w-[130px]">{mk.nama}</span>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
-                                        ))}
+
+                                            {/* Verifikator List */}
+                                            <div className="border border-slate-200/80 rounded-2xl p-4 bg-white space-y-3 shadow-2xs">
+                                                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileCheck className="w-4 h-4 text-emerald-600" />
+                                                        <h4 className="text-xs font-bold text-slate-800">Dosen Verifikator MK</h4>
+                                                    </div>
+                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-extrabold">
+                                                        {viewItem.penugasan.verifikator_list?.length || 0} Dosen
+                                                    </span>
+                                                </div>
+
+                                                {(!viewItem.penugasan.verifikator_list || viewItem.penugasan.verifikator_list.length === 0) ? (
+                                                    <p className="text-xs text-slate-400 italic py-4 text-center">Belum ada dosen verifikator yang ditugaskan.</p>
+                                                ) : (
+                                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                                        {viewItem.penugasan.verifikator_list.map((d, i) => (
+                                                            <div key={d.dosen_id || i} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 hover:bg-slate-100/60 transition-colors">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="text-xs font-bold text-slate-800 leading-snug">{d.dosen_nama}</span>
+                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white text-slate-600 border border-slate-200 flex-shrink-0">
+                                                                        {d.dosen_kode}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {d.mata_kuliah?.map((mk, mkIdx) => (
+                                                                        <span key={mkIdx} className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200/80" title={mk.nama}>
+                                                                            <span className="font-bold text-emerald-700">{mk.kode}</span>
+                                                                            <span className="truncate max-w-[130px]">{mk.nama}</span>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 

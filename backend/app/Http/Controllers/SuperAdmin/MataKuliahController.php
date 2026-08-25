@@ -36,7 +36,7 @@ class MataKuliahController extends Controller
 
         $mataKuliahList = $query->orderBy('semester', 'asc')
             ->orderBy('kode_mk', 'asc')
-            ->paginate(15)
+            ->paginate(10)
             ->withQueryString();
 
         $allPlo = Plo::orderBy('kode_plo', 'asc')->get();

@@ -294,8 +294,17 @@ class KelompokVerifikasiController extends Controller
                     SUM(CASE WHEN status = 'SUBMITTED' THEN 1 ELSE 0 END) as submitted,
                     SUM(CASE WHEN status IN ('IN_REVIEW', 'RESUBMITTED') THEN 1 ELSE 0 END) as in_review,
                     SUM(CASE WHEN status = 'REVISION' THEN 1 ELSE 0 END) as revision,
-                    SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved
+                    SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved,
+                    SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as rejected
                 ")->first();
+
+            $totalCount = (int) ($counts->total ?? 0);
+            $draftCount = (int) ($counts->draft ?? 0);
+            $reviewedCount = (int) ($counts->submitted ?? 0)
+                + (int) ($counts->in_review ?? 0)
+                + (int) ($counts->revision ?? 0)
+                + (int) ($counts->approved ?? 0)
+                + (int) ($counts->rejected ?? 0);
 
             return [
                 'id'               => $kmk->id,
@@ -307,15 +316,23 @@ class KelompokVerifikasiController extends Controller
                 'koordinator'      => $koordinators->first(),
                 'koordinator_list' => $koordinators->values(),
                 'verifikator_list' => $verifikators->values(),
+                'soal_count'       => $totalCount,
+                'draft'            => $draftCount,
+                'submitted'        => (int) ($counts->submitted ?? 0),
+                'in_review'        => (int) ($counts->in_review ?? 0),
+                'revision'         => (int) ($counts->revision ?? 0),
+                'approved'         => (int) ($counts->approved ?? 0),
+                'rejected'         => (int) ($counts->rejected ?? 0),
                 'stats'            => [
-                    'total'     => (int) ($counts->total ?? 0),
-                    'draft'     => (int) ($counts->draft ?? 0),
+                    'total'     => $totalCount,
+                    'draft'     => $draftCount,
                     'submitted' => (int) ($counts->submitted ?? 0),
                     'in_review' => (int) ($counts->in_review ?? 0),
                     'revision'  => (int) ($counts->revision ?? 0),
                     'approved'  => (int) ($counts->approved ?? 0),
+                    'rejected'  => (int) ($counts->rejected ?? 0),
                 ],
-                'status_progres'   => ($counts->approved ?? 0) > 0 ? 'COMPLETE' : (($counts->total ?? 0) > 0 ? 'IN_PROGRESS' : 'PENDING'),
+                'status_progres'   => ($counts->approved ?? 0) > 0 ? 'COMPLETE' : ($totalCount > 0 ? 'IN_PROGRESS' : 'PENDING'),
             ];
         });
 
@@ -344,7 +361,8 @@ class KelompokVerifikasiController extends Controller
                     COUNT(*) as total,
                     SUM(CASE WHEN status IN ('SUBMITTED', 'IN_REVIEW', 'RESUBMITTED') THEN 1 ELSE 0 END) as menunggu,
                     SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as diverifikasi,
-                    SUM(CASE WHEN status = 'REVISION' THEN 1 ELSE 0 END) as revisi
+                    SUM(CASE WHEN status = 'REVISION' THEN 1 ELSE 0 END) as revisi,
+                    SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as ditolak
                 ")->first();
 
             return [
@@ -358,6 +376,7 @@ class KelompokVerifikasiController extends Controller
                 'menunggu'        => (int) ($counts->menunggu ?? 0),
                 'diverifikasi'    => (int) ($counts->diverifikasi ?? 0),
                 'revisi'          => (int) ($counts->revisi ?? 0),
+                'ditolak'         => (int) ($counts->ditolak ?? 0),
                 'status'          => $dosen->status ?? 'ACTIVE',
             ];
         })->values();
@@ -366,27 +385,23 @@ class KelompokVerifikasiController extends Controller
         $totalMk = $mkListStats->count();
         $mkWithSoal = $mkListStats->filter(fn($m) => $m['stats']['total'] > 0)->count();
         $totalSoal = $mkListStats->sum(fn($m) => $m['stats']['total']);
+        $inReviewSoal = $mkListStats->sum(fn($m) => $m['stats']['submitted'] + $m['stats']['in_review']);
         $approvedSoal = $mkListStats->sum(fn($m) => $m['stats']['approved']);
+        $activeReviewTarget = $approvedSoal + $inReviewSoal;
 
         $uploadProgress = $totalMk > 0 ? round(($mkWithSoal / $totalMk) * 100) : 0;
-        $verificationProgress = $totalSoal > 0 ? round(($approvedSoal / $totalSoal) * 100) : 0;
+        // Progress verifikasi: Approved dibagi total soal yang aktif direview (Approved + In Review / Submitted), mengecualikan Ditolak dan Draft
+        $verificationProgress = $activeReviewTarget > 0 ? round(($approvedSoal / $activeReviewTarget) * 100) : 0;
 
         // Recent Audit Logs for this group
         $recentActivities = AuditLog::where('model_type', 'KelompokVerifikasi')
             ->where('model_id', $kelompokVerifikasi->id)
-            ->with('user')
+            ->with('user.dosen')
             ->orderBy('created_at', 'desc')
             ->limit(10)
-            ->get()
-            ->map(function ($log) {
-                return [
-                    'id'         => $log->id,
-                    'action'     => $log->action,
-                    'model_type' => $log->model_type,
-                    'user_name'  => $log->user->name ?? 'System',
-                    'created_at' => $log->created_at ? $log->created_at->toISOString() : null,
-                ];
-            });
+            ->get();
+
+        $formattedActivities = AuditLog::formatLogs($recentActivities);
 
         return Inertia::render('SuperAdmin/KelompokVerifikasi/Show', [
             'kelompok'              => $kelompokVerifikasi,
@@ -398,9 +413,11 @@ class KelompokVerifikasiController extends Controller
                 'totalMk'      => $totalMk,
                 'mkWithSoal'   => $mkWithSoal,
                 'totalSoal'    => $totalSoal,
+                'inReviewSoal' => $inReviewSoal,
+                'reviewedSoal' => $activeReviewTarget,
                 'approvedSoal' => $approvedSoal,
             ],
-            'recentActivities'      => $recentActivities,
+            'recentActivities'      => $formattedActivities,
         ]);
     }
 
@@ -601,6 +618,7 @@ class KelompokVerifikasiController extends Controller
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             $this->syncAffectedDosenRoles();
+            $this->syncMataKuliahStatus();
 
             AuditLog::record(
                 $request->user()->id,
@@ -625,6 +643,7 @@ class KelompokVerifikasiController extends Controller
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             $this->syncAffectedDosenRoles();
+            $this->syncMataKuliahStatus();
 
             AuditLog::record(
                 $request->user()->id,
@@ -652,6 +671,7 @@ class KelompokVerifikasiController extends Controller
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             $this->syncAffectedDosenRoles();
+            $this->syncMataKuliahStatus();
 
             $kelompokVerifikasi->delete();
 
@@ -762,6 +782,27 @@ class KelompokVerifikasiController extends Controller
 
         // Synchronize all dosen user roles
         $this->syncAffectedDosenRoles();
+
+        // Synchronize all mata kuliah statuses based on active assignments
+        $this->syncMataKuliahStatus();
+    }
+
+    /**
+     * Recalculate and synchronize status for all MataKuliah based on active assignments in active period
+     */
+    protected function syncMataKuliahStatus(): void
+    {
+        $activePeriode = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+        if ($activePeriode) {
+            $assignedMkIds = PenugasanKoordinator::where('periode_id', $activePeriode->id)
+                ->where('status', 'ACTIVE')
+                ->pluck('mata_kuliah_id')
+                ->unique()
+                ->toArray();
+
+            MataKuliah::whereIn('id', $assignedMkIds)->update(['status' => 'ACTIVE']);
+            MataKuliah::whereNotIn('id', $assignedMkIds)->update(['status' => 'INACTIVE']);
+        }
     }
 
     /**

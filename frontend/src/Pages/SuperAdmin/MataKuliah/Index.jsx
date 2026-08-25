@@ -224,15 +224,6 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 Nonaktif
                             </button>
                         </div>
-
-                        {(search || semester || status) && (
-                            <button
-                                onClick={handleResetFilters}
-                                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors"
-                            >
-                                Reset Filter
-                            </button>
-                        )}
                     </div>
                 </div>
 
@@ -259,7 +250,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                 {/* Counter Footer */}
                 <div className="flex items-center justify-between text-xs text-slate-500 font-semibold pt-2 border-t border-slate-100">
                     <div>
-                        Menampilkan <strong className="text-[#801720] font-extrabold">{mataKuliahList.total}</strong> mata kuliah kurikulum
+                        Menampilkan <strong className="text-[#801720] font-extrabold">{mataKuliahList.from || 0} - {mataKuliahList.to || 0}</strong> dari <strong className="text-slate-800 font-extrabold">{mataKuliahList.total}</strong> mata kuliah kurikulum
                         {(search || semester || status) && <span className="text-slate-400 font-normal"> (hasil filter)</span>}
                     </div>
                 </div>

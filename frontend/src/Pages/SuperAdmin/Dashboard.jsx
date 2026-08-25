@@ -62,11 +62,14 @@ export default function Dashboard({
     progressPct = 0,
     statusCounts = { SUBMITTED: 0, REVISION: 0, APPROVED: 0, REJECTED: 0 },
     recentActivities = [],
+    urgentMataKuliah = [],
     urgentSoal = [],
     trendData = { labels: [], menunggu: [], disetujui: [], ditolak: [] }
 }) {
     const { auth } = usePage().props;
     const userName = auth?.user?.name || 'Super Admin';
+
+    const attentionList = (urgentMataKuliah && urgentMataKuliah.length > 0) ? urgentMataKuliah : (urgentSoal || []);
 
     // Chart ref and download handler
     const chartRef = useRef(null);
@@ -95,17 +98,45 @@ export default function Dashboard({
     };
 
     // Badge styling helper
-    const getUrgentBadge = (soal) => {
-        const diffMs = Date.now() - new Date(soal.created_at).getTime();
-        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (days >= 3) {
-            return { label: 'Urgent', bg: 'bg-red-50 text-red-700 border-red-200' };
-        } else if (soal.status === 'RESUBMITTED') {
-            return { label: 'Re-upload', bg: 'bg-blue-50 text-blue-700 border-blue-200' };
-        } else {
-            return { label: 'Priority', bg: 'bg-amber-50 text-amber-700 border-amber-200' };
+    const getUrgentBadge = (item) => {
+        const status = item?.status;
+        switch (status) {
+            case 'REVISION':
+                return { label: 'Perlu Revisi', bg: 'bg-amber-50 text-amber-700 border-amber-200' };
+            case 'REJECTED':
+                return { label: 'Ditolak', bg: 'bg-red-50 text-red-700 border-red-200' };
+            case 'IN_REVIEW':
+            case 'SUBMITTED':
+            case 'RESUBMITTED':
+                return { label: 'Menunggu Verifikasi', bg: 'bg-purple-50 text-purple-700 border-purple-200' };
+            case 'BELUM_UPLOAD':
+                return { label: 'Belum Upload', bg: 'bg-slate-100 text-slate-600 border-slate-200' };
+            case 'DRAFT':
+                return { label: 'Draf', bg: 'bg-blue-50 text-blue-700 border-blue-200' };
+            default:
+                return { label: item?.status_label || 'Belum Disetujui', bg: 'bg-amber-50 text-amber-700 border-amber-200' };
         }
+    };
+
+    // Fallback activity text formatter
+    const formatActivityFallback = (action) => {
+        if (!action) return 'Aktivitas sistem';
+        const dict = {
+            'BERITA_ACARA_SOAL_DOWNLOADED': 'Berita acara soal telah diunduh',
+            'BERITA_ACARA_CREATED': 'Berita acara verifikasi telah dibuat',
+            'BERITA_ACARA_ALL_DOWNLOADED': 'Semua berita acara telah diunduh',
+            'VERIFIKASI_APPROVED': 'Soal verifikasi telah disetujui',
+            'VERIFIKASI_REVISION': 'Soal verifikasi diminta revisi',
+            'VERIFIKASI_REJECTED': 'Soal verifikasi ditolak',
+            'UPLOAD_SOAL': 'Mengunggah berkas soal baru',
+            'SUBMIT_SOAL': 'Mengajukan soal untuk verifikasi',
+            'UPLOAD_REVISI': 'Mengunggah revisi berkas soal',
+            'UPDATE_SOAL': 'Memperbarui data berkas soal',
+            'DELETE_SOAL': 'Menghapus berkas soal',
+            'CHANGE_PASSWORD': 'Mengubah kata sandi akun',
+        };
+        if (dict[action]) return dict[action];
+        return action.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     };
 
     // Modal state for Generate Laporan
@@ -347,22 +378,27 @@ export default function Dashboard({
                                         <AlertTriangle className="w-4 h-4 text-amber-500" /> Perlu Perhatian
                                     </h2>
                                     <span className="text-xs font-semibold text-slate-500">
-                                        {urgentSoal.length} Soal
+                                        {attentionList.length} Mata Kuliah
                                     </span>
                                 </div>
 
-                                <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
-                                    {urgentSoal.length > 0 ? (
-                                        urgentSoal.map((soal) => {
-                                            const badge = getUrgentBadge(soal);
+                                <div className="space-y-2.5 max-h-[170px] overflow-y-auto pr-1">
+                                    {attentionList.length > 0 ? (
+                                        attentionList.map((item) => {
+                                            const badge = getUrgentBadge(item);
+                                            const namaMk = item.nama_mk || item.mata_kuliah?.nama_mk || 'Mata Kuliah';
+                                            const kodeMk = item.kode_mk || item.mata_kuliah?.kode_mk || '';
+                                            const koordinator = item.koordinator ? `Koord: ${item.koordinator}` : 'Koordinator belum ada';
+                                            const keterangan = item.keterangan || (item.kategori?.nama ? `${item.kategori.nama} • ${relativeTime(item.created_at)}` : 'Belum disetujui');
+
                                             return (
-                                                <div key={soal.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:bg-slate-100/60 transition-colors">
+                                                <div key={item.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:bg-slate-100/60 transition-colors">
                                                     <div className="min-w-0 flex-1 pr-2">
                                                         <p className="text-xs font-bold text-gray-800 truncate">
-                                                            {soal.mata_kuliah?.nama_mk || 'Mata Kuliah'}
+                                                            {namaMk} {kodeMk && <span className="text-gray-400 font-normal">({kodeMk})</span>}
                                                         </p>
-                                                        <p className="text-[10px] text-gray-400 font-medium mt-0.5">
-                                                            {soal.kategori?.nama || '-'} • {relativeTime(soal.created_at)}
+                                                        <p className="text-[10px] text-gray-400 font-medium mt-0.5 truncate">
+                                                            {koordinator} • {keterangan}
                                                         </p>
                                                     </div>
                                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex-shrink-0 ${badge.bg}`}>
@@ -372,7 +408,7 @@ export default function Dashboard({
                                             );
                                         })
                                     ) : (
-                                        <p className="text-xs text-gray-400 text-center py-6">Semua aman. Tidak ada berkas soal yang memerlukan perhatian.</p>
+                                        <p className="text-xs text-gray-400 text-center py-6">Semua aman. Seluruh mata kuliah telah memiliki soal yang disetujui.</p>
                                     )}
                                 </div>
                             </div>
@@ -390,14 +426,18 @@ export default function Dashboard({
                                     </span>
                                 </div>
 
-                                <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
+                                <div className="space-y-2.5 max-h-[170px] overflow-y-auto pr-1">
                                     {recentActivities.length > 0 ? (
                                         recentActivities.map((act) => (
                                             <div key={act.id} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100/60 transition-colors">
                                                 <div className="w-2 h-2 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs text-gray-700 leading-snug font-medium">{act.description || act.action}</p>
-                                                    <p className="text-[10px] text-gray-400 mt-1">{act.user?.name || 'Sistem'} • {relativeTime(act.created_at)}</p>
+                                                    <p className="text-xs text-gray-700 leading-snug font-medium">
+                                                        {act.description || formatActivityFallback(act.action)}
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-400 mt-1">
+                                                        {act.user?.name || act.user_name || 'Sistem'} • {relativeTime(act.created_at)}
+                                                    </p>
                                                 </div>
                                             </div>
                                         ))
