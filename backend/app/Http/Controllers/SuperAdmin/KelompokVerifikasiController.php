@@ -828,8 +828,9 @@ class KelompokVerifikasiController extends Controller
                     $dosen->user->update(['role' => 'VERIFIKATOR']);
                 }
             } else {
-                if ($dosen->user->role !== null) {
-                    $dosen->user->update(['role' => null]);
+                // Tidak ada penugasan aktif — kembalikan ke DOSEN (kolom role NOT NULL)
+                if ($dosen->user->role !== 'DOSEN') {
+                    $dosen->user->update(['role' => 'DOSEN']);
                 }
             }
         }

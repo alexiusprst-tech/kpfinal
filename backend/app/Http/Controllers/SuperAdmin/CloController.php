@@ -34,11 +34,44 @@ class CloController extends Controller
         $allPlo  = Plo::orderBy('kode_plo', 'asc')->get();
         $allMk   = MataKuliah::where('status', 'ACTIVE')->orderBy('nama_mk', 'asc')->get(['id', 'kode_mk', 'nama_mk']);
 
+        // Data flat mapping untuk tampilan detail per Mata Kuliah (seperti Excel)
+        $allClosWithRelations = Clo::with(['plo', 'mataKuliah'])->orderBy('kode_clo', 'asc')->get();
+        $flatMappings = [];
+        $no = 1;
+        foreach ($allClosWithRelations as $c) {
+            $ploString = $c->plo->pluck('kode_plo')->join(', ');
+            if ($c->mataKuliah->isEmpty()) {
+                $flatMappings[] = [
+                    'no'        => $no++,
+                    'plo'       => $ploString ?: '—',
+                    'kode_clo'  => $c->kode_clo,
+                    'deskripsi' => $c->deskripsi,
+                    'bloom'     => $c->bloom,
+                    'mk'        => '—',
+                    'kode_mk'   => '—',
+                ];
+            } else {
+                foreach ($c->mataKuliah as $mk) {
+                    $flatMappings[] = [
+                        'no'        => $no++,
+                        'plo'       => $ploString ?: '—',
+                        'kode_clo'  => $c->kode_clo,
+                        'deskripsi' => $c->deskripsi,
+                        'bloom'     => $c->bloom,
+                        'mk'        => $mk->nama_mk,
+                        'kode_mk'   => $mk->kode_mk,
+                    ];
+                }
+            }
+        }
+
         return Inertia::render('SuperAdmin/CLO/Index', [
-            'cloList' => $cloList,
-            'allPlo'  => $allPlo,
-            'allMk'   => $allMk,
-            'filters' => $request->only(['search']),
+            'cloList'       => $cloList,
+            'allPlo'        => $allPlo,
+            'allMk'         => $allMk,
+            'flatMappings'  => $flatMappings,
+            'totalMappings' => count($flatMappings),
+            'filters'       => $request->only(['search']),
         ]);
     }
 

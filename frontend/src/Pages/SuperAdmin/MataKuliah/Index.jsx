@@ -407,7 +407,17 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
             {isCreateOpen && (
                 <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-lg font-extrabold text-[#1E293B] mb-4">Tambah Mata Kuliah</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-extrabold text-[#1E293B]">Tambah Mata Kuliah</h2>
+                            <button
+                                type="button"
+                                onClick={() => setIsCreateOpen(false)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                                aria-label="Tutup"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
                         <form onSubmit={handleCreateSubmit} className="space-y-4">
                             <div className="grid grid-cols-3 gap-3">
@@ -570,7 +580,17 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
             {editMk && (
                 <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-lg font-extrabold text-[#1E293B] mb-4">Edit Mata Kuliah</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-extrabold text-[#1E293B]">Edit Mata Kuliah</h2>
+                            <button
+                                type="button"
+                                onClick={() => setEditMk(null)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                                aria-label="Tutup"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                             <div className="grid grid-cols-4 gap-3">

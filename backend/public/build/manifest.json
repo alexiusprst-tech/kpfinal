@@ -526,7 +526,7 @@
     ]
   },
   "src/Pages/SuperAdmin/CLO/Index.jsx": {
-    "file": "assets/Index-CkoXRMd3.js",
+    "file": "assets/Index-DB0fhtIW.js",
     "name": "Index",
     "src": "src/Pages/SuperAdmin/CLO/Index.jsx",
     "isDynamicEntry": true,
@@ -576,7 +576,7 @@
     ]
   },
   "src/Pages/SuperAdmin/Dosen/Index.jsx": {
-    "file": "assets/Index-cDId_UFB.js",
+    "file": "assets/Index-CDSPTb1o.js",
     "name": "Index",
     "src": "src/Pages/SuperAdmin/Dosen/Index.jsx",
     "isDynamicEntry": true,
@@ -704,7 +704,7 @@
     ]
   },
   "src/Pages/SuperAdmin/MataKuliah/Index.jsx": {
-    "file": "assets/Index-B5pl5Mam.js",
+    "file": "assets/Index-oxs2VXwm.js",
     "name": "Index",
     "src": "src/Pages/SuperAdmin/MataKuliah/Index.jsx",
     "isDynamicEntry": true,
@@ -905,7 +905,7 @@
     ]
   },
   "src/app.jsx": {
-    "file": "assets/app-BqRn55vt.js",
+    "file": "assets/app-CKREPnZ3.js",
     "name": "app",
     "src": "src/app.jsx",
     "isEntry": true,
@@ -944,11 +944,11 @@
       "src/Pages/Verifikator/Soal/Show.jsx"
     ],
     "css": [
-      "assets/app-DNXhQo8a.css"
+      "assets/app-D8Wx62xz.css"
     ]
   },
   "src/css/app.css": {
-    "file": "assets/app-DNXhQo8a.css",
+    "file": "assets/app-D8Wx62xz.css",
     "name": "app",
     "names": [
       "app.css"

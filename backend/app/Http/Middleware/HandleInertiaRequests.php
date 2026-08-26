@@ -62,11 +62,9 @@ class HandleInertiaRequests extends Middleware
                         $user->update(['role' => 'KOORDINATOR']);
                         $user->role = 'KOORDINATOR';
                     } elseif (!$hasActiveKoor && !$hasActiveVerif) {
-                        // Tidak ada penugasan aktif sama sekali
-                        if ($user->role !== null) {
-                            $user->update(['role' => null]);
-                            $user->role = null;
-                        }
+                        // Tidak ada penugasan aktif — jangan update DB (kolom role NOT NULL)
+                        // Cukup set in-memory agar frontend tahu tidak ada role aktif
+                        $user->role = null;
                     }
                 } else {
                     $hasActiveKoor = ($user->role === 'KOORDINATOR');

@@ -238,7 +238,7 @@ export default function Index({ dosenList, filters }) {
                         {(search || kategori || status) && (
                             <button
                                 onClick={handleResetFilters}
-                                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors"
+                                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors cursor-pointer"
                             >
                                 Reset Filter
                             </button>
@@ -261,71 +261,80 @@ export default function Index({ dosenList, filters }) {
                     <table className="w-full text-left text-xs border-collapse">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200 text-[#64748B] font-extrabold uppercase tracking-wider">
-                                <th className="p-4">Kode Dosen</th>
-                                <th className="p-4">Nama Lengkap</th>
-                                <th className="p-4">Kategori</th>
-                                <th className="p-4">Email</th>
-                                <th className="p-4">Status Penugasan</th>
-                                <th className="p-4">Status Akun</th>
-                                <th className="p-4 text-center">Aksi</th>
+                                <th className="p-4 whitespace-nowrap">Kode Dosen</th>
+                                <th className="p-4 whitespace-nowrap">Nama Lengkap</th>
+                                <th className="p-4 whitespace-nowrap">Kategori</th>
+                                <th className="p-4 whitespace-nowrap">Email</th>
+                                <th className="p-4 whitespace-nowrap">Status Penugasan</th>
+                                <th className="p-4 whitespace-nowrap">Status Akun</th>
+                                <th className="p-4 text-center whitespace-nowrap">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-[#1E293B] font-medium">
                             {dosenList.data.length > 0 ? (
                                 dosenList.data.map((dosen) => {
                                     const hasAssignments = (dosen.active_koordinator_count > 0) || (dosen.active_verifikator_count > 0);
+                                    const isLB = dosen.kategori_dosen === 'LB' || dosen.kategori_dosen === 'LUAR_BIASA';
 
                                     return (
                                         <tr key={dosen.id} className="hover:bg-slate-50/80 transition-colors">
-                                            <td className="p-4 font-bold text-[#801720]">{dosen.kode_dosen}</td>
+                                            <td className="p-4 font-bold text-[#801720] whitespace-nowrap">{dosen.kode_dosen}</td>
                                             <td className="p-4 font-bold">{dosen.nama_lengkap}</td>
-                                            <td className="p-4">
-                                                <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] ${dosen.kategori_dosen === 'LB' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-purple-50 text-purple-700 border border-purple-200'}`}>
-                                                    {dosen.kategori_dosen || 'Dosen Tetap'}
-                                                </span>
+                                            <td className="p-4 whitespace-nowrap">
+                                                {isLB ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[11px] bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                                                        LB (Luar Biasa)
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[11px] bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500 flex-shrink-0" />
+                                                        Dosen Tetap
+                                                    </span>
+                                                )}
                                             </td>
-                                            <td className="p-4 text-slate-500">{dosen.email || '-'}</td>
+                                            <td className="p-4 text-slate-500 whitespace-nowrap">{dosen.email || '-'}</td>
                                             <td className="p-4">
-                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                <div className="flex flex-wrap items-center gap-1.5 min-w-[160px]">
                                                     {dosen.user?.role === 'SUPER_ADMIN' && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-white font-bold text-[10px]">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-white font-bold text-[10px] whitespace-nowrap">
                                                             <ShieldAlert className="w-3 h-3 text-red-400" />
                                                             SUPER ADMIN
                                                         </span>
                                                     )}
                                                     {dosen.active_koordinator_count > 0 && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200 whitespace-nowrap">
                                                             <UserCheck className="w-3 h-3" />
                                                             KOORDINATOR ({dosen.active_koordinator_count})
                                                         </span>
                                                     )}
                                                     {dosen.active_verifikator_count > 0 && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-[10px] border border-indigo-200">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-[10px] border border-indigo-200 whitespace-nowrap">
                                                             <FileCheck className="w-3 h-3" />
                                                             VERIFIKATOR ({dosen.active_verifikator_count})
                                                         </span>
                                                     )}
                                                     {!hasAssignments && dosen.user?.role !== 'SUPER_ADMIN' && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-semibold text-[10px]">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-semibold text-[10px] whitespace-nowrap">
                                                             Belum Ditugaskan
                                                         </span>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="p-4">
+                                            <td className="p-4 whitespace-nowrap">
                                                 {dosen.status === 'ACTIVE' ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px]">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] whitespace-nowrap">
                                                         <CheckCircle className="w-3 h-3" />
                                                         ACTIVE
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-bold text-[10px]">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-bold text-[10px] whitespace-nowrap">
                                                         <XCircle className="w-3 h-3" />
                                                         INACTIVE
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="p-4 text-center">
+                                            <td className="p-4 text-center whitespace-nowrap">
                                                 <div className="flex items-center justify-center gap-1.5">
                                                     {hasAssignments && (
                                                         <button 
@@ -394,7 +403,17 @@ export default function Index({ dosenList, filters }) {
             {isCreateOpen && (
                 <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200">
-                        <h2 className="text-lg font-extrabold text-[#1E293B] mb-4">Tambah Data Dosen</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-extrabold text-[#1E293B]">Tambah Data Dosen</h2>
+                            <button
+                                type="button"
+                                onClick={() => setIsCreateOpen(false)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                                aria-label="Tutup"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                         
                         <form onSubmit={handleCreateSubmit} className="space-y-4">
                             <div>
@@ -495,7 +514,17 @@ export default function Index({ dosenList, filters }) {
             {editDosen && (
                 <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200">
-                        <h2 className="text-lg font-extrabold text-[#1E293B] mb-4">Edit Data Dosen</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-extrabold text-[#1E293B]">Edit Data Dosen</h2>
+                            <button
+                                type="button"
+                                onClick={() => setEditDosen(null)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                                aria-label="Tutup"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                         
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                             <div>

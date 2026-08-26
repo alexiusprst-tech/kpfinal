@@ -247,9 +247,24 @@ function Modal({ open, onClose, title, children }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function CloIndex({ cloList, allPlo, allMk, filters }) {
+export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMappings = [], totalMappings = 0, filters }) {
     const { flash } = usePage().props;
     const [search, setSearch] = useState(filters?.search || '');
+
+    const [mappingSearch, setMappingSearch] = useState('');
+
+    // Filter flat mappings locally
+    const filteredFlatMappings = flatMappings.filter(row => {
+        if (!mappingSearch.trim()) return true;
+        const q = mappingSearch.toLowerCase();
+        return (
+            (row.kode_clo && row.kode_clo.toLowerCase().includes(q)) ||
+            (row.deskripsi && row.deskripsi.toLowerCase().includes(q)) ||
+            (row.bloom && row.bloom.toLowerCase().includes(q)) ||
+            (row.plo && row.plo.toLowerCase().includes(q)) ||
+            (row.mk && row.mk.toLowerCase().includes(q))
+        );
+    });
 
     // Real-time reactive search with 300ms debounce
     useEffect(() => {
@@ -483,6 +498,37 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
                     </div>
                 </div>
 
+                {/* Stats Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-[#801720]/10 flex items-center justify-center flex-shrink-0">
+                            <Activity className="w-5 h-5 text-[#801720]" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold text-slate-500">Master CLO</p>
+                            <h3 className="text-xl font-extrabold text-slate-800">{cloList.total || 0} <span className="text-xs font-normal text-slate-400">Kode CLO</span></h3>
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0">
+                            <BookOpen className="w-5 h-5 text-violet-700" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold text-slate-500">Total Pemetaan Mata Kuliah</p>
+                            <h3 className="text-xl font-extrabold text-slate-800">{flatMappings.length || totalMappings} <span className="text-xs font-normal text-slate-400">Baris Relasi</span></h3>
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                            <Layers className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold text-slate-500">PLO Terpetakan</p>
+                            <h3 className="text-xl font-extrabold text-slate-800">{allPlo.length || 0} <span className="text-xs font-normal text-slate-400">Kode PLO</span></h3>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Search */}
                 <form onSubmit={doSearch} className="flex gap-2">
                     <div className="relative flex-1 max-w-sm">
@@ -493,7 +539,7 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
                     <button type="submit" className="px-4 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] transition-all">Cari</button>
                 </form>
 
-                {/* Table */}
+                {/* Table Master CLO */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -504,13 +550,12 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
                                     <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Deskripsi</th>
                                     <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Bloom</th>
                                     <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">PLO</th>
-                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Mata Kuliah</th>
                                     <th className="text-right px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {cloList.data?.length === 0 ? (
-                                    <tr><td colSpan={7} className="text-center py-12 text-gray-400 text-sm">Tidak ada data CLO</td></tr>
+                                    <tr><td colSpan={6} className="text-center py-12 text-gray-400 text-sm">Tidak ada data CLO</td></tr>
                                 ) : cloList.data?.map((item, idx) => (
                                     <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-5 py-4 text-gray-500 text-xs">{(cloList.current_page - 1) * cloList.per_page + idx + 1}</td>
@@ -532,40 +577,12 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
                                             </div>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <div className="flex flex-wrap items-center gap-1">
-                                                {item.mataKuliah && item.mataKuliah.length > 0 ? (
-                                                    <>
-                                                        {item.mataKuliah.slice(0, 2).map(m => (
-                                                            <span
-                                                                key={m.id}
-                                                                className="px-1.5 py-0.5 bg-violet-50 text-violet-700 border border-violet-200 rounded text-[10px] font-semibold"
-                                                            >
-                                                                {m.nama_mk}
-                                                            </span>
-                                                        ))}
-                                                        {item.mataKuliah.length > 2 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setViewItem(item)}
-                                                                className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold cursor-pointer transition-colors"
-                                                                title="Lihat semua mata kuliah"
-                                                            >
-                                                                +{item.mataKuliah.length - 2} MK
-                                                            </button>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400">—</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4">
                                             <div className="flex items-center justify-end gap-1.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => setViewItem(item)}
                                                     className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
-                                                    title="Lihat Mata Kuliah & Detail CLO"
+                                                    title="Lihat Detail CLO & Mata Kuliah"
                                                 >
                                                     <Eye className="w-3.5 h-3.5" />
                                                 </button>
@@ -592,15 +609,20 @@ export default function CloIndex({ cloList, allPlo, allMk, filters }) {
                             </tbody>
                         </table>
                     </div>
-                    {cloList.last_page > 1 && (
-                        <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                            <span>Menampilkan {cloList.from}–{cloList.to} dari {cloList.total} data</span>
+                    {cloList.links && (
+                        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                            <span className="text-xs text-slate-500 font-medium">
+                                Menampilkan {cloList.from || 0} - {cloList.to || 0} dari {cloList.total || 0} CLO
+                            </span>
                             <div className="flex gap-1">
-                                {cloList.links?.map((link, i) => (
-                                    <button key={i} disabled={!link.url}
+                                {cloList.links.map((link, idx) => (
+                                    <button
+                                        key={idx}
+                                        disabled={!link.url}
                                         onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
-                                        className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${link.active ? 'bg-[#801720] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }} />
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${link.active ? 'bg-[#801720] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed'}`}
+                                    />
                                 ))}
                             </div>
                         </div>
