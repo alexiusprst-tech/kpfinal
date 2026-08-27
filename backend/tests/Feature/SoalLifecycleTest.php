@@ -152,6 +152,17 @@ class SoalLifecycleTest extends TestCase
             'kategori_id'    => $this->kategori->id,
             'judul'          => 'Soal UTS Web App 2025/2026',
             'file'           => $file,
+            'plo_clo_data'   => [
+                'plo' => [
+                    [
+                        'kode' => 'PLO01',
+                        'deskripsi' => 'PLO Deskripsi',
+                        'clo' => [
+                            ['kode' => 'CLO01', 'deskripsi' => 'CLO Deskripsi', 'bobot_lo' => '100%']
+                        ]
+                    ]
+                ]
+            ],
         ]);
 
         $response->assertSessionHas('success');

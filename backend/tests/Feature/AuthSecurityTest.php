@@ -37,6 +37,42 @@ class AuthSecurityTest extends TestCase
             'user_id'      => $this->user->id,
             'status'       => 'ACTIVE',
         ]);
+
+        $ta = \App\Models\TahunAjaran::create([
+            'id'           => (string) Str::uuid(),
+            'nama'         => '2026/2027',
+            'tahun_mulai'  => 2026,
+            'tahun_selesai'=> 2027,
+            'status'       => 'ACTIVE',
+        ]);
+
+        $periode = \App\Models\PeriodeVerifikasi::create([
+            'id'              => (string) Str::uuid(),
+            'tahun_ajaran_id' => $ta->id,
+            'nama'            => 'UTS Ganjil 2026/2027',
+            'tanggal_mulai'   => '2026-10-01',
+            'tanggal_selesai' => '2026-10-31',
+            'deadline_upload' => '2026-10-25 23:59:59',
+            'status'          => 'ACTIVE',
+        ]);
+
+        $mk = \App\Models\MataKuliah::create([
+            'id'       => (string) Str::uuid(),
+            'kode_mk'  => 'MK001',
+            'nama_mk'  => 'Mata Kuliah Test',
+            'sks'      => 3,
+            'semester' => 1,
+            'status'   => 'ACTIVE',
+        ]);
+
+        \App\Models\PenugasanKoordinator::create([
+            'id'             => (string) Str::uuid(),
+            'dosen_id'       => $this->dosen->id,
+            'mata_kuliah_id' => $mk->id,
+            'periode_id'     => $periode->id,
+            'assigned_by'    => $this->user->id,
+            'status'         => 'ACTIVE',
+        ]);
     }
 
     public function test_user_can_login_with_valid_email_and_password(): void

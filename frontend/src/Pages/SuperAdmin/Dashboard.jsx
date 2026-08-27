@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     Users,
     BookOpen,
@@ -37,18 +37,37 @@ import NotificationDropdown from '@/Components/NotificationDropdown';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, ChartTooltip, ChartLegend);
 
-function StatCard({ label, value, icon: Icon, color }) {
-    return (
-        <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex flex-col gap-3">
-            <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center flex-shrink-0`}>
-                <Icon className="w-5 h-5 text-white" />
+function StatCard({ label, value, icon: Icon, color, href }) {
+    const cardContent = (
+        <div className={`bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex flex-col gap-3 transition-all duration-200 ${
+            href ? 'hover:shadow-md hover:border-gray-200 hover:-translate-y-0.5 group cursor-pointer' : ''
+        }`}>
+            <div className="flex items-center justify-between">
+                <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center flex-shrink-0 transition-transform duration-200 ${href ? 'group-hover:scale-105' : ''} shadow-xs`}>
+                    <Icon className="w-5 h-5 text-white" />
+                </div>
+                {href && (
+                    <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#801720]/10 group-hover:text-[#801720] transition-colors">
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                    </div>
+                )}
             </div>
             <div className="min-w-0">
-                <p className="text-2xl font-extrabold text-gray-800 leading-tight">{value}</p>
-                <p className="text-xs text-gray-500 font-medium leading-snug">{label}</p>
+                <p className="text-2xl font-extrabold text-gray-800 leading-tight tracking-tight">{value}</p>
+                <p className={`text-xs text-gray-500 font-medium leading-snug truncate ${href ? 'group-hover:text-gray-900' : ''} transition-colors`}>{label}</p>
             </div>
         </div>
     );
+
+    if (href) {
+        return (
+            <Link href={href} className="block focus:outline-none focus:ring-2 focus:ring-[#801720]/20 rounded-2xl">
+                {cardContent}
+            </Link>
+        );
+    }
+
+    return cardContent;
 }
 
 export default function Dashboard({
@@ -312,10 +331,10 @@ export default function Dashboard({
 
                 {/* 6 StatCards Grid (Master Data Overview) */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <StatCard label="Total Dosen"            value={totalDosen}                     icon={Users}       color="bg-slate-700" />
-                    <StatCard label="Total Mata Kuliah"      value={totalMataKuliah}                icon={BookOpen}    color="bg-blue-600" />
-                    <StatCard label="Total PLO"              value={totalPlo}                       icon={Target}      color="bg-purple-600" />
-                    <StatCard label="Total CLO"              value={totalClo}                       icon={Layers}      color="bg-indigo-600" />
+                    <StatCard label="Total Dosen"            value={totalDosen}                     icon={Users}       color="bg-slate-700" href="/superadmin/dosen" />
+                    <StatCard label="Total Mata Kuliah"      value={totalMataKuliah}                icon={BookOpen}    color="bg-blue-600"  href="/superadmin/mata-kuliah" />
+                    <StatCard label="Total PLO"              value={totalPlo}                       icon={Target}      color="bg-purple-600" href="/superadmin/plo" />
+                    <StatCard label="Total CLO"              value={totalClo}                       icon={Layers}      color="bg-indigo-600" href="/superadmin/clo" />
                     <StatCard label="Bank Soal (Disetujui)"  value={totalBankSoal.toLocaleString()} icon={FileText}    color="bg-emerald-600" />
                     <StatCard label="Progress Periode"       value={`${progressPct}%`}              icon={TrendingUp}  color="bg-amber-500" />
                 </div>

@@ -618,7 +618,6 @@ class KelompokVerifikasiController extends Controller
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             $this->syncAffectedDosenRoles();
-            $this->syncMataKuliahStatus();
 
             AuditLog::record(
                 $request->user()->id,
@@ -643,7 +642,6 @@ class KelompokVerifikasiController extends Controller
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             $this->syncAffectedDosenRoles();
-            $this->syncMataKuliahStatus();
 
             AuditLog::record(
                 $request->user()->id,
@@ -671,7 +669,6 @@ class KelompokVerifikasiController extends Controller
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->update(['status' => 'ENDED']);
             $this->syncAffectedDosenRoles();
-            $this->syncMataKuliahStatus();
 
             $kelompokVerifikasi->delete();
 
@@ -782,27 +779,6 @@ class KelompokVerifikasiController extends Controller
 
         // Synchronize all dosen user roles
         $this->syncAffectedDosenRoles();
-
-        // Synchronize all mata kuliah statuses based on active assignments
-        $this->syncMataKuliahStatus();
-    }
-
-    /**
-     * Recalculate and synchronize status for all MataKuliah based on active assignments in active period
-     */
-    protected function syncMataKuliahStatus(): void
-    {
-        $activePeriode = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
-        if ($activePeriode) {
-            $assignedMkIds = PenugasanKoordinator::where('periode_id', $activePeriode->id)
-                ->where('status', 'ACTIVE')
-                ->pluck('mata_kuliah_id')
-                ->unique()
-                ->toArray();
-
-            MataKuliah::whereIn('id', $assignedMkIds)->update(['status' => 'ACTIVE']);
-            MataKuliah::whereNotIn('id', $assignedMkIds)->update(['status' => 'INACTIVE']);
-        }
     }
 
     /**
