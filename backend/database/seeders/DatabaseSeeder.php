@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             MataKuliahSeeder::class,
             TahunAjaranSeeder::class,
             KategoriSoalSeeder::class,
+            CloSeeder::class,
             DemoDataSeeder::class,
         ]);
     }

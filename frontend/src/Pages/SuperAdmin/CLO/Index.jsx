@@ -9,7 +9,7 @@ import {
     AlertTriangle, X, Activity, FileSpreadsheet, Eye,
     ArrowRight, Check, CloudUpload, FileText, Save,
     RotateCcw, AlertCircle, CheckCircle2, ChevronDown,
-    ChevronRight, BookOpen, Layers
+    ChevronRight, BookOpen, Layers, Filter
 } from 'lucide-react';
 
 // ─── Bloom options ────────────────────────────────────────────────────────────
@@ -250,11 +250,14 @@ function Modal({ open, onClose, title, children }) {
 export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMappings = [], totalMappings = 0, filters }) {
     const { flash } = usePage().props;
     const [search, setSearch] = useState(filters?.search || '');
-
+    const [selectedPlo, setSelectedPlo] = useState(filters?.plo || '');
     const [mappingSearch, setMappingSearch] = useState('');
 
     // Filter flat mappings locally
     const filteredFlatMappings = flatMappings.filter(row => {
+        if (selectedPlo && row.plo && !row.plo.includes(selectedPlo)) {
+            return false;
+        }
         if (!mappingSearch.trim()) return true;
         const q = mappingSearch.toLowerCase();
         return (
@@ -270,13 +273,26 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
     useEffect(() => {
         const timer = setTimeout(() => {
             const currentSearch = filters?.search || '';
-            if (search !== currentSearch) {
-                router.get('/superadmin/clo', { search }, { preserveState: true, replace: true });
+            const currentPlo = filters?.plo || '';
+            if (search !== currentSearch || selectedPlo !== currentPlo) {
+                const params = {};
+                if (search.trim()) params.search = search.trim();
+                if (selectedPlo) params.plo = selectedPlo;
+                router.get('/superadmin/clo', params, { preserveState: true, replace: true });
             }
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [search]);
+    }, [search, selectedPlo]);
+
+    const handlePloSelect = (ploCode) => {
+        const newPlo = selectedPlo === ploCode ? '' : ploCode;
+        setSelectedPlo(newPlo);
+        const params = {};
+        if (search.trim()) params.search = search.trim();
+        if (newPlo) params.plo = newPlo;
+        router.get('/superadmin/clo', params, { preserveState: true, replace: true });
+    };
     const [showAddModal, setShowAddModal] = useState(false);
     const [viewItem, setViewItem] = useState(null);
     const [editItem, setEditItem] = useState(null);
@@ -529,15 +545,63 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                     </div>
                 </div>
 
-                {/* Search */}
-                <form onSubmit={doSearch} className="flex gap-2">
-                    <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari kode atau deskripsi..."
-                            className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none" />
+                {/* Filter Bar & Quick PLO Pills */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-3">
+                    {/* Search Input */}
+                    <div className="relative max-w-md">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Cari kode CLO, deskripsi, atau kata kunci..."
+                            className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] focus:bg-white outline-none transition-all"
+                        />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={() => setSearch('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
-                    <button type="submit" className="px-4 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] transition-all">Cari</button>
-                </form>
+
+                    {/* Quick-Filter Horizontal Pills for PLO */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-100 scrollbar-thin">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1 flex-shrink-0">
+                            <Layers className="w-3.5 h-3.5 text-[#801720]" /> Filter PLO:
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => handlePloSelect('')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                                !selectedPlo
+                                    ? 'bg-[#801720] text-white shadow-sm shadow-red-900/20'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                        >
+                            Semua ({totalMappings > 0 ? (totalMappings === cloList.total ? cloList.total : 37) : 37})
+                        </button>
+                        {allPlo.map(plo => {
+                            const isActive = selectedPlo === plo.kode_plo;
+                            return (
+                                <button
+                                    key={plo.id}
+                                    type="button"
+                                    onClick={() => handlePloSelect(plo.kode_plo)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
+                                        isActive
+                                            ? 'bg-[#801720] text-white shadow-sm shadow-red-900/20'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    <span>{plo.kode_plo}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
 
                 {/* Table Master CLO */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

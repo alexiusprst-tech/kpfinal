@@ -121,7 +121,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
 
 
     const togglePlo = (form, ploId) => {
-        const current = form.data.plo_ids;
+        const current = form.data.plo_ids || [];
         if (current.includes(ploId)) {
             form.setData('plo_ids', current.filter((id) => id !== ploId));
         } else {
@@ -130,12 +130,20 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
     };
 
     const toggleClo = (form, cloId) => {
-        const current = form.data.clo_ids;
-        if (current.includes(cloId)) {
-            form.setData('clo_ids', current.filter((id) => id !== cloId));
-        } else {
-            form.setData('clo_ids', [...current, cloId]);
-        }
+        const current = form.data.clo_ids || [];
+        const nextCloIds = current.includes(cloId) ? current.filter((id) => id !== cloId) : [...current, cloId];
+
+        // Otomatis sinkronkan PLO IDs dari CLO yang dipilih
+        const derivedPloIds = allClo
+            .filter((c) => nextCloIds.includes(c.id))
+            .flatMap((c) => (c.plo ? c.plo.map((p) => p.id) : []))
+            .filter((id, index, self) => self.indexOf(id) === index);
+
+        form.setData((data) => ({
+            ...data,
+            clo_ids: nextCloIds,
+            plo_ids: derivedPloIds,
+        }));
     };
 
     return (
@@ -481,59 +489,28 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 />
                             </div>
 
-                            {/* PLO Mapping */}
+                            {/* 1. CLO Mapping (Pilihan Utama) */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                                    <Target className="w-3.5 h-3.5 text-purple-650" />
-                                    <span>Pilih PLO Terkait (Kurikulum)</span>
-                                </label>
-                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-40 overflow-y-auto">
-                                    {allPlo && allPlo.length > 0 ? (
-                                        allPlo.map((plo) => {
-                                            const isSelected = createForm.data.plo_ids.includes(plo.id);
-                                            return (
-                                                <div 
-                                                    key={plo.id}
-                                                    onClick={() => togglePlo(createForm, plo.id)}
-                                                    className={`p-2 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
-                                                        isSelected ? 'border-purple-600 bg-purple-50/10' : 'border-slate-200 hover:border-purple-300 bg-white'
-                                                    }`}
-                                                >
-                                                    <input 
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        readOnly
-                                                        className="mt-0.5 w-3.5 h-3.5 text-purple-650 border-slate-300 rounded focus:ring-purple-500/20 cursor-pointer accent-purple-600"
-                                                    />
-                                                    <div className="text-[11px] leading-tight">
-                                                        <span className="font-bold text-purple-700 mr-2">{plo.kode_plo}</span>
-                                                        <span className="text-slate-600 font-semibold">{plo.deskripsi}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <p className="text-[10px] text-slate-400 text-center py-2">Tidak ada data PLO</p>
-                                    )}
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <Activity className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>1. Pilih CLO Terkait (Kurikulum)</span>
+                                    </label>
+                                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                        {createForm.data.clo_ids.length} CLO Dipilih
+                                    </span>
                                 </div>
-                            </div>
-
-                            {/* CLO Mapping */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                                    <Activity className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Pilih CLO Terkait</span>
-                                </label>
-                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-40 overflow-y-auto">
+                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-44 overflow-y-auto">
                                     {allClo && allClo.length > 0 ? (
                                         allClo.map((clo) => {
                                             const isSelected = createForm.data.clo_ids.includes(clo.id);
+                                            const cloPloCode = clo.plo && clo.plo.length > 0 ? clo.plo[0].kode_plo : '';
                                             return (
                                                 <div 
                                                     key={clo.id}
                                                     onClick={() => toggleClo(createForm, clo.id)}
-                                                    className={`p-2 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
-                                                        isSelected ? 'border-emerald-600 bg-emerald-50/10' : 'border-slate-200 hover:border-emerald-350 bg-white'
+                                                    className={`p-2.5 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
+                                                        isSelected ? 'border-emerald-600 bg-emerald-50/20 shadow-xs' : 'border-slate-200 hover:border-emerald-300 bg-white'
                                                     }`}
                                                 >
                                                     <input 
@@ -542,15 +519,57 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                                         readOnly
                                                         className="mt-0.5 w-3.5 h-3.5 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
                                                     />
-                                                    <div className="text-[11px] leading-tight">
-                                                        <span className="font-bold text-emerald-700 mr-2">{clo.kode_clo}</span>
-                                                        <span className="text-slate-600 font-semibold">{clo.deskripsi}</span>
+                                                    <div className="text-[11px] leading-tight flex-1">
+                                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                                            <span className="font-extrabold text-emerald-800">{clo.kode_clo}</span>
+                                                            {cloPloCode && (
+                                                                <span className="px-1.5 py-0.2 bg-blue-100 text-blue-700 font-bold rounded text-[9px]">
+                                                                    {cloPloCode}
+                                                                </span>
+                                                            )}
+                                                            {clo.bloom && (
+                                                                <span className="text-[9px] text-slate-400 font-semibold">({clo.bloom})</span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-slate-600 font-medium line-clamp-2">{clo.deskripsi}</span>
                                                     </div>
                                                 </div>
                                             );
                                         })
                                     ) : (
                                         <p className="text-[10px] text-slate-400 text-center py-2">Tidak ada data CLO</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 2. PLO Mapping (Otomatis Mengikuti CLO) */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <Target className="w-3.5 h-3.5 text-purple-650" />
+                                        <span>2. Pemetaan PLO Terkait (Otomatis)</span>
+                                    </label>
+                                    <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                                        Otomatis mengikuti CLO ({createForm.data.plo_ids.length} PLO)
+                                    </span>
+                                </div>
+                                <div className="p-3 rounded-xl bg-purple-50/30 border border-purple-150 space-y-2">
+                                    {createForm.data.plo_ids.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {allPlo
+                                                .filter(p => createForm.data.plo_ids.includes(p.id))
+                                                .map(plo => (
+                                                    <span 
+                                                        key={plo.id}
+                                                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100 text-purple-800 text-xs font-bold border border-purple-200 shadow-xs"
+                                                    >
+                                                        <CheckCircle className="w-3 h-3 text-purple-600" />
+                                                        {plo.kode_plo}
+                                                    </span>
+                                                ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 italic">Pilih satu atau lebih CLO di atas untuk menghubungkan PLO secara otomatis.</p>
                                     )}
                                 </div>
                             </div>
@@ -662,59 +681,28 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 />
                             </div>
 
-                            {/* PLO Mapping */}
+                            {/* 1. CLO Mapping (Pilihan Utama) */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                                    <Target className="w-3.5 h-3.5 text-purple-650" />
-                                    <span>Pilih PLO Terkait (Kurikulum)</span>
-                                </label>
-                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-40 overflow-y-auto">
-                                    {allPlo && allPlo.length > 0 ? (
-                                        allPlo.map((plo) => {
-                                            const isSelected = editForm.data.plo_ids.includes(plo.id);
-                                            return (
-                                                <div 
-                                                    key={plo.id}
-                                                    onClick={() => togglePlo(editForm, plo.id)}
-                                                    className={`p-2 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
-                                                        isSelected ? 'border-purple-600 bg-purple-50/10' : 'border-slate-200 hover:border-purple-300 bg-white'
-                                                    }`}
-                                                >
-                                                    <input 
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        readOnly
-                                                        className="mt-0.5 w-3.5 h-3.5 text-purple-655 border-slate-300 rounded focus:ring-purple-500/20 cursor-pointer accent-purple-600"
-                                                    />
-                                                    <div className="text-[11px] leading-tight">
-                                                        <span className="font-bold text-purple-700 mr-2">{plo.kode_plo}</span>
-                                                        <span className="text-slate-600 font-semibold">{plo.deskripsi}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <p className="text-[10px] text-slate-400 text-center py-2">Tidak ada data PLO</p>
-                                    )}
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <Activity className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>1. Pilih CLO Terkait (Kurikulum)</span>
+                                    </label>
+                                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                        {editForm.data.clo_ids.length} CLO Dipilih
+                                    </span>
                                 </div>
-                            </div>
-
-                            {/* CLO Mapping */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                                    <Activity className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Pilih CLO Terkait</span>
-                                </label>
-                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-40 overflow-y-auto">
+                                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-44 overflow-y-auto">
                                     {allClo && allClo.length > 0 ? (
                                         allClo.map((clo) => {
                                             const isSelected = editForm.data.clo_ids.includes(clo.id);
+                                            const cloPloCode = clo.plo && clo.plo.length > 0 ? clo.plo[0].kode_plo : '';
                                             return (
                                                 <div 
                                                     key={clo.id}
                                                     onClick={() => toggleClo(editForm, clo.id)}
-                                                    className={`p-2 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
-                                                        isSelected ? 'border-emerald-600 bg-emerald-50/10' : 'border-slate-200 hover:border-emerald-350 bg-white'
+                                                    className={`p-2.5 rounded-lg border cursor-pointer transition-all flex items-start gap-2.5 ${
+                                                        isSelected ? 'border-emerald-600 bg-emerald-50/20 shadow-xs' : 'border-slate-200 hover:border-emerald-300 bg-white'
                                                     }`}
                                                 >
                                                     <input 
@@ -723,15 +711,57 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                                         readOnly
                                                         className="mt-0.5 w-3.5 h-3.5 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
                                                     />
-                                                    <div className="text-[11px] leading-tight">
-                                                        <span className="font-bold text-emerald-700 mr-2">{clo.kode_clo}</span>
-                                                        <span className="text-slate-600 font-semibold">{clo.deskripsi}</span>
+                                                    <div className="text-[11px] leading-tight flex-1">
+                                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                                            <span className="font-extrabold text-emerald-800">{clo.kode_clo}</span>
+                                                            {cloPloCode && (
+                                                                <span className="px-1.5 py-0.2 bg-blue-100 text-blue-700 font-bold rounded text-[9px]">
+                                                                    {cloPloCode}
+                                                                </span>
+                                                            )}
+                                                            {clo.bloom && (
+                                                                <span className="text-[9px] text-slate-400 font-semibold">({clo.bloom})</span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-slate-600 font-medium line-clamp-2">{clo.deskripsi}</span>
                                                     </div>
                                                 </div>
                                             );
                                         })
                                     ) : (
                                         <p className="text-[10px] text-slate-400 text-center py-2">Tidak ada data CLO</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 2. PLO Mapping (Otomatis Mengikuti CLO) */}
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <Target className="w-3.5 h-3.5 text-purple-650" />
+                                        <span>2. Pemetaan PLO Terkait (Otomatis)</span>
+                                    </label>
+                                    <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                                        Otomatis mengikuti CLO ({editForm.data.plo_ids.length} PLO)
+                                    </span>
+                                </div>
+                                <div className="p-3 rounded-xl bg-purple-50/30 border border-purple-150 space-y-2">
+                                    {editForm.data.plo_ids.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {allPlo
+                                                .filter(p => editForm.data.plo_ids.includes(p.id))
+                                                .map(plo => (
+                                                    <span 
+                                                        key={plo.id}
+                                                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100 text-purple-800 text-xs font-bold border border-purple-200 shadow-xs"
+                                                    >
+                                                        <CheckCircle className="w-3 h-3 text-purple-600" />
+                                                        {plo.kode_plo}
+                                                    </span>
+                                                ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 italic">Pilih satu atau lebih CLO di atas untuk menghubungkan PLO secara otomatis.</p>
                                     )}
                                 </div>
                             </div>

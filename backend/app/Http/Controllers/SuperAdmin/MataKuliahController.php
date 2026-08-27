@@ -40,7 +40,7 @@ class MataKuliahController extends Controller
             ->withQueryString();
 
         $allPlo = Plo::orderBy('kode_plo', 'asc')->get();
-        $allClo = Clo::orderBy('kode_clo', 'asc')->get();
+        $allClo = Clo::with('plo')->orderBy('kode_clo', 'asc')->get();
 
         return Inertia::render('SuperAdmin/MataKuliah/Index', [
             'mataKuliahList' => $mataKuliahList,
@@ -74,12 +74,11 @@ class MataKuliahController extends Controller
             'status'     => 'ACTIVE',
         ]);
 
-        if (!empty($validated['plo_ids'])) {
-            $mk->plo()->sync($validated['plo_ids']);
-        }
-
-        if (!empty($validated['clo_ids'])) {
+        if (isset($validated['clo_ids'])) {
             $mk->clo()->sync($validated['clo_ids']);
+            $mk->syncPlosFromClos();
+        } elseif (!empty($validated['plo_ids'])) {
+            $mk->plo()->sync($validated['plo_ids']);
         }
 
         AuditLog::record(
@@ -103,9 +102,9 @@ class MataKuliahController extends Controller
             'sks'        => ['required', 'integer', 'min:1', 'max:10'],
             'semester'   => ['required', 'integer', 'min:1', 'max:14'],
             'status'     => ['required', 'in:ACTIVE,INACTIVE'],
-            'plo_ids'    => ['array'],
+            'plo_ids'    => ['nullable', 'array'],
             'plo_ids.*'  => ['exists:plo,id'],
-            'clo_ids'    => ['array'],
+            'clo_ids'    => ['nullable', 'array'],
             'clo_ids.*'  => ['exists:clo,id'],
         ]);
 
@@ -119,8 +118,12 @@ class MataKuliahController extends Controller
             'status'     => $validated['status'],
         ]);
 
-        $mataKuliah->plo()->sync($validated['plo_ids'] ?? []);
-        $mataKuliah->clo()->sync($validated['clo_ids'] ?? []);
+        if (isset($validated['clo_ids'])) {
+            $mataKuliah->clo()->sync($validated['clo_ids']);
+            $mataKuliah->syncPlosFromClos();
+        } elseif (isset($validated['plo_ids'])) {
+            $mataKuliah->plo()->sync($validated['plo_ids']);
+        }
 
         AuditLog::record(
             $request->user()->id,

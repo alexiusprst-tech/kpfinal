@@ -67,4 +67,13 @@ class MataKuliah extends Model
     {
         return $this->hasMany(KelompokMataKuliah::class, 'mata_kuliah_id');
     }
+
+    /**
+     * Otomatis sinkronisasi relasi PLO berdasarkan CLO yang dipetakan ke Mata Kuliah ini
+     */
+    public function syncPlosFromClos(): void
+    {
+        $ploIds = $this->clo()->with('plo')->get()->map(fn($c) => $c->plo->pluck('id'))->flatten()->unique()->values()->toArray();
+        $this->plo()->sync($ploIds);
+    }
 }

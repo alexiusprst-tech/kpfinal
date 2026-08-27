@@ -43,13 +43,18 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
         }
     };
 
-    // Toggle CLO checkbox
+    // Toggle CLO checkbox (otomatis update PLO terkait)
     const toggleClo = (id) => {
-        if (selectedCloIds.includes(id)) {
-            setSelectedCloIds(selectedCloIds.filter(cloId => cloId !== id));
-        } else {
-            setSelectedCloIds([...selectedCloIds, id]);
-        }
+        const nextCloIds = selectedCloIds.includes(id)
+            ? selectedCloIds.filter(cloId => cloId !== id)
+            : [...selectedCloIds, id];
+        setSelectedCloIds(nextCloIds);
+
+        const derivedPloIds = allClo
+            .filter(c => nextCloIds.includes(c.id))
+            .flatMap(c => (c.plo ? c.plo.map(p => p.id) : []))
+            .filter((pid, idx, self) => self.indexOf(pid) === idx);
+        setSelectedPloIds(derivedPloIds);
     };
 
     // Remove PLO mapping from right-side table
@@ -57,9 +62,16 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
         setSelectedPloIds(selectedPloIds.filter(ploId => ploId !== id));
     };
 
-    // Remove CLO mapping from right-side table
+    // Remove CLO mapping from right-side table (otomatis update PLO terkait)
     const removeClo = (id) => {
-        setSelectedCloIds(selectedCloIds.filter(cloId => cloId !== id));
+        const nextCloIds = selectedCloIds.filter(cloId => cloId !== id);
+        setSelectedCloIds(nextCloIds);
+
+        const derivedPloIds = allClo
+            .filter(c => nextCloIds.includes(c.id))
+            .flatMap(c => (c.plo ? c.plo.map(p => p.id) : []))
+            .filter((pid, idx, self) => self.indexOf(pid) === idx);
+        setSelectedPloIds(derivedPloIds);
     };
 
     // Save mapping state to server
