@@ -29,16 +29,16 @@ function getNavSections(user, pathname = "") {
 
     if (user.role === "SUPER_ADMIN") {
         return [
-            { type: "item",    label: "Dashboard",           href: "/superadmin/dashboard",          icon: LayoutDashboard },
+            { type: "item", label: "Dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
             { type: "divider", label: "Master Data" },
-            { type: "item",    label: "Tahun Ajaran",        href: "/superadmin/tahun-ajaran",        icon: Calendar },
-            { type: "item",    label: "Periode Verifikasi",  href: "/superadmin/periode",             icon: Clock },
-            { type: "item",    label: "Mata Kuliah",         href: "/superadmin/mata-kuliah",         icon: BookOpen },
-            { type: "item",    label: "PLO",                 href: "/superadmin/plo",                 icon: Target },
-            { type: "item",    label: "CLO",                 href: "/superadmin/clo",                 icon: Activity },
-            { type: "item",    label: "Dosen",               href: "/superadmin/dosen",               icon: Users },
+            { type: "item", label: "Tahun Ajaran", href: "/superadmin/tahun-ajaran", icon: Calendar },
+            { type: "item", label: "Periode Verifikasi", href: "/superadmin/periode", icon: Clock },
+            { type: "item", label: "Mata Kuliah", href: "/superadmin/mata-kuliah", icon: BookOpen },
+            { type: "item", label: "PLO", href: "/superadmin/plo", icon: Target },
+            { type: "item", label: "CLO", href: "/superadmin/clo", icon: Activity },
+            { type: "item", label: "Dosen", href: "/superadmin/dosen", icon: Users },
             { type: "divider", label: "Penugasan" },
-            { type: "item",    label: "Kelompok Verifikasi", href: "/superadmin/kelompok-verifikasi", icon: FolderKanban },
+            { type: "item", label: "Kelompok Verifikasi", href: "/superadmin/kelompok-verifikasi", icon: FolderKanban },
         ];
     }
 
@@ -54,27 +54,27 @@ function getNavSections(user, pathname = "") {
                 matchPaths: ["/koordinator/dashboard", "/verifikator/dashboard"],
             },
             { type: "divider", label: "Koordinator MK" },
-            { type: "item",    label: "Daftar Lembar Soal",    href: "/koordinator/soal",      icon: FileText },
+            { type: "item", label: "Upload Soal", href: "/koordinator/soal", icon: FileText },
             { type: "divider", label: "Verifikator Soal" },
-            { type: "item",    label: "Verifikasi Soal",       href: "/verifikator/soal",      icon: FileCheck },
-            { type: "item",    label: "Berita Acara",          href: "/verifikator/berita-acara", icon: FileText },
+            { type: "item", label: "Verifikasi Soal", href: "/verifikator/soal", icon: FileCheck },
+            { type: "item", label: "Berita Acara", href: "/verifikator/berita-acara", icon: FileText },
         ];
     }
 
     if (user.is_verifikator || user.role === "VERIFIKATOR") {
         return [
-            { type: "item",    label: "Dashboard",             href: "/verifikator/dashboard",    icon: LayoutDashboard },
+            { type: "item", label: "Dashboard", href: "/verifikator/dashboard", icon: LayoutDashboard },
             { type: "divider", label: "Verifikasi Soal" },
-            { type: "item",    label: "Verifikasi Soal",       href: "/verifikator/soal",         icon: FileCheck },
-            { type: "item",    label: "Berita Acara",          href: "/verifikator/berita-acara", icon: FileText },
+            { type: "item", label: "Verifikasi Soal", href: "/verifikator/soal", icon: FileCheck },
+            { type: "item", label: "Berita Acara", href: "/verifikator/berita-acara", icon: FileText },
         ];
     }
 
     // Default Koordinator
     return [
-        { type: "item",    label: "Dashboard",             href: "/koordinator/dashboard", icon: LayoutDashboard },
+        { type: "item", label: "Dashboard", href: "/koordinator/dashboard", icon: LayoutDashboard },
         { type: "divider", label: "Lembar Soal" },
-        { type: "item",    label: "Daftar Lembar Soal",    href: "/koordinator/soal",      icon: FileText },
+        { type: "item", label: "Upload Soal", href: "/koordinator/soal", icon: FileText },
     ];
 }
 
@@ -98,7 +98,7 @@ function isPathActive(item) {
 }
 
 function NavLink({ item, collapsed }) {
-    const Icon   = item.icon;
+    const Icon = item.icon;
     const active = isPathActive(item);
     return (
         <Link
@@ -126,7 +126,7 @@ function NavLink({ item, collapsed }) {
 export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
     const { auth, activePeriod, flash } = usePage().props;
     const user = auth?.user;
-    const [mobileMenuOpen,   setMobileMenuOpen]   = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     useEffect(() => {

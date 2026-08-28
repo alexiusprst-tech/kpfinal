@@ -5,21 +5,9 @@ import {
     LayoutDashboard, FileCheck, AlertTriangle, CheckCircle2,
     XCircle, Clock, ArrowRight, ArrowUpRight, BookOpen, ShieldCheck, RefreshCw,
     TrendingUp, FileText, Search, User, Filter, Check, Printer, Bell,
-    PieChart, BarChart3, FilePlus2
+    FilePlus2
 } from 'lucide-react';
-import {
-    Chart as ChartJS,
-    ArcElement,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Tooltip as ChartTooltip,
-    Legend as ChartLegend
-} from 'chart.js';
-import { Doughnut, Bar } from 'react-chartjs-2';
 import NotificationDropdown from '@/Components/NotificationDropdown';
-
-ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, ChartTooltip, ChartLegend);
 
 const STATUS_CONFIG = {
     BELUM_UPLOAD: { label: 'Belum Upload', color: 'bg-slate-100 text-slate-700 border border-slate-200', dot: 'bg-slate-400' },
@@ -82,7 +70,6 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
     const notifCount = notifications?.count || 0;
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedMk, setSelectedMk] = useState('ALL');
-    const [chartType, setChartType] = useState('donut'); // 'donut' | 'bar'
 
     const belumUploadCount = assignments.filter(a => (a.total || 0) === 0).length;
 
@@ -98,137 +85,6 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
         return new Date(d).toLocaleDateString('id-ID', {
             day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
-    };
-
-    const totalChartItems = belumUploadCount + (stats?.pending || 0) + (stats?.approved || 0) + (stats?.revision || 0) + (stats?.rejected || 0);
-    const hasData = totalChartItems > 0;
-
-    const donutData = {
-        labels: ['Belum Upload', 'In Review', 'Disetujui', 'Revisi', 'Ditolak'],
-        datasets: [
-            {
-                data: hasData
-                    ? [belumUploadCount, stats?.pending || 0, stats?.approved || 0, stats?.revision || 0, stats?.rejected || 0]
-                    : [1],
-                backgroundColor: hasData
-                    ? ['#94A3B8', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444']
-                    : ['#F1F5F9'],
-                hoverBackgroundColor: hasData
-                    ? ['#64748B', '#7C3AED', '#059669', '#D97706', '#DC2626']
-                    : ['#F1F5F9'],
-                borderWidth: 2,
-                borderColor: '#ffffff',
-            },
-        ],
-    };
-
-    const donutOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '72%',
-        animation: {
-            animateScale: true,
-            animateRotate: true,
-        },
-        plugins: {
-            legend: {
-                display: false,
-            },
-            tooltip: {
-                enabled: hasData,
-                backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                titleColor: '#FFFFFF',
-                bodyColor: '#F8FAFC',
-                titleFont: { size: 12, weight: 'bold' },
-                bodyFont: { size: 12, weight: '600' },
-                padding: { top: 8, bottom: 8, left: 12, right: 12 },
-                cornerRadius: 10,
-                boxPadding: 6,
-                usePointStyle: true,
-                callbacks: {
-                    label: function (context) {
-                        const label = context.label || '';
-                        const val = context.raw || 0;
-                        const total = totalChartItems || 1;
-                        const pct = Math.round((val / total) * 100);
-                        return ` ${label}: ${val} (${pct}%)`;
-                    },
-                },
-            },
-        },
-    };
-
-    const barData = {
-        labels: ['Belum Upload', 'In Review', 'Disetujui', 'Revisi', 'Ditolak'],
-        datasets: [
-            {
-                label: 'Jumlah',
-                data: [
-                    belumUploadCount,
-                    stats?.pending || 0,
-                    stats?.approved || 0,
-                    stats?.revision || 0,
-                    stats?.rejected || 0,
-                ],
-                backgroundColor: ['#94A3B8', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'],
-                hoverBackgroundColor: ['#64748B', '#7C3AED', '#059669', '#D97706', '#DC2626'],
-                borderRadius: 8,
-                borderSkipped: false,
-                maxBarThickness: 36,
-            },
-        ],
-    };
-
-    const barOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-            duration: 400,
-        },
-        plugins: {
-            legend: {
-                display: false,
-            },
-            tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                titleColor: '#FFFFFF',
-                bodyColor: '#F8FAFC',
-                titleFont: { size: 12, weight: 'bold' },
-                bodyFont: { size: 12, weight: '600' },
-                padding: { top: 8, bottom: 8, left: 12, right: 12 },
-                cornerRadius: 10,
-                boxPadding: 6,
-                callbacks: {
-                    label: function (context) {
-                        const val = context.raw || 0;
-                        const total = stats?.total || 1;
-                        const pct = Math.round((val / total) * 100);
-                        return ` ${val} Soal (${pct}%)`;
-                    },
-                },
-            },
-        },
-        scales: {
-            x: {
-                grid: { display: false },
-                ticks: {
-                    font: { size: 11, weight: '600' },
-                    color: '#64748B',
-                },
-            },
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1,
-                    precision: 0,
-                    font: { size: 11 },
-                    color: '#94A3B8',
-                },
-                grid: {
-                    color: '#F1F5F9',
-                },
-            },
-        },
     };
 
     return (
@@ -320,155 +176,14 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                     <StatCard label="Ditolak"            value={stats?.rejected || 0} icon={XCircle}       color="bg-red-500" />
                 </div>
 
-                {/* 2-Column Section: Left (Diagram Donut Status Soal - col-span-7) & Right (Mata Kuliah yang Diawasi - col-span-5) */}
-                <div className="grid lg:grid-cols-12 gap-6 items-stretch">
-                    {/* Left: Diagram Distribusi Status Soal */}
-                    <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
-                        <div className="flex items-center justify-between">
+                {/* Main Content Grid: Antrean Soal (Left 8) & Mata Kuliah yang Diawasi (Right 4) */}
+                <div className="grid lg:grid-cols-12 gap-6 items-start">
+                    {/* Antrean Soal Menunggu Verifikasi (Left 8) */}
+                    <div className="lg:col-span-8 bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-gray-100">
                             <div>
-                                <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                                    {chartType === 'donut' ? (
-                                        <PieChart className="w-4 h-4 text-[#801720]" />
-                                    ) : (
-                                        <BarChart3 className="w-4 h-4 text-[#801720]" />
-                                    )}
-                                    Distribusi Status Soal
-                                </h2>
-                                <p className="text-xs text-gray-500 font-medium mt-0.5">
-                                    Proporsi status verifikasi seluruh mata kuliah Anda
-                                </p>
-                            </div>
-
-                            {/* Chart Type Toggle */}
-                            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-                                <button
-                                    type="button"
-                                    onClick={() => setChartType('donut')}
-                                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                                        chartType === 'donut'
-                                            ? 'bg-white text-[#801720] shadow-xs'
-                                            : 'text-slate-400 hover:text-slate-600'
-                                    }`}
-                                    title="Diagram Donut"
-                                    aria-label="Diagram Donut"
-                                >
-                                    <PieChart className="w-4 h-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setChartType('bar')}
-                                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                                        chartType === 'bar'
-                                            ? 'bg-white text-[#801720] shadow-xs'
-                                            : 'text-slate-400 hover:text-slate-600'
-                                    }`}
-                                    title="Diagram Batang"
-                                    aria-label="Diagram Batang"
-                                >
-                                    <BarChart3 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Chart Canvas Area */}
-                        <div className="relative w-full h-56 mx-auto flex items-center justify-center my-3">
-                            {chartType === 'donut' ? (
-                                <div className="relative w-52 h-52 sm:w-56 sm:h-56 mx-auto flex items-center justify-center">
-                                    <Doughnut data={donutData} options={donutOptions} />
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                        <span className="text-3xl font-black text-slate-900 leading-tight">{assignments.length || stats?.total || 0}</span>
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Mata Kuliah</span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="w-full h-full pt-2">
-                                    <Bar data={barData} options={barOptions} />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Legend */}
-                        <div className="flex flex-wrap items-center justify-center gap-4 pt-2 border-t border-gray-100">
-                            {[
-                                { label: 'Belum Upload', color: 'bg-slate-400', count: belumUploadCount },
-                                { label: 'In Review',    color: 'bg-purple-500', count: stats?.pending || 0 },
-                                { label: 'Disetujui',    color: 'bg-emerald-500', count: stats?.approved || 0 },
-                                { label: 'Revisi',       color: 'bg-amber-500', count: stats?.revision || 0 },
-                                { label: 'Ditolak',      color: 'bg-red-500', count: stats?.rejected || 0 },
-                            ].map(item => (
-                                <div key={item.label} className="flex items-center gap-1.5 text-xs">
-                                    <span className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-                                    <span className="text-slate-600 font-medium">{item.label}:</span>
-                                    <span className="font-bold text-slate-800">{item.count}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Right: Mata Kuliah yang Diawasi */}
-                    <div className="lg:col-span-5 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                                    <BookOpen className="w-4 h-4 text-[#801720]" /> Mata Kuliah yang Diawasi
-                                </h2>
-                                <span className="text-xs font-semibold text-slate-500">
-                                    {assignments.length} Mata Kuliah Ditugaskan
-                                </span>
-                            </div>
-
-                            {assignments.length === 0 ? (
-                                <p className="text-sm text-gray-400 text-center py-10">Belum ada mata kuliah yang ditugaskan.</p>
-                            ) : (
-                                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                                    {assignments.map(a => {
-                                        const isComplete = a.total > 0 && a.pending === 0;
-                                        return (
-                                            <div key={a.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100/60 transition-colors flex items-center justify-between gap-3">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold text-gray-800 truncate">{a.mata_kuliah?.nama_mk}</p>
-                                                    <p className="text-[10px] text-gray-400 mt-0.5">{a.mata_kuliah?.kode_mk} · {a.mata_kuliah?.sks || 3} SKS · <span className="font-semibold text-slate-600">{a.total} Soal</span></p>
-                                                </div>
-                                                <div className="flex items-center gap-2 flex-shrink-0">
-                                                    {a.total === 0 ? (
-                                                        <StatusBadge status="BELUM_UPLOAD" />
-                                                    ) : isComplete ? (
-                                                        <a
-                                                            href={`/verifikator/mata-kuliah/${a.mata_kuliah_id}/berita-acara`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#801720] text-white rounded-xl text-[10px] font-bold hover:bg-[#6a1219] transition-all shadow-xs"
-                                                            title="Cetak Berita Acara"
-                                                        >
-                                                            <Printer className="w-3 h-3" /> Berita Acara
-                                                        </a>
-                                                    ) : (
-                                                        <StatusBadge status="IN_REVIEW" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="pt-3 border-t border-gray-100 mt-4 text-center">
-                            <p className="text-[11px] font-semibold text-slate-400">
-                                Total {assignments.length} mata kuliah dalam pengawasan verifikator
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content Grid: Pending Queue & Activity Log */}
-                <div className="grid lg:grid-cols-3 gap-6">
-                    {/* Antrean Soal Menunggu Verifikasi */}
-                    <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                            <div>
-                                <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                                    <FileCheck className="w-4 h-4 text-[#801720]" /> Antrean Soal Menunggu Verifikasi
+                                <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                                    <FileCheck className="w-5 h-5 text-[#801720]" /> Antrean Soal Menunggu Verifikasi
                                 </h2>
                                 <p className="text-xs text-gray-500 font-medium mt-0.5">
                                     Tinjau dokumen dan berikan persetujuan atau catatan revisi
@@ -492,14 +207,14 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                     placeholder="Cari judul soal atau nama dosen..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
                                 />
                             </div>
                             {assignments.length > 0 && (
                                 <select
                                     value={selectedMk}
                                     onChange={(e) => setSelectedMk(e.target.value)}
-                                    className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                    className="text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
                                 >
                                     <option value="ALL">Semua MK Ditugaskan</option>
                                     {assignments.map(a => (
@@ -563,7 +278,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                         <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100">
                                             <Link
                                                 href={`/verifikator/soal/${soal.id}`}
-                                                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#9B1B26] transition-all shadow-xs"
+                                                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#9B1B26] transition-all shadow-xs"
                                             >
                                                 <span>Review & Verifikasi</span>
                                                 <ArrowRight className="w-3.5 h-3.5" />
@@ -575,67 +290,123 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                         )}
                     </div>
 
-                    {/* Timeline Riwayat Keputusan Verifikasi */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+                    {/* Mata Kuliah yang Diawasi (Right 4) */}
+                    <div className="lg:col-span-4 bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between">
                         <div>
-                            <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-[#801720]" /> Riwayat Verifikasi Saya
-                            </h2>
-                            <p className="text-xs text-gray-500 font-medium mt-0.5">
-                                Keputusan verifikasi terbaru yang Anda berikan
-                            </p>
+                            <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                                <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                                    <BookOpen className="w-5 h-5 text-[#801720]" /> Mata Kuliah Diawasi
+                                </h2>
+                                <span className="text-xs font-semibold text-slate-500">
+                                    {assignments.length} MK
+                                </span>
+                            </div>
+
+                            {assignments.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-10">Belum ada mata kuliah yang ditugaskan.</p>
+                            ) : (
+                                <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+                                    {assignments.map(a => {
+                                        const isComplete = a.total > 0 && a.pending === 0;
+                                        return (
+                                            <div key={a.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100/60 transition-colors flex items-center justify-between gap-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-bold text-gray-800 truncate">{a.mata_kuliah?.nama_mk}</p>
+                                                    <p className="text-[10px] text-gray-400 mt-0.5">{a.mata_kuliah?.kode_mk} · {a.mata_kuliah?.sks || 3} SKS · <span className="font-semibold text-slate-600">{a.total} Soal</span></p>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    {a.total === 0 ? (
+                                                        <StatusBadge status="BELUM_UPLOAD" />
+                                                    ) : isComplete ? (
+                                                        <a
+                                                            href={`/verifikator/mata-kuliah/${a.mata_kuliah_id}/berita-acara`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#801720] text-white rounded-xl text-[10px] font-bold hover:bg-[#6a1219] transition-all shadow-xs"
+                                                            title="Cetak Berita Acara"
+                                                        >
+                                                            <Printer className="w-3 h-3" /> Berita Acara
+                                                        </a>
+                                                    ) : (
+                                                        <StatusBadge status="IN_REVIEW" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
-                        {recentVerifikasis.length === 0 ? (
-                            <div className="text-center py-10 text-gray-400">
-                                <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                <p className="text-xs font-semibold">Belum Ada Keputusan</p>
-                                <p className="text-[11px] text-gray-400 mt-0.5">Riwayat verifikasi Anda akan muncul di sini.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2.5 relative before:absolute before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-100">
-                                {recentVerifikasis.map(v => {
-                                    const actionConfig = {
-                                        APPROVED: { label: 'Disetujui', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
-                                        REVISION: { label: 'Perlu Revisi', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: RefreshCw },
-                                        REJECTED: { label: 'Ditolak', color: 'bg-red-50 text-red-700 border-red-200', icon: XCircle },
-                                    }[v.action] || { label: v.action, color: 'bg-slate-100 text-slate-800 border-slate-300', icon: Check };
-
-                                    const Icon = actionConfig.icon;
-
-                                    return (
-                                        <div key={v.id} className="relative pl-7 group">
-                                            <div className="absolute left-1.5 top-1.5 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-[#801720] flex items-center justify-center">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-[#801720]" />
-                                            </div>
-
-                                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/60 transition-all text-xs space-y-1.5">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${actionConfig.color} inline-flex items-center gap-1`}>
-                                                        <Icon className="w-3 h-3" /> {actionConfig.label}
-                                                    </span>
-                                                    <span className="text-[10px] text-gray-400 font-semibold">{formatDate(v.created_at)}</span>
-                                                </div>
-
-                                                <p className="font-bold text-gray-800 truncate">
-                                                    {v.soal?.judul || 'Soal Ujian'}
-                                                </p>
-                                                <p className="text-[10px] text-gray-400 font-medium">
-                                                    {v.soal?.mata_kuliah?.nama_mk}
-                                                </p>
-
-                                                {v.catatan && (
-                                                    <p className="text-[10px] text-gray-600 italic bg-white p-2 rounded-lg border border-gray-200/80 line-clamp-2 mt-1">
-                                                        "{v.catatan}"
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                        <div className="pt-3 border-t border-gray-100 mt-4 text-center">
+                            <p className="text-[11px] font-semibold text-slate-400">
+                                Total {assignments.length} mata kuliah dalam pengawasan verifikator
+                            </p>
+                        </div>
                     </div>
+                </div>
+
+                {/* Timeline Riwayat Keputusan Verifikasi */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className="pb-2 border-b border-gray-100 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-[#801720]" /> Riwayat Verifikasi Saya
+                            </h2>
+                            <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                Keputusan verifikasi terbaru yang Anda berikan pada sistem
+                            </p>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-500">
+                            {recentVerifikasis.length} Catatan
+                        </span>
+                    </div>
+
+                    {recentVerifikasis.length === 0 ? (
+                        <div className="text-center py-10 text-gray-400">
+                            <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                            <p className="text-xs font-semibold">Belum Ada Keputusan</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">Riwayat verifikasi Anda akan muncul di sini.</p>
+                        </div>
+                    ) : (
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {recentVerifikasis.map(v => {
+                                const actionConfig = {
+                                    APPROVED: { label: 'Disetujui', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
+                                    REVISION: { label: 'Perlu Revisi', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: RefreshCw },
+                                    REJECTED: { label: 'Ditolak', color: 'bg-red-50 text-red-700 border-red-200', icon: XCircle },
+                                }[v.action] || { label: v.action, color: 'bg-slate-100 text-slate-800 border-slate-300', icon: Check };
+
+                                const Icon = actionConfig.icon;
+
+                                return (
+                                    <div key={v.id} className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-100 hover:bg-slate-100/60 transition-all text-xs space-y-2 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${actionConfig.color} inline-flex items-center gap-1`}>
+                                                    <Icon className="w-3 h-3" /> {actionConfig.label}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 font-semibold">{formatDate(v.created_at)}</span>
+                                            </div>
+
+                                            <p className="font-bold text-gray-800 truncate mt-2">
+                                                {v.soal?.judul || 'Soal Ujian'}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 font-medium">
+                                                {v.soal?.mata_kuliah?.nama_mk}
+                                            </p>
+                                        </div>
+
+                                        {v.catatan && (
+                                            <p className="text-[10px] text-gray-600 italic bg-white p-2 rounded-xl border border-gray-200/80 line-clamp-2 mt-1">
+                                                "{v.catatan}"
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

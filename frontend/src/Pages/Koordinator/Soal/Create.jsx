@@ -29,25 +29,14 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef(null);
 
-    // Determine default category based on active period
-    const isUasPeriod = Boolean(
-        activePeriode?.nama?.toLowerCase().includes('uas') ||
-        activePeriode?.nama?.toLowerCase().includes('akhir')
-    );
-
-    const fixedCategory = defaultKategori || (() => {
-        if (!kategoriAll || kategoriAll.length === 0) return null;
-        if (isUasPeriod) {
-            return kategoriAll.find(k => k.nama.toLowerCase().includes('uas') || (k.deskripsi && k.deskripsi.toLowerCase().includes('akhir'))) || kategoriAll[0];
-        }
-        return kategoriAll.find(k => k.nama.toLowerCase().includes('uts') || (k.deskripsi && k.deskripsi.toLowerCase().includes('tengah'))) || kategoriAll[0];
-    })();
+    // Determine default category
+    const initialCategory = defaultKategori || (kategoriAll && kategoriAll.length > 0 ? kategoriAll[0] : null);
 
     // Main form state
     const { data, setData, post, processing, errors } = useForm({
         mata_kuliah_id: selectedMataKuliahId || (assignments[0]?.id ?? ''),
         periode_id: activePeriode?.id || '',
-        kategori_id: fixedCategory?.id || '',
+        kategori_id: initialCategory?.id || '',
         judul: '',
         file: null,
         submit_now: true,
@@ -55,6 +44,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
     });
 
     const selectedMk = assignments.find(a => a.id === data.mata_kuliah_id);
+    const selectedCategory = (kategoriAll || []).find(k => k.id === data.kategori_id) || initialCategory;
 
     // Generator & PLO/CLO States
     const [generatorData, setGeneratorData] = useState(null);
@@ -65,11 +55,19 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
 
     // Auto-suggest Judul Soal when MK or category changes
     useEffect(() => {
-        if (selectedMk && fixedCategory && !data.judul) {
-            const kategoriName = fixedCategory.nama || 'Ujian';
-            setData('judul', `${kategoriName} - ${selectedMk.nama_mk}`);
+        if (selectedMk && selectedCategory) {
+            const kategoriName = selectedCategory.nama || 'Ujian';
+            setData(prev => {
+                if (!prev.judul || prev.judul.startsWith('UTS -') || prev.judul.startsWith('UAS -') || prev.judul.startsWith('Quiz -') || prev.judul.startsWith('Tugas -') || prev.judul.startsWith('Tugas Besar -') || prev.judul.startsWith('Praktikum -')) {
+                    return {
+                        ...prev,
+                        judul: `${kategoriName} - ${selectedMk.nama_mk}`
+                    };
+                }
+                return prev;
+            });
         }
-    }, [selectedMk?.id, fixedCategory?.id]);
+    }, [selectedMk?.id, data.kategori_id]);
 
     // Fetch generator course data (PLO/CLO) dynamically when course changes
     useEffect(() => {
@@ -451,14 +449,41 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                         </div>
 
                         {/* Kategori Soal */}
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <div>
-                                <span className="text-[11px] text-gray-400 block">Kategori Evaluasi</span>
-                                <span className="font-bold text-gray-800 text-xs">{fixedCategory?.nama || 'UTS'}</span>
-                            </div>
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold">
-                                Otomatis
-                            </span>
+                        <div>
+                            <label className="block font-semibold text-gray-700 mb-1.5">
+                                Kategori Evaluasi / Asesmen <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                value={data.kategori_id}
+                                onChange={(e) => {
+                                    const newCatId = e.target.value;
+                                    const newCat = (kategoriAll || []).find(k => k.id === newCatId);
+                                    setData(prev => {
+                                        const updated = { ...prev, kategori_id: newCatId };
+                                        if (selectedMk && newCat) {
+                                            updated.judul = `${newCat.nama} - ${selectedMk.nama_mk}`;
+                                        }
+                                        return updated;
+                                    });
+                                    if (generatorData && newCat) {
+                                        setGeneratorData(prev => ({
+                                            ...prev,
+                                            tipe_ujian: newCat.nama,
+                                            nama_evaluasi: newCat.deskripsi || newCat.nama
+                                        }));
+                                    }
+                                }}
+                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all"
+                            >
+                                {(kategoriAll || []).map((k) => (
+                                    <option key={k.id} value={k.id}>
+                                        {k.nama} {k.deskripsi ? `— ${k.deskripsi}` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.kategori_id && (
+                                <p className="text-xs text-red-600 mt-1">{errors.kategori_id}</p>
+                            )}
                         </div>
                     </div>
                 </div>

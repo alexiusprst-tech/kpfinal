@@ -551,23 +551,18 @@
 
 
 <!-- ============================================================== -->
-<!-- HALAMAN 2+: LEMBAR SOAL DARI SOAL YANG DIUNGGAH KOORDINATOR MK -->
+<!-- HALAMAN 2+: INFORMASI & NASKAH SOAL UNGGAHAN KOORDINATOR MK   -->
 <!-- ============================================================== -->
 @foreach ($soalList as $soalIndex => $soalItem)
     @php
         $pcd = is_array($soalItem->plo_clo_data) ? $soalItem->plo_clo_data : (json_decode($soalItem->plo_clo_data, true) ?: []);
         $formNo = $pcd['form_no'] ?? '100-S1SI-001-R1';
-        $namaEvaluasi = $pcd['nama_evaluasi'] ?? ($periode->jenis_periode === 'UAS' ? 'Ujian Akhir Semester' : 'Ujian Tengah Semester');
-        $kodeDosenVal = $pcd['kode_dosen'] ?? ($koordinatorDosen->kode_dosen ?? $evaluatorKode ?? '-');
-        $kodeNamaMkVal = $pcd['kode_nama_mk'] ?? ($mataKuliah->kode_mk . ' / ' . $mataKuliah->nama_mk);
-        $tipeUjianVal = $pcd['tipe_ujian'] ?? ($soalItem->kategori->nama ?? ($periode->jenis_periode ?? 'UTS'));
-        $tglEvaluasiVal = $pcd['tanggal_evaluasi'] ?? ($tanggalIndonesia . ' / 120 menit');
-        $tipeSoalVal = $pcd['tipe_soal'] ?? 'Closed Book (120 minutes)';
-        $petunjukList = $pcd['petunjuk_pengerjaan'] ?? [
-            'Bacalah setiap soal dengan teliti.',
-            'Jawablah seluruh pertanyaan pada lembar jawaban yang disediakan.',
-            'Dilarang menggunakan kalkulator atau handphone selama ujian berlangsung.',
-        ];
+        $namaEvaluasi = $soalItem->kategori->nama ?? ($pcd['nama_evaluasi'] ?? ($periode->jenis_periode === 'UAS' ? 'Ujian Akhir Semester' : 'Ujian Tengah Semester'));
+        $kodeDosenVal = $soalItem->uploadedBy->dosen->kode_dosen ?? ($koordinatorDosen->kode_dosen ?? $evaluatorKode ?? '-');
+        $namaDosenVal = $soalItem->uploadedBy->dosen->nama_lengkap ?? ($koordinatorNama ?? '-');
+        $kodeNamaMkVal = $mataKuliah->kode_mk . ' / ' . $mataKuliah->nama_mk;
+        $tipeUjianVal = $soalItem->kategori->nama ?? ($periode->jenis_periode ?? 'UTS');
+        $tglEvaluasiVal = $soalItem->created_at ? $soalItem->created_at->format('d/m/Y H:i') : $tanggalIndonesia;
         $ploList = $pcd['plo'] ?? [];
         $questionNumber = 1;
     @endphp
@@ -590,38 +585,39 @@
                         <strong style="font-size: 11px;">Telkom<br>University</strong>
                     @endif
                 </td>
-                <td class="ls-title-cell" colspan="4">LEMBAR SOAL</td>
+                <td class="ls-title-cell" colspan="4">LAMPIRAN: NASKAH SOAL ASESMEN</td>
             </tr>
             <tr>
                 <td class="ls-label-cell">Nama Evaluasi</td>
                 <td class="ls-value-cell">{{ $namaEvaluasi }}</td>
-                <td class="ls-label-cell-right">Kode dosen</td>
-                <td class="ls-value-cell-right">{{ $kodeDosenVal }}</td>
+                <td class="ls-label-cell-right">Dosen Koordinator</td>
+                <td class="ls-value-cell-right">{{ $namaDosenVal }} ({{ $kodeDosenVal }})</td>
             </tr>
             <tr>
                 <td class="ls-label-cell">Kode/Nama MK</td>
                 <td class="ls-value-cell">{{ $kodeNamaMkVal }}</td>
-                <td class="ls-label-cell-right">Tipe Ujian</td>
+                <td class="ls-label-cell-right">Bentuk Asesmen</td>
                 <td class="ls-value-cell-right">{{ $tipeUjianVal }}</td>
             </tr>
             <tr>
-                <td class="ls-label-cell">Tanggal Evaluasi</td>
-                <td class="ls-value-cell">{{ $tglEvaluasiVal }}</td>
-                <td class="ls-label-cell-right">Tipe Soal</td>
-                <td class="ls-value-cell-right" style="font-weight: bold;">{{ $tipeSoalVal }}</td>
+                <td class="ls-label-cell">Judul Naskah Soal</td>
+                <td class="ls-value-cell"><strong>{{ $soalItem->judul }}</strong></td>
+                <td class="ls-label-cell-right">Berkas Asli</td>
+                <td class="ls-value-cell-right" style="font-weight: bold;">{{ $soalItem->nama_file }}</td>
             </tr>
         </table>
 
-        <!-- Petunjuk Pengerjaan Box -->
-        <table class="ls-block-table">
+        <!-- Berkas Unggahan Banner -->
+        <table class="ls-block-table" style="background-color: #f8fafc; border: 1.5px solid #000000; margin-bottom: 8px;">
             <tr>
-                <td class="ls-block-label">
-                    Petunjuk<br>Pengerjaan
+                <td class="ls-block-label" style="width: 22%; background-color: #f1f5f9;">
+                    Informasi Berkas<br>Naskah Soal
                 </td>
-                <td class="ls-block-content">
-                    @foreach($petunjukList as $pIdx => $pItem)
-                        <div style="margin-bottom: 3px;">({{ $pIdx + 1 }}) {{ $pItem }}</div>
-                    @endforeach
+                <td class="ls-block-content" style="line-height: 1.5;">
+                    <div><strong>Judul Soal:</strong> {{ $soalItem->judul }}</div>
+                    <div><strong>Nama File Unggahan:</strong> {{ $soalItem->nama_file }} ({{ round(($soalItem->file_size ?: 0) / 1024, 1) }} KB)</div>
+                    <div><strong>Waktu Unggah:</strong> {{ $soalItem->created_at ? $soalItem->created_at->format('d/m/Y H:i') . ' WIB' : '-' }}</div>
+                    <div><strong>Status Keputusan Verifikasi:</strong> <span style="font-weight: bold; color: #047857;">DISETUJUI (APPROVED)</span></div>
                 </td>
             </tr>
         </table>
@@ -665,19 +661,15 @@
                                 </tbody>
                             </table>
 
-                            <!-- Soal LO Badge -->
-                            <div class="soal-title-container">
-                                <div class="soal-title-badge">Soal LO{{ $questionNumber }}</div>
-                            </div>
+                            @if(!empty($cloItem['soal']))
+                                <div class="soal-title-container">
+                                    <div class="soal-title-badge">Naskah Pertanyaan {{ $cloItem['kode'] ?? ('LO' . $questionNumber) }}</div>
+                                </div>
 
-                            <!-- Area Soal Content (Soal yang diisi Koordinator) -->
-                            <div class="area-soal-box">
-                                @if(!empty($cloItem['soal']))
+                                <div class="area-soal-box">
                                     <div class="soal-text">{!! nl2br(e($cloItem['soal'])) !!}</div>
-                                @else
-                                    <div class="soal-empty">&nbsp;</div>
-                                @endif
-                            </div>
+                                </div>
+                            @endif
                         </div>
                         @php $questionNumber++; @endphp
                     @endforeach
@@ -721,17 +713,9 @@
                             </tr>
                         </tbody>
                     </table>
-
-                    <div class="soal-title-container">
-                        <div class="soal-title-badge">Soal LO{{ $cIndex + 1 }}</div>
-                    </div>
-
-                    <div class="area-soal-box">
-                        <div class="soal-empty">&nbsp;</div>
-                    </div>
                 </div>
             @empty
-                <p style="font-size: 11px; margin-top: 15px;">Belum ada CLO yang terdaftar untuk mata kuliah ini.</p>
+                <p style="font-size: 11px; margin-top: 15px;">Belum ada pemetaan CLO terdaftar untuk mata kuliah ini.</p>
             @endforelse
         @endif
     </div>

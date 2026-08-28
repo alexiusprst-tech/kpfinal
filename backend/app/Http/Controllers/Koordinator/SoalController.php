@@ -93,7 +93,20 @@ class SoalController extends Controller
         }
 
         $categories = $this->getKategoriForPeriode($activePeriod);
-        $defaultKategori = $categories->first();
+        
+        $defaultKategori = null;
+        if ($activePeriod) {
+            $periodText = mb_strtolower(($activePeriod->nama ?? '') . ' ' . ($activePeriod->catatan ?? ''));
+            $isUas = str_contains($periodText, 'uas') || str_contains($periodText, 'akhir semester');
+            if ($isUas) {
+                $defaultKategori = $categories->first(fn($c) => strtolower($c->nama) === 'uas') 
+                    ?? $categories->first(fn($c) => str_contains(strtolower($c->nama), 'uas'));
+            } else {
+                $defaultKategori = $categories->first(fn($c) => strtolower($c->nama) === 'uts')
+                    ?? $categories->first(fn($c) => str_contains(strtolower($c->nama), 'uts'));
+            }
+        }
+        $defaultKategori = $defaultKategori ?? $categories->first();
 
         return Inertia::render('Koordinator/Soal/Create', [
             'assignments' => $assignments->map(fn ($a) => [
@@ -388,52 +401,48 @@ class SoalController extends Controller
     }
 
     /**
-     * Get active categories strictly filtered by the target Periode (UTS during UTS period, UAS during UAS period).
+     * Get all active assessment categories (UTS, UAS, Quiz, Tugas, Tugas Besar, Praktikum, etc.).
      */
     private function getKategoriForPeriode(?PeriodeVerifikasi $periode)
     {
-        $query = KategoriSoal::where('status', 'ACTIVE');
+        $categories = KategoriSoal::where('status', 'ACTIVE')
+            ->orderByRaw("CASE 
+                WHEN UPPER(nama) = 'UTS' THEN 1 
+                WHEN UPPER(nama) = 'UAS' THEN 2 
+                WHEN UPPER(nama) = 'QUIZ' THEN 3 
+                WHEN UPPER(nama) = 'TUGAS' THEN 4 
+                WHEN UPPER(nama) LIKE 'TUGAS BESAR%' THEN 5 
+                ELSE 6 END")
+            ->orderBy('nama', 'asc')
+            ->get(['id', 'nama', 'deskripsi']);
 
-        if ($periode) {
-            $periodText = mb_strtolower(($periode->nama ?? '') . ' ' . ($periode->catatan ?? ''));
-            $isUas = str_contains($periodText, 'uas') || str_contains($periodText, 'akhir semester');
-
-            if ($isUas) {
-                // In UAS period: ONLY UAS
-                $query->where(function ($q) {
-                    $q->whereRaw('LOWER(nama) LIKE ?', ['%uas%'])
-                      ->orWhereRaw('LOWER(deskripsi) LIKE ?', ['%akhir semester%']);
-                });
-            } else {
-                // In UTS period (default): ONLY UTS
-                $query->where(function ($q) {
-                    $q->whereRaw('LOWER(nama) LIKE ?', ['%uts%'])
-                      ->orWhereRaw('LOWER(deskripsi) LIKE ?', ['%tengah semester%']);
-                });
+        if ($categories->isEmpty()) {
+            $defaultList = [
+                ['nama' => 'UTS', 'deskripsi' => 'Ujian Tengah Semester (UTS)'],
+                ['nama' => 'UAS', 'deskripsi' => 'Ujian Akhir Semester (UAS)'],
+                ['nama' => 'Quiz', 'deskripsi' => 'Quiz / Kuis'],
+                ['nama' => 'Tugas', 'deskripsi' => 'Tugas Mandiri / Terstruktur'],
+                ['nama' => 'Tugas Besar', 'deskripsi' => 'Tugas Besar / Proyek (Tubus)'],
+                ['nama' => 'Praktikum', 'deskripsi' => 'Praktikum / Responsi'],
+            ];
+            foreach ($defaultList as $cat) {
+                KategoriSoal::firstOrCreate(
+                    ['nama' => $cat['nama']],
+                    ['id' => (string) Str::uuid(), 'deskripsi' => $cat['deskripsi'], 'status' => 'ACTIVE']
+                );
             }
-        } else {
-            $query->where(function ($q) {
-                $q->whereRaw('LOWER(nama) LIKE ?', ['%uts%'])
-                  ->orWhereRaw('LOWER(nama) LIKE ?', ['%uas%']);
-            });
+            $categories = KategoriSoal::where('status', 'ACTIVE')
+                ->orderByRaw("CASE 
+                    WHEN UPPER(nama) = 'UTS' THEN 1 
+                    WHEN UPPER(nama) = 'UAS' THEN 2 
+                    WHEN UPPER(nama) = 'QUIZ' THEN 3 
+                    WHEN UPPER(nama) = 'TUGAS' THEN 4 
+                    WHEN UPPER(nama) LIKE 'TUGAS BESAR%' THEN 5 
+                    ELSE 6 END")
+                ->orderBy('nama', 'asc')
+                ->get(['id', 'nama', 'deskripsi']);
         }
 
-        $results = $query->orderBy('nama', 'asc')->get(['id', 'nama', 'deskripsi']);
-
-        // Auto-provision if the matching master category doesn't exist yet
-        if ($results->isEmpty() && $periode) {
-            $periodText = mb_strtolower(($periode->nama ?? '') . ' ' . ($periode->catatan ?? ''));
-            $isUas = str_contains($periodText, 'uas') || str_contains($periodText, 'akhir semester');
-            $name = $isUas ? 'UAS' : 'UTS';
-            $desc = $isUas ? 'Ujian Akhir Semester (UAS)' : 'Ujian Tengah Semester (UTS)';
-
-            $cat = KategoriSoal::firstOrCreate(
-                ['nama' => $name],
-                ['id' => (string) Str::uuid(), 'deskripsi' => $desc, 'status' => 'ACTIVE']
-            );
-            return collect([$cat]);
-        }
-
-        return $results;
+        return $categories;
     }
 }

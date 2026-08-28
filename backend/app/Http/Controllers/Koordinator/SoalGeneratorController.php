@@ -109,8 +109,8 @@ class SoalGeneratorController extends Controller
                 $isUas = true;
             }
         }
-        $data['nama_evaluasi'] = $isUas ? 'Ujian Akhir Semester' : 'Ujian Tengah Semester';
-        $data['tipe_ujian'] = $isUas ? 'UAS' : 'UTS';
+        $data['nama_evaluasi'] = $request->input('nama_evaluasi') ?: ($isUas ? 'Ujian Akhir Semester' : 'Ujian Tengah Semester');
+        $data['tipe_ujian'] = $request->input('tipe_ujian') ?: ($isUas ? 'UAS' : 'UTS');
         if ($dosen && $dosen->kode_dosen) {
             $data['kode_dosen'] = $dosen->kode_dosen;
         }
@@ -175,8 +175,8 @@ class SoalGeneratorController extends Controller
                 $isUas = true;
             }
         }
-        $data['nama_evaluasi'] = $isUas ? 'Ujian Akhir Semester' : 'Ujian Tengah Semester';
-        $data['tipe_ujian'] = $isUas ? 'UAS' : 'UTS';
+        $data['nama_evaluasi'] = $request->input('nama_evaluasi') ?: ($isUas ? 'Ujian Akhir Semester' : 'Ujian Tengah Semester');
+        $data['tipe_ujian'] = $request->input('tipe_ujian') ?: ($isUas ? 'UAS' : 'UTS');
         if ($dosen && $dosen->kode_dosen) {
             $data['kode_dosen'] = $dosen->kode_dosen;
         }

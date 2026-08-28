@@ -164,11 +164,11 @@ class BeritaAcaraController extends Controller
             return redirect()->back()->with('error', 'Tidak ada periode verifikasi yang aktif.');
         }
 
-        $isAssigned = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+        $isAssigned = ($dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
             ->where('mata_kuliah_id', $mataKuliah->id)
             ->where('periode_id', $activePeriod->id)
             ->where('status', 'ACTIVE')
-            ->exists();
+            ->exists()) || $user->isSuperAdmin();
 
         if (!$isAssigned) {
             return redirect()->back()->with('error', 'Anda tidak ditugaskan sebagai verifikator untuk mata kuliah ini.');
@@ -241,10 +241,10 @@ class BeritaAcaraController extends Controller
                 'jumlahRevision'           => $jumlahRevision,
                 'jumlahRejected'           => $jumlahRejected,
                 'logo_base64'              => $logoBase64,
-                'tanda_tangan_evaluator'   => $dosen->tanda_tangan
+                'tanda_tangan_evaluator'   => $dosen?->tanda_tangan
                     ? storage_path('app/public/' . $dosen->tanda_tangan)
                     : null,
-                'tanda_tangan_koordinator' => $koordinatorDosen->tanda_tangan
+                'tanda_tangan_koordinator' => $koordinatorDosen?->tanda_tangan
                     ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan)
                     : null,
             ];
@@ -255,10 +255,10 @@ class BeritaAcaraController extends Controller
                 $singleData = $baseData;
                 $singleData['soalList'] = collect([$singleSoal]);
 
-                $pdf = Pdf::loadView('pdf.berita-acara', $singleData)->setPaper('a4', 'portrait');
+                $pdfContent = $this->generateBapPdf($singleData, $singleSoal);
 
                 $relativePath = 'berita-acara/' . Str::uuid() . '.pdf';
-                Storage::disk('private')->put($relativePath, $pdf->output());
+                Storage::disk('private')->put($relativePath, $pdfContent);
 
                 $beritaAcara = BeritaAcara::updateOrCreate(
                     [
@@ -287,7 +287,9 @@ class BeritaAcaraController extends Controller
                 $cleanTitle = Str::slug($mataKuliah->kode_mk . '-' . $singleSoal->judul);
                 $filename = 'BAP-' . ($cleanTitle ?: 'soal') . '.pdf';
 
-                return $pdf->download($filename);
+                return response($pdfContent)
+                    ->header('Content-Type', 'application/pdf')
+                    ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
             }
 
             // If multiple approved soals exist, generate separate BAP PDF for each and package into a ZIP archive
@@ -304,8 +306,7 @@ class BeritaAcaraController extends Controller
                     $itemData = $baseData;
                     $itemData['soalList'] = collect([$soalItem]);
 
-                    $pdf = Pdf::loadView('pdf.berita-acara', $itemData)->setPaper('a4', 'portrait');
-                    $pdfContent = $pdf->output();
+                    $pdfContent = $this->generateBapPdf($itemData, $soalItem);
 
                     $cleanTitle = Str::slug($mataKuliah->kode_mk . '-' . $soalItem->judul);
                     $pdfName = 'BAP-' . ($cleanTitle ?: ('soal-' . ($index + 1))) . '.pdf';
@@ -428,18 +429,18 @@ class BeritaAcaraController extends Controller
                 'jumlahRevision'           => 0,
                 'jumlahRejected'           => 0,
                 'logo_base64'              => $logoBase64,
-                'tanda_tangan_evaluator'   => $dosen->tanda_tangan
+                'tanda_tangan_evaluator'   => $dosen?->tanda_tangan
                     ? storage_path('app/public/' . $dosen->tanda_tangan)
                     : null,
-                'tanda_tangan_koordinator' => $koordinatorDosen->tanda_tangan
+                'tanda_tangan_koordinator' => $koordinatorDosen?->tanda_tangan
                     ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan)
                     : null,
             ];
 
-            $pdf = Pdf::loadView('pdf.berita-acara', $data)->setPaper('a4', 'portrait');
+            $pdfContent = $this->generateBapPdf($data, $soal);
 
             $relativePath = 'berita-acara/' . Str::uuid() . '.pdf';
-            Storage::disk('private')->put($relativePath, $pdf->output());
+            Storage::disk('private')->put($relativePath, $pdfContent);
 
             $beritaAcara = BeritaAcara::updateOrCreate(
                 [
@@ -470,8 +471,75 @@ class BeritaAcaraController extends Controller
             $cleanTitle = Str::slug($mataKuliah->kode_mk . '-' . $soal->judul);
             $filename = 'BAP-' . ($cleanTitle ?: 'soal') . '.pdf';
 
-            return $pdf->download($filename);
+            return response($pdfContent)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
         });
+    }
+
+    /**
+     * Generate merged BAP PDF containing the 1-page BAP Form (Page 1)
+     * and the actual uploaded exam question PDF by Koordinator MK (Page 2+).
+     */
+    private function generateBapPdf(array $viewData, ?Soal $soalItem = null): string
+    {
+        $domPdf = Pdf::loadView('pdf.berita-acara', $viewData)->setPaper('a4', 'portrait');
+        $bapPdfContent = $domPdf->output();
+
+        if (!$soalItem || empty($soalItem->file_path)) {
+            return $bapPdfContent;
+        }
+
+        $filePath = null;
+        if (Storage::disk('private')->exists($soalItem->file_path)) {
+            $filePath = Storage::disk('private')->path($soalItem->file_path);
+        } elseif (file_exists(storage_path('app/' . $soalItem->file_path))) {
+            $filePath = storage_path('app/' . $soalItem->file_path);
+        } elseif (file_exists(storage_path('app/private/' . $soalItem->file_path))) {
+            $filePath = storage_path('app/private/' . $soalItem->file_path);
+        }
+
+        if (!$filePath || !file_exists($filePath)) {
+            return $bapPdfContent;
+        }
+
+        $isPdf = strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'pdf'
+            || (file_get_contents($filePath, false, null, 0, 5) === '%PDF-');
+
+        if (!$isPdf) {
+            return $bapPdfContent;
+        }
+
+        try {
+            require_once base_path('vendor/setasign/fpdf/fpdf.php');
+            require_once base_path('vendor/setasign/fpdi/src/autoload.php');
+
+            $fpdi = new \setasign\Fpdi\Fpdi();
+
+            // Import Page 1 from generated BAP PDF (The official Berita Acara Evaluation Form)
+            $bapStream = \setasign\Fpdi\PdfParser\StreamReader::createByString($bapPdfContent);
+            $pageCountBap = $fpdi->setSourceFile($bapStream);
+            if ($pageCountBap >= 1) {
+                $tplId = $fpdi->importPage(1);
+                $size = $fpdi->getTemplateSize($tplId);
+                $fpdi->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $fpdi->useTemplate($tplId);
+            }
+
+            // Import ALL pages from the actual uploaded exam question PDF by Koordinator MK
+            $pageCountSoal = $fpdi->setSourceFile($filePath);
+            for ($pageNo = 1; $pageNo <= $pageCountSoal; $pageNo++) {
+                $tplId = $fpdi->importPage($pageNo);
+                $size = $fpdi->getTemplateSize($tplId);
+                $fpdi->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $fpdi->useTemplate($tplId);
+            }
+
+            return $fpdi->Output('S');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FPDI merge failed, using standard BAP view: ' . $e->getMessage());
+            return $bapPdfContent;
+        }
     }
 
     private function generateNomor(PeriodeVerifikasi $periode, MataKuliah $mataKuliah): string

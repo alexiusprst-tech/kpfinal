@@ -329,14 +329,11 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                {/* 6 StatCards Grid (Master Data Overview) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <StatCard label="Total Dosen"            value={totalDosen}                     icon={Users}       color="bg-slate-700" href="/superadmin/dosen" />
-                    <StatCard label="Total Mata Kuliah"      value={totalMataKuliah}                icon={BookOpen}    color="bg-blue-600"  href="/superadmin/mata-kuliah" />
-                    <StatCard label="Total PLO"              value={totalPlo}                       icon={Target}      color="bg-purple-600" href="/superadmin/plo" />
-                    <StatCard label="Total CLO"              value={totalClo}                       icon={Layers}      color="bg-indigo-600" href="/superadmin/clo" />
-                    <StatCard label="Bank Soal (Disetujui)"  value={totalBankSoal.toLocaleString()} icon={FileText}    color="bg-emerald-600" />
-                    <StatCard label="Progress Periode"       value={`${progressPct}%`}              icon={TrendingUp}  color="bg-amber-500" />
+                {/* StatCards Grid (Master Data & Bank Soal Overview) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <StatCard label="Total Dosen"           value={totalDosen}                     icon={Users}    color="bg-slate-700" href="/superadmin/dosen" />
+                    <StatCard label="Total Mata Kuliah"     value={totalMataKuliah}                icon={BookOpen} color="bg-blue-600"  href="/superadmin/mata-kuliah" />
+                    <StatCard label="Bank Soal (Disetujui)" value={totalBankSoal.toLocaleString()} icon={FileText} color="bg-emerald-600" />
                 </div>
 
                 {/* 4 Status Verification Cards */}
