@@ -14,26 +14,28 @@ class DosenSeeder extends Seeder
     public function run(): void
     {
         $dosenList = [
-            ['kode_dosen' => 'QLB', 'nama_lengkap' => 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.',   'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'SHC', 'nama_lengkap' => 'Sasmi Hidayatul Yulianing Tyas, S.Kom., M.Kom.', 'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'WHO', 'nama_lengkap' => 'Dea Wemona Rahma, S.Kom., M.T.I.',               'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'WRA', 'nama_lengkap' => 'Dwina Satrinia, S.Kom., M.T.',                   'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'DWN', 'nama_lengkap' => 'Dewi Marini Umi Atmaja, S.Kom., M.Kom.',         'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'DET', 'nama_lengkap' => 'Deki Satria, S.T., M.Kom.',                      'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'ILR', 'nama_lengkap' => 'Ilham Roni Yansyah, S.Kom., M.Kom.',             'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'MSE', 'nama_lengkap' => 'Muhammad Solehuddin, S.SI., M.Kom.',             'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'ARK', 'nama_lengkap' => 'Arif Rahman Hakim, S.Kom., M.Kom.',              'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'ZIZ', 'nama_lengkap' => 'Muhammad Aziz Kurniawan, S.SI., M.T.',           'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'YZN', 'nama_lengkap' => 'Yumna Zahran Ramadhan, S.Kom., M.Kom.',          'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'FRE', 'nama_lengkap' => 'Fadhil Rozi Hendrawan, S.Kom., M.Kom.',          'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'AIK', 'nama_lengkap' => 'Ade Rahmat Iskandar, S.Kom., M.T.',              'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'CHS', 'nama_lengkap' => 'Adelia Chitra Sazkia, S.Kom., M.Comp.Sc.',       'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'HMW', 'nama_lengkap' => 'Ahmad Ridwan Fauzi, S.Kom., M.Sc., MBA.',        'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'PRQ', 'nama_lengkap' => 'Putri Rizqiyah, S.Kom., M.Kom.',                 'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'DIS', 'nama_lengkap' => 'Muhammad Ardiansyah, S.Kom., M.M.',              'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'IPJ', 'nama_lengkap' => 'I Putu Eka Juliantara, S.T., M.Eng.',            'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'PTM', 'nama_lengkap' => 'Putri Utami Rukmana, S.Kom., M.Kom.',            'kategori_dosen' => 'Dosen Tetap'],
-            ['kode_dosen' => 'TRM', 'nama_lengkap' => 'Tiara Rahmania Hadiningrum, S.Kom., M.Kom.',     'kategori_dosen' => 'Dosen Tetap'],
+            ['kode_dosen' => 'QLB', 'nama_lengkap' => 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.',   'kategori_dosen' => 'Dosen Tetap', 'nip' => '25930036'],
+            ['kode_dosen' => 'SHC', 'nama_lengkap' => 'Sasmi Hidayatul Yulianing Tyas, S.Kom., M.Kom.', 'kategori_dosen' => 'Dosen Tetap', 'nip' => '25930035'],
+            ['kode_dosen' => 'WHO', 'nama_lengkap' => 'Dea Wemona Rahma, S.Kom., M.T.I.',               'kategori_dosen' => 'Dosen Tetap', 'nip' => '22950047'],
+            ['kode_dosen' => 'WRA', 'nama_lengkap' => 'Dwina Satrinia, S.Kom., M.T.',                   'kategori_dosen' => 'Dosen Tetap', 'nip' => '25890015'],
+            ['kode_dosen' => 'DWN', 'nama_lengkap' => 'Dewi Marini Umi Atmaja, S.Kom., M.Kom.',         'kategori_dosen' => 'Dosen Tetap', 'nip' => '24960026'],
+            ['kode_dosen' => 'DET', 'nama_lengkap' => 'Deki Satria, S.T., M.Kom.',                      'kategori_dosen' => 'Dosen Tetap', 'nip' => '23920014'],
+            ['kode_dosen' => 'ILR', 'nama_lengkap' => 'Ilham Roni Yansyah, S.Kom., M.Kom.',             'kategori_dosen' => 'Dosen Tetap', 'nip' => '22960002'],
+            ['kode_dosen' => 'MSE', 'nama_lengkap' => 'Muhammad Solehuddin, S.SI., M.Kom.',             'kategori_dosen' => 'Dosen Tetap', 'nip' => '23980030'],
+            ['kode_dosen' => 'ARK', 'nama_lengkap' => 'Arif Rahman Hakim, S.Kom., M.Kom.',              'kategori_dosen' => 'Dosen Tetap', 'nip' => '24920011'],
+            ['kode_dosen' => 'ZIZ', 'nama_lengkap' => 'Muhammad Aziz Kurniawan, S.SI., M.T.',           'kategori_dosen' => 'Dosen Tetap', 'nip' => '24970020'],
+            ['kode_dosen' => 'YZN', 'nama_lengkap' => 'Yumna Zahran Ramadhan, S.Kom., M.Kom.',          'kategori_dosen' => 'Dosen Tetap', 'nip' => '25010009'],
+            ['kode_dosen' => 'FRE', 'nama_lengkap' => 'Fadhil Rozi Hendrawan, S.Kom., M.Kom.',          'kategori_dosen' => 'Dosen Tetap', 'nip' => '25000006'],
+            ['kode_dosen' => 'AIK', 'nama_lengkap' => 'Dr. Ade Rahmat Iskandar, S.Kom., M.T.',          'kategori_dosen' => 'Dosen Tetap', 'nip' => '20770002'],
+            ['kode_dosen' => 'CHS', 'nama_lengkap' => 'Adelia Chitra Sazkia, S.Kom., M.Comp.Sc.',       'kategori_dosen' => 'Dosen Tetap', 'nip' => '25940043'],
+            ['kode_dosen' => 'HMW', 'nama_lengkap' => 'Ahmad Ridwan Fauzi, S.Kom., M.Sc., MBA.',        'kategori_dosen' => 'Dosen Tetap', 'nip' => '25940044'],
+            ['kode_dosen' => 'PRQ', 'nama_lengkap' => 'Putri Rizqiyah, S.Kom., M.Kom.',                 'kategori_dosen' => 'Dosen Tetap', 'nip' => '25970018'],
+            ['kode_dosen' => 'DIS', 'nama_lengkap' => 'Muhammad Ardiansyah, S.Kom., M.M.',              'kategori_dosen' => 'Dosen Tetap', 'nip' => '25920033'],
+            ['kode_dosen' => 'IPJ', 'nama_lengkap' => 'I Putu Eka Juliantara, S.T., M.Eng.',            'kategori_dosen' => 'Dosen Tetap', 'nip' => '25970023'],
+            ['kode_dosen' => 'PTM', 'nama_lengkap' => 'Putri Utami Rukmana, S.Kom., M.Kom.',            'kategori_dosen' => 'Dosen Tetap', 'nip' => '26000035'],
+            ['kode_dosen' => 'TRM', 'nama_lengkap' => 'Tiara Rahmania Hadiningrum, S.Kom., M.Kom.',     'kategori_dosen' => 'Dosen Tetap', 'nip' => '26010017'],
+            ['kode_dosen' => 'PPA', 'nama_lengkap' => 'Puspita Parahita Anindita, S.Kom., BInfTech, MSc.','kategori_dosen' => 'Dosen Tetap', 'nip' => '26970033'],
+            ['kode_dosen' => 'HDN', 'nama_lengkap' => 'Dr. Nur Hadian, S.Kom., M.Kom.',                 'kategori_dosen' => 'Dosen Tetap', 'nip' => '26970035'],
             ['kode_dosen' => 'PIE', 'nama_lengkap' => 'Pietra Dorand, M.Pd.',                           'kategori_dosen' => 'Dosen Tetap'],
             ['kode_dosen' => 'VVI', 'nama_lengkap' => 'Alva Nurvina Sularso, S.Sos., M.Hum.',           'kategori_dosen' => 'Dosen Tetap'],
             ['kode_dosen' => 'MTM', 'nama_lengkap' => 'Muhammad Fakhrul Safitra, S.Kom., M.Kom.',       'kategori_dosen' => 'LB'],
@@ -61,6 +63,7 @@ class DosenSeeder extends Seeder
 
         foreach ($dosenList as $item) {
             $email = strtolower($item['kode_dosen']) . '@telkomuniversity.ac.id';
+            $passwordStr = isset($item['nip']) ? $item['nip'] : 'password';
 
             // Create or get user account for lecturer
             $user = \App\Models\User::firstOrCreate(
@@ -68,25 +71,32 @@ class DosenSeeder extends Seeder
                 [
                     'id'       => (string) Str::uuid(),
                     'name'     => $item['nama_lengkap'],
-                    'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                    'password' => \Illuminate\Support\Facades\Hash::make($passwordStr),
                     'role'     => 'KOORDINATOR',
                     'status'   => 'ACTIVE',
                 ]
             );
 
-            Dosen::updateOrCreate(
-                ['kode_dosen' => $item['kode_dosen']],
-                [
-                    'id'             => (string) Str::uuid(),
-                    'nama_lengkap'   => $item['nama_lengkap'],
-                    'kategori_dosen' => $item['kategori_dosen'],
-                    'email'          => $email,
-                    'user_id'        => $user->id,
-                    'status'         => 'ACTIVE',
-                ]
-            );
+            if (isset($item['nip'])) {
+                $user->update([
+                    'password' => \Illuminate\Support\Facades\Hash::make($item['nip']),
+                    'name'     => $item['nama_lengkap'],
+                ]);
+            }
+
+            $dosen = Dosen::firstOrNew(['kode_dosen' => $item['kode_dosen']]);
+            if (!$dosen->exists) {
+                $dosen->id = (string) Str::uuid();
+            }
+            $dosen->nama_lengkap   = $item['nama_lengkap'];
+            $dosen->kategori_dosen = $item['kategori_dosen'];
+            $dosen->email          = $email;
+            $dosen->user_id        = $user->id;
+            $dosen->status         = 'ACTIVE';
+            $dosen->save();
         }
 
-        $this->command->info('✅ Berhasil menyemai 43 data Dosen & Akun User Autentikasi (Dosen Tetap & LB).');
+        $this->command->info('✅ Berhasil menyemai data Dosen & Akun User Autentikasi dengan kata sandi NIP.');
     }
 }
+

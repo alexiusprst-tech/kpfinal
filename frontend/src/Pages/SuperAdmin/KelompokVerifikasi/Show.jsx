@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
@@ -37,8 +37,6 @@ const formatDateTime = (d) => d ? new Date(d).toLocaleString('id-ID', { day: '2-
 
 export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifikatorListStats, progress, recentActivities }) {
     const { flash } = usePage().props;
-    const [actionType, setActionType] = useState(null); // 'activate', 'deactivate', 'delete'
-    const [processing, setProcessing] = useState(false);
 
     const handleAction = async (type) => {
         if (!type) return;
@@ -461,74 +459,6 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                     </div>
                 </div>
             </div>
-
-            {/* Action Confirmation Modal */}
-            {actionType && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setActionType(null)} />
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                                actionType === 'activate' ? 'bg-emerald-50 text-emerald-600' :
-                                actionType === 'deactivate' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
-                            }`}>
-                                {actionType === 'activate' ? <Play className="w-6 h-6" /> :
-                                 actionType === 'deactivate' ? <PowerOff className="w-6 h-6" /> : <Trash2 className="w-6 h-6" />}
-                            </div>
-                            <div>
-                                <h3 className="text-base font-extrabold text-gray-900">
-                                    {actionType === 'activate' ? 'Aktifkan Kelompok Verifikasi?' :
-                                     actionType === 'deactivate' ? 'Nonaktifkan Kelompok Verifikasi?' : 'Hapus Kelompok Verifikasi?'}
-                                </h3>
-                                <p className="text-xs text-gray-400 font-medium mt-0.5">{kelompok.nama}</p>
-                            </div>
-                        </div>
-
-                        <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
-                            {actionType === 'activate' && (
-                                <>
-                                    Mengaktifkan kelompok ini akan <strong>menerbitkan penugasan resmi</strong> ke masing-masing Koordinator Mata Kuliah dan Tim Verifikator. Koordinator dapat langsung mengunggah soal dan Verifikator dapat memverifikasinya.
-                                </>
-                            )}
-                            {actionType === 'deactivate' && (
-                                <>
-                                    Menonaktifkan kelompok ini akan <strong>menghentikan penugasan operasional sementara</strong>. Koordinator dan Verifikator tidak dapat melakukan aksi baru untuk mata kuliah dalam kelompok ini sampai diaktifkan kembali.
-                                </>
-                            )}
-                            {actionType === 'delete' && (
-                                <>
-                                    Apakah Anda yakin ingin menghapus kelompok ini secara permanen?
-                                </>
-                            )}
-                        </p>
-
-                        <div className="flex items-center justify-end gap-2.5 pt-2">
-                            <button
-                                type="button"
-                                disabled={processing}
-                                onClick={() => setActionType(null)}
-                                className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="button"
-                                disabled={processing}
-                                onClick={handleConfirmAction}
-                                className={`px-4 py-2 text-xs font-bold text-white rounded-xl shadow-md transition-all cursor-pointer ${
-                                    actionType === 'activate' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' :
-                                    actionType === 'deactivate' ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20' :
-                                    'bg-red-600 hover:bg-red-700 shadow-red-600/20'
-                                }`}
-                            >
-                                {processing ? 'Memproses...' :
-                                 actionType === 'activate' ? 'Aktifkan Sekarang' :
-                                 actionType === 'deactivate' ? 'Nonaktifkan' : 'Ya, Hapus'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </AuthenticatedLayout>
     );
 }

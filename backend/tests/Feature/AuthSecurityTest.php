@@ -168,6 +168,12 @@ class AuthSecurityTest extends TestCase
             'status'        => 'ACTIVE',
         ]);
 
+        // Not ACTIVE: the shared setUp() above already created an ACTIVE
+        // periode, and the app only ever allows one ACTIVE periode at a time
+        // (enforced by PeriodeController::activate() and, at the DB layer,
+        // by the uq_periode_only_one_active partial unique index). This
+        // periode only needs to exist as a valid FK target for the
+        // assignment below — its own status is irrelevant to this test.
         $periode = \App\Models\PeriodeVerifikasi::create([
             'id'              => (string) Str::uuid(),
             'tahun_ajaran_id' => $ta->id,
@@ -175,7 +181,7 @@ class AuthSecurityTest extends TestCase
             'tanggal_mulai'   => now()->subDays(5)->toDateString(),
             'tanggal_selesai' => now()->addDays(20)->toDateString(),
             'deadline_upload' => now()->addDays(10),
-            'status'          => 'ACTIVE',
+            'status'          => 'INACTIVE',
         ]);
 
         $mk = \App\Models\MataKuliah::create([

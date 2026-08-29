@@ -308,9 +308,14 @@ class PeriodeController extends Controller
         if ($periode->status === 'ACTIVE') {
             return redirect()->back()->with('error', 'Periode aktif tidak bisa dihapus.');
         }
-        $old = $periode->toArray();
-        $periode->delete();
-        AuditLog::record($request->user()->id, 'DELETE_PERIODE', 'PeriodeVerifikasi', $periode->id, $old, null);
-        return redirect()->back()->with('success', 'Periode Verifikasi berhasil dihapus.');
+
+        try {
+            $old = $periode->toArray();
+            $periode->delete();
+            AuditLog::record($request->user()->id, 'DELETE_PERIODE', 'PeriodeVerifikasi', $periode->id, $old, null);
+            return redirect()->back()->with('success', 'Periode Verifikasi berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', "Periode '{$periode->nama}' tidak dapat dihapus karena masih terikat dengan data soal atau penugasan.");
+        }
     }
 }

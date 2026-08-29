@@ -137,9 +137,17 @@ class TahunAjaranController extends Controller
 
     public function destroy(Request $request, TahunAjaran $tahunAjaran)
     {
-        $old = $tahunAjaran->toArray();
-        $tahunAjaran->delete();
-        AuditLog::record($request->user()->id, 'DELETE_TAHUN_AJARAN', 'TahunAjaran', $tahunAjaran->id, $old, null);
-        return redirect()->back()->with('success', 'Tahun Ajaran berhasil dihapus.');
+        if ($tahunAjaran->periodeVerifikasi()->exists()) {
+            return redirect()->back()->with('error', "Tahun Ajaran '{$tahunAjaran->nama}' tidak dapat dihapus karena masih memiliki Periode Verifikasi terikat.");
+        }
+
+        try {
+            $old = $tahunAjaran->toArray();
+            $tahunAjaran->delete();
+            AuditLog::record($request->user()->id, 'DELETE_TAHUN_AJARAN', 'TahunAjaran', $tahunAjaran->id, $old, null);
+            return redirect()->back()->with('success', 'Tahun Ajaran berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus Tahun Ajaran: Data terikat dengan entitas lain.');
+        }
     }
 }

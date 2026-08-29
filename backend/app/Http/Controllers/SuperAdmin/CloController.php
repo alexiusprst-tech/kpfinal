@@ -36,8 +36,12 @@ class CloController extends Controller
         if ($request->filled('plo')) {
             $ploFilter = $request->plo;
             $query->whereHas('plo', function ($q) use ($ploFilter) {
-                $q->where('plo.id', $ploFilter)
-                  ->orWhere('plo.kode_plo', $ploFilter);
+                if (Str::isUuid($ploFilter)) {
+                    $q->where('plo.id', $ploFilter)
+                      ->orWhere('plo.kode_plo', $ploFilter);
+                } else {
+                    $q->where('plo.kode_plo', $ploFilter);
+                }
             });
         }
 
@@ -50,8 +54,12 @@ class CloController extends Controller
         if ($request->filled('plo')) {
             $ploFilter = $request->plo;
             $flatQuery->whereHas('plo', function ($q) use ($ploFilter) {
-                $q->where('plo.id', $ploFilter)
-                  ->orWhere('plo.kode_plo', $ploFilter);
+                if (Str::isUuid($ploFilter)) {
+                    $q->where('plo.id', $ploFilter)
+                      ->orWhere('plo.kode_plo', $ploFilter);
+                } else {
+                    $q->where('plo.kode_plo', $ploFilter);
+                }
             });
         }
         $allClosWithRelations = $flatQuery->get();

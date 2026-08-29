@@ -188,26 +188,78 @@ class DashboardController extends Controller
             $ditolakData[] = $ditolakCount;
         }
 
-        // No fallback, show actual real database values
+        // Active Period Summary metrics
+        $activePeriodSummary = null;
+        if ($activePeriod) {
+            $activePeriod->loadMissing('tahunAjaran');
+            $totalMkCount = MataKuliah::where('status', 'ACTIVE')->count();
+
+            $completedMkCount = MataKuliah::whereHas('soal', function ($q) use ($activePeriod) {
+                $q->where('periode_id', $activePeriod->id)->where('status', 'APPROVED');
+            })->count();
+
+            $periodProgressPct = $totalMkCount > 0 ? round(($completedMkCount / $totalMkCount) * 100) : 0;
+
+            $deadline = $activePeriod->deadline_upload ? \Carbon\Carbon::parse($activePeriod->deadline_upload) : \Carbon\Carbon::parse($activePeriod->tanggal_selesai);
+            $now = now();
+            $sisaHari = (int) $now->diffInDays($deadline, false);
+            if ($sisaHari > 0) {
+                $sisaWaktuStr = $sisaHari . ' hari lagi';
+            } elseif ($sisaHari === 0) {
+                $sisaWaktuStr = 'Tenggat hari ini';
+            } else {
+                $sisaWaktuStr = 'Tenggat waktu lewat';
+            }
+
+            $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+            $formatDate = function ($d) use ($months) {
+                if (!$d) return '-';
+                $c = \Carbon\Carbon::parse($d);
+                return $c->format('j') . ' ' . $months[$c->month - 1] . ' ' . $c->format('Y');
+            };
+
+            $formatDateTime = function ($d) use ($months) {
+                if (!$d) return '-';
+                $c = \Carbon\Carbon::parse($d);
+                return $c->format('j') . ' ' . $months[$c->month - 1] . ' ' . $c->format('Y') . ', ' . $c->format('H:i');
+            };
+
+            $activePeriodSummary = [
+                'id'               => $activePeriod->id,
+                'nama'             => $activePeriod->nama,
+                'tahun_ajaran'     => $activePeriod->tahunAjaran->nama ?? '',
+                'tanggal_mulai'    => $formatDate($activePeriod->tanggal_mulai),
+                'tanggal_selesai'  => $formatDate($activePeriod->tanggal_selesai),
+                'deadline_upload'  => $formatDateTime($activePeriod->deadline_upload),
+                'status'           => $activePeriod->status,
+                'status_label'     => $activePeriod->status === 'ACTIVE' ? 'Aktif' : $activePeriod->status,
+                'total_mk'         => $totalMkCount,
+                'completed_mk'     => $completedMkCount,
+                'progress_pct'     => $periodProgressPct,
+                'sisa_waktu'       => $sisaWaktuStr,
+            ];
+        }
 
         $allPeriods = PeriodeVerifikasi::with('tahunAjaran')
             ->orderBy('created_at', 'desc')
             ->get();
 
         return \Inertia\Inertia::render('SuperAdmin/Dashboard', [
-            'activePeriod'     => $activePeriod,
-            'allPeriods'       => $allPeriods,
-            'totalDosen'       => $totalDosen,
-            'totalMataKuliah'  => $totalMataKuliah,
-            'totalPlo'         => $totalPlo,
-            'totalClo'         => $totalClo,
-            'totalBankSoal'    => $totalBankSoal,
-            'progressPct'      => $progressPct,
-            'statusCounts'     => $statusCounts,
-            'recentActivities' => $recentActivities,
-            'urgentMataKuliah' => $urgentMataKuliah,
-            'urgentSoal'       => $urgentMataKuliah,
-            'trendData'        => [
+            'activePeriod'        => $activePeriod,
+            'activePeriodSummary' => $activePeriodSummary,
+            'allPeriods'          => $allPeriods,
+            'totalDosen'          => $totalDosen,
+            'totalMataKuliah'     => $totalMataKuliah,
+            'totalPlo'            => $totalPlo,
+            'totalClo'            => $totalClo,
+            'totalBankSoal'       => $totalBankSoal,
+            'progressPct'         => $progressPct,
+            'statusCounts'        => $statusCounts,
+            'recentActivities'    => $recentActivities,
+            'urgentMataKuliah'    => $urgentMataKuliah,
+            'urgentSoal'          => $urgentMataKuliah,
+            'trendData'           => [
                 'labels'    => $dates,
                 'menunggu'  => $menungguData,
                 'disetujui' => $disetujuiData,
@@ -226,7 +278,9 @@ class DashboardController extends Controller
         $format       = strtolower($request->get('format', 'pdf'));
 
         $periode = null;
-        if ($periodeId && $periodeId !== 'ALL') {
+        if ($periodeId === 'ACTIVE' || $periodeId === 'active') {
+            $periode = PeriodeVerifikasi::with('tahunAjaran')->where('status', 'ACTIVE')->first();
+        } elseif ($periodeId && $periodeId !== 'ALL') {
             $periode = PeriodeVerifikasi::with('tahunAjaran')->find($periodeId);
         }
 

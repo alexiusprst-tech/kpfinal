@@ -82,10 +82,11 @@ class ProfileController extends Controller
         ]);
 
         Auth::user()->update([
-            'password' => Hash::make($validated['password']),
+            'password'             => Hash::make($validated['password']),
+            'must_change_password' => false,
         ]);
 
-        return back()->with('success', 'Password berhasil diperbarui.');
+        return back()->with('success', 'Password berhasil diperbarui. Sekarang Anda dapat menggunakan seluruh fitur aplikasi.');
     }
 
     /**

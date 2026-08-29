@@ -24,29 +24,51 @@ class BeritaAcaraController extends Controller
         $user  = $request->user();
         $dosen = $user->dosen;
 
-        $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
-        if (!$activePeriod) {
-            return Inertia::render('Verifikator/BeritaAcara/Index', [
-                'activePeriod' => null,
-                'assignments'  => [],
-                'history'      => [],
-            ]);
+        $allPeriods = PeriodeVerifikasi::with('tahunAjaran')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $activePeriod = $allPeriods->firstWhere('status', 'ACTIVE');
+        $periodeId    = $request->get('periode_id');
+        $kategoriType = strtoupper($request->get('kategori', 'ALL'));
+
+        $selectedPeriod = null;
+        if ($periodeId && $periodeId !== 'ALL') {
+            $selectedPeriod = $allPeriods->firstWhere('id', $periodeId);
+        } else {
+            $selectedPeriod = $activePeriod ?? $allPeriods->first();
         }
 
-        // Get assignments for active period
-        $assignments = $dosen
-            ? PenugasanVerifikator::with(['mataKuliah'])
-                ->where('dosen_id', $dosen->id)
-                ->where('periode_id', $activePeriod->id)
-                ->where('status', 'ACTIVE')
-                ->get()
-            : collect();
+        // Get assignments for selected period (or all)
+        $assignmentsQuery = PenugasanVerifikator::with(['mataKuliah']);
+        if ($dosen) {
+            $assignmentsQuery->where('dosen_id', $dosen->id);
+        } else {
+            $assignmentsQuery->whereRaw('1 = 0');
+        }
+
+        if ($selectedPeriod && $periodeId !== 'ALL') {
+            $assignmentsQuery->where('periode_id', $selectedPeriod->id);
+        }
+        $assignments = $assignmentsQuery->get();
 
         $assignedMkIds = $assignments->pluck('mata_kuliah_id');
 
-        $soalList = Soal::whereIn('mata_kuliah_id', $assignedMkIds)
-            ->where('periode_id', $activePeriod->id)
-            ->get();
+        // Query Soal
+        $soalQuery = Soal::with('kategori')
+            ->whereIn('mata_kuliah_id', $assignedMkIds);
+
+        if ($selectedPeriod && $periodeId !== 'ALL') {
+            $soalQuery->where('periode_id', $selectedPeriod->id);
+        }
+
+        if (in_array($kategoriType, ['UTS', 'UAS'])) {
+            $soalQuery->whereHas('kategori', function ($q) use ($kategoriType) {
+                $q->whereRaw('UPPER(nama) LIKE ?', ["%{$kategoriType}%"]);
+            });
+        }
+
+        $soalList = $soalQuery->get();
 
         $assignmentsWithStats = $assignments->map(function ($a) use ($soalList) {
             $mkSoal = $soalList->where('mata_kuliah_id', $a->mata_kuliah_id);
@@ -65,16 +87,22 @@ class BeritaAcaraController extends Controller
         });
 
         // History of generated Berita Acara
-        $history = BeritaAcara::with(['mataKuliah', 'koordinator'])
-            ->where('dibuat_oleh', $user->id)
-            ->where('periode_id', $activePeriod->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $historyQuery = BeritaAcara::with(['mataKuliah', 'koordinator'])
+            ->where('dibuat_oleh', $user->id);
+
+        if ($selectedPeriod && $periodeId !== 'ALL') {
+            $historyQuery->where('periode_id', $selectedPeriod->id);
+        }
+
+        $history = $historyQuery->orderBy('created_at', 'desc')->get();
 
         return Inertia::render('Verifikator/BeritaAcara/Index', [
-            'activePeriod' => $activePeriod,
-            'assignments'  => $assignmentsWithStats,
-            'history'      => $history,
+            'activePeriod'      => $activePeriod,
+            'allPeriods'        => $allPeriods,
+            'selectedPeriodeId' => $selectedPeriod ? $selectedPeriod->id : 'ALL',
+            'selectedKategori'  => $kategoriType,
+            'assignments'       => $assignmentsWithStats,
+            'history'           => $history,
         ]);
     }
 
@@ -87,43 +115,59 @@ class BeritaAcaraController extends Controller
         $user  = $request->user();
         $dosen = $user->dosen;
 
-        $activePeriod = PeriodeVerifikasi::with('tahunAjaran')->where('status', 'ACTIVE')->first();
-        if (!$activePeriod) {
-            return redirect()->route('verifikator.berita-acara.index')
-                ->with('error', 'Tidak ada periode verifikasi yang aktif.');
+        $allPeriods   = PeriodeVerifikasi::with('tahunAjaran')->orderBy('created_at', 'desc')->get();
+        $activePeriod = $allPeriods->firstWhere('status', 'ACTIVE');
+        $periodeId    = $request->get('periode_id');
+        $kategoriType = strtoupper($request->get('kategori', 'ALL'));
+
+        $selectedPeriod = null;
+        if ($periodeId && $periodeId !== 'ALL') {
+            $selectedPeriod = $allPeriods->firstWhere('id', $periodeId);
+        } else {
+            $selectedPeriod = $activePeriod ?? $allPeriods->first();
         }
 
-        $isAssigned = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+        if (!$selectedPeriod) {
+            return redirect()->route('verifikator.berita-acara.index')
+                ->with('error', 'Tidak ada periode verifikasi yang ditemukan.');
+        }
+
+        $isAssigned = ($dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
             ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $activePeriod->id)
+            ->where('periode_id', $selectedPeriod->id)
             ->where('status', 'ACTIVE')
-            ->exists();
+            ->exists()) || $user->isSuperAdmin();
 
         if (!$isAssigned) {
             return redirect()->route('verifikator.berita-acara.index')
-                ->with('error', 'Anda tidak ditugaskan sebagai verifikator untuk mata kuliah ini.');
+                ->with('error', 'Anda tidak ditugaskan sebagai verifikator untuk mata kuliah ini pada periode terpilih.');
         }
 
-        // Only show APPROVED soals
-        $soalApproved = Soal::with(['kategori', 'latestVerifikasi.verifikator', 'uploadedBy'])
-            ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $activePeriod->id)
+        // Query Soal
+        $soalBaseQuery = Soal::where('mata_kuliah_id', $mataKuliah->id)
+            ->where('periode_id', $selectedPeriod->id);
+
+        if (in_array($kategoriType, ['UTS', 'UAS'])) {
+            $soalBaseQuery->whereHas('kategori', function ($q) use ($kategoriType) {
+                $q->whereRaw('UPPER(nama) LIKE ?', ["%{$kategoriType}%"]);
+            });
+        }
+
+        $allSoal = (clone $soalBaseQuery)->get();
+
+        $soalApproved = (clone $soalBaseQuery)
+            ->with(['kategori', 'latestVerifikasi.verifikator', 'uploadedBy'])
             ->where('status', Soal::STATUS_APPROVED)
             ->orderBy('created_at')
             ->get();
 
-        $allSoal = Soal::where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $activePeriod->id)
-            ->get();
-
         $koordinatorDosen = PenugasanKoordinator::with('dosen')
             ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $activePeriod->id)
-            ->where('status', 'ACTIVE')
+            ->where('periode_id', $selectedPeriod->id)
             ->first()?->dosen;
 
         // Check if a BA document has been generated previously
-        $existingBA = BeritaAcara::where('periode_id', $activePeriod->id)
+        $existingBA = BeritaAcara::where('periode_id', $selectedPeriod->id)
             ->where('mata_kuliah_id', $mataKuliah->id)
             ->where('dibuat_oleh', $user->id)
             ->first();
@@ -131,6 +175,9 @@ class BeritaAcaraController extends Controller
         return Inertia::render('Verifikator/BeritaAcara/Show', [
             'mataKuliah'       => $mataKuliah,
             'activePeriod'     => $activePeriod,
+            'allPeriods'       => $allPeriods,
+            'selectedPeriodeId' => $selectedPeriod->id,
+            'selectedKategori'  => $kategoriType,
             'soalApproved'     => $soalApproved,
             'stats'            => [
                 'total'    => $allSoal->count(),
@@ -152,21 +199,32 @@ class BeritaAcaraController extends Controller
 
     /**
      * Generate (or regenerate) the Berita Acara Verifikasi PDF for one mata
-     * kuliah in the active periode, store it, and stream it to the browser.
+     * kuliah in the selected periode & category, store it, and stream it to the browser.
      */
     public function cetak(Request $request, MataKuliah $mataKuliah)
     {
         $user  = $request->user();
         $dosen = $user->dosen;
 
-        $activePeriod = PeriodeVerifikasi::with('tahunAjaran')->where('status', 'ACTIVE')->first();
-        if (!$activePeriod) {
-            return redirect()->back()->with('error', 'Tidak ada periode verifikasi yang aktif.');
+        $periodeId    = $request->get('periode_id');
+        $kategoriType = strtoupper($request->get('kategori', 'ALL'));
+
+        $allPeriods   = PeriodeVerifikasi::with('tahunAjaran')->get();
+        $activePeriod = $allPeriods->firstWhere('status', 'ACTIVE');
+
+        if ($periodeId && $periodeId !== 'ALL') {
+            $selectedPeriod = $allPeriods->firstWhere('id', $periodeId);
+        } else {
+            $selectedPeriod = $activePeriod ?? $allPeriods->first();
+        }
+
+        if (!$selectedPeriod) {
+            return redirect()->back()->with('error', 'Tidak ada periode verifikasi yang dipilih.');
         }
 
         $isAssigned = ($dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
             ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $activePeriod->id)
+            ->where('periode_id', $selectedPeriod->id)
             ->where('status', 'ACTIVE')
             ->exists()) || $user->isSuperAdmin();
 
@@ -174,17 +232,24 @@ class BeritaAcaraController extends Controller
             return redirect()->back()->with('error', 'Anda tidak ditugaskan sebagai verifikator untuk mata kuliah ini.');
         }
 
-        $soalList = Soal::with(['kategori', 'latestVerifikasi'])
+        $soalQuery = Soal::with(['kategori', 'latestVerifikasi'])
             ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $activePeriod->id)
-            ->orderBy('created_at')
-            ->get();
+            ->where('periode_id', $selectedPeriod->id);
+
+        if (in_array($kategoriType, ['UTS', 'UAS'])) {
+            $soalQuery->whereHas('kategori', function ($q) use ($kategoriType) {
+                $q->whereRaw('UPPER(nama) LIKE ?', ["%{$kategoriType}%"]);
+            });
+        }
+
+        $soalList = $soalQuery->orderBy('created_at')->get();
 
         // Hanya ambil soal yang sudah disetujui (APPROVED) untuk Berita Acara
         $soalApproved = $soalList->where('status', 'APPROVED');
 
         if ($soalApproved->isEmpty()) {
-            return redirect()->back()->with('error', 'Belum ada soal yang disetujui (APPROVED) untuk mata kuliah ini. Berita Acara hanya dapat dibuat untuk soal yang telah disetujui.');
+            $labelKategori = in_array($kategoriType, ['UTS', 'UAS']) ? " {$kategoriType}" : "";
+            return redirect()->back()->with('error', "Belum ada soal{$labelKategori} yang disetujui (APPROVED) untuk mata kuliah ini pada periode terpilih.");
         }
 
         $jumlahApproved = $soalApproved->count();
@@ -193,19 +258,18 @@ class BeritaAcaraController extends Controller
 
         $koordinatorDosen = PenugasanKoordinator::with('dosen')
             ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $activePeriod->id)
-            ->where('status', 'ACTIVE')
+            ->where('periode_id', $selectedPeriod->id)
             ->first()?->dosen;
 
         if (!$koordinatorDosen) {
-            return redirect()->back()->with('error', 'Mata kuliah ini belum memiliki Dosen Koordinator aktif pada periode ini.');
+            return redirect()->back()->with('error', 'Mata kuliah ini belum memiliki Dosen Koordinator pada periode terpilih.');
         }
 
         $clos = $mataKuliah->clo()->with('plo')->get();
 
-        return DB::transaction(function () use ($user, $dosen, $activePeriod, $mataKuliah, $soalList, $soalApproved, $clos, $koordinatorDosen, $jumlahApproved, $jumlahRevision, $jumlahRejected) {
+        return DB::transaction(function () use ($user, $dosen, $selectedPeriod, $mataKuliah, $soalList, $soalApproved, $clos, $koordinatorDosen, $jumlahApproved, $jumlahRevision, $jumlahRejected) {
             // Lock period to prevent race condition during serial number generation
-            $lockedPeriod = PeriodeVerifikasi::where('id', $activePeriod->id)->lockForUpdate()->first();
+            $lockedPeriod = PeriodeVerifikasi::where('id', $selectedPeriod->id)->lockForUpdate()->first();
 
             $existing = BeritaAcara::where('periode_id', $lockedPeriod->id)
                 ->where('mata_kuliah_id', $mataKuliah->id)

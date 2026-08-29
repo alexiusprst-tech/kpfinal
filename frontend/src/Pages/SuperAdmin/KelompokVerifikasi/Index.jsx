@@ -62,9 +62,6 @@ export default function KelompokVerifikasiIndex({
 }) {
     const { flash } = usePage().props;
     const [search, setSearch] = useState(filters?.search || '');
-    const [actionItem, setActionItem] = useState(null);
-    const [actionType, setActionType] = useState(null); // 'activate', 'deactivate', 'delete'
-    const [processing, setProcessing] = useState(false);
 
     // Normalize props
     const dataList = (list && Array.isArray(list.data)) ? list : (kelompokList && Array.isArray(kelompokList.data)) ? kelompokList : { data: [], current_page: 1, per_page: 10, total: 0, last_page: 1, links: [] };
@@ -251,25 +248,20 @@ export default function KelompokVerifikasiIndex({
                             </select>
                         </div>
 
-                        {/* Koordinator MK Filter */}
+                        {/* Buat Kelompok Button */}
                         <div>
-                            <select
-                                value={filters?.koordinator_id || ''}
-                                onChange={(e) => applyFilters({ koordinator_id: e.target.value })}
-                                className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] transition-all bg-gray-50/50 hover:bg-white cursor-pointer"
+                            <Link
+                                href="/superadmin/kelompok-verifikasi/create"
+                                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
                             >
-                                <option value="">Semua Koordinator</option>
-                                {dosens.map((d) => (
-                                    <option key={d.id} value={d.id}>
-                                        {d.kode_dosen} - {d.nama_lengkap}
-                                    </option>
-                                ))}
-                            </select>
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Buat Kelompok</span>
+                            </Link>
                         </div>
                     </div>
 
                     {/* Active filter count & reset */}
-                    {(filters?.periode_id || filters?.status || filters?.koordinator_id || filters?.tahun_ajaran_id || search) && (
+                    {(filters?.periode_id || filters?.status || filters?.tahun_ajaran_id || search) && (
                         <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-[11px] text-gray-500">
                             <span>Menampilkan hasil terfilter</span>
                             <button
@@ -548,54 +540,6 @@ export default function KelompokVerifikasiIndex({
                         </div>
                     )}
                 </div>
-
-                {/* Modal Konfirmasi Aksi */}
-                {actionItem && actionType && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-100">
-                        <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-gray-100 space-y-4">
-                            <div className="flex items-start gap-3">
-                                <div className={`p-3 rounded-2xl ${
-                                    actionType === 'activate' ? 'bg-emerald-50 text-emerald-600' :
-                                    actionType === 'deactivate' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
-                                }`}>
-                                    {actionType === 'activate' ? <Play className="w-6 h-6" /> :
-                                     actionType === 'deactivate' ? <PowerOff className="w-6 h-6" /> : <Trash2 className="w-6 h-6" />}
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-base font-extrabold text-gray-900">
-                                        {actionType === 'activate' ? 'Aktifkan Kelompok Verifikasi?' :
-                                         actionType === 'deactivate' ? 'Nonaktifkan Kelompok Verifikasi?' : 'Hapus Kelompok Verifikasi?'}
-                                    </h3>
-                                    <p className="text-xs text-gray-500 leading-relaxed">
-                                        {actionType === 'activate' ? `Kelompok "${actionItem.nama}" akan diaktifkan. Seluruh koordinator dan tim verifikator yang ditugaskan akan langsung mendapatkan akses operasional.` :
-                                         actionType === 'deactivate' ? `Kelompok "${actionItem.nama}" akan dinonaktifkan sementara. Penugasan operasional dosen akan dihentikan.` :
-                                         `Kelompok "${actionItem.nama}" akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
-                                <button
-                                    onClick={() => { setActionItem(null); setActionType(null); }}
-                                    disabled={processing}
-                                    className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    onClick={handleConfirmAction}
-                                    disabled={processing}
-                                    className={`px-4 py-2 text-xs font-bold text-white rounded-xl transition-all shadow-sm cursor-pointer ${
-                                        actionType === 'activate' ? 'bg-emerald-600 hover:bg-emerald-700' :
-                                        actionType === 'deactivate' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700'
-                                    }`}
-                                >
-                                    {processing ? 'Memproses...' : 'Ya, Lanjutkan'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         </AuthenticatedLayout>
     );

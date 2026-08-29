@@ -840,7 +840,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                             <div className="w-7 h-7 rounded-xl bg-white group-hover:bg-[#801720] text-gray-500 group-hover:text-white flex items-center justify-center shadow-xs border border-gray-200 group-hover:border-[#801720] transition-all">
                                                 <Plus className="w-4 h-4" />
                                             </div>
-                                            <span>+ Tambah Penetapan Mata Kuliah</span>
+                                            <span>Tambah Penetapan Mata Kuliah</span>
                                             <span className="text-[11px] font-normal text-gray-400">({unselectedMks.length} mata kuliah tersedia)</span>
                                         </button>
                                     ) : (

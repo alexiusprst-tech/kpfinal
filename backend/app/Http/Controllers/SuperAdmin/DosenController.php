@@ -74,16 +74,30 @@ class DosenController extends Controller
 
         $userId = null;
 
-        if ($request->create_user && $request->email) {
-            $userId = (string) Str::uuid();
-            User::create([
-                'id'       => $userId,
-                'name'     => $validated['nama_lengkap'],
-                'email'    => $validated['email'],
-                'password' => Hash::make('password'),
-                'role'     => null, // Belum ada penugasan, role null
-                'status'   => 'ACTIVE',
-            ]);
+        if ($request->create_user && !empty($validated['email'])) {
+            $emailClean = strtolower(trim($validated['email']));
+            $existingUser = User::whereRaw('LOWER(email) = ?', [$emailClean])->first();
+
+            if ($existingUser) {
+                $linkedDosen = Dosen::where('user_id', $existingUser->id)->first();
+                if ($linkedDosen) {
+                    return redirect()->back()->withErrors([
+                        'email' => "Email {$validated['email']} sudah terdaftar untuk pengguna/dosen lain ({$linkedDosen->nama_lengkap}).",
+                    ])->withInput();
+                }
+                $userId = $existingUser->id;
+            } else {
+                $userId = (string) Str::uuid();
+                User::create([
+                    'id'                   => $userId,
+                    'name'                 => $validated['nama_lengkap'],
+                    'email'                => $validated['email'],
+                    'password'             => Hash::make('password'),
+                    'role'                 => null, // Belum ada penugasan, role null
+                    'status'               => 'ACTIVE',
+                    'must_change_password' => true,
+                ]);
+            }
         }
 
         $dosen = Dosen::create([
@@ -117,6 +131,17 @@ class DosenController extends Controller
             'kategori_dosen' => ['nullable', 'string', 'max:50'],
             'status'         => ['required', 'in:ACTIVE,INACTIVE'],
         ]);
+
+        if ($dosen->user && !empty($validated['email'])) {
+            $existingOtherUser = User::whereRaw('LOWER(email) = ?', [strtolower(trim($validated['email']))])
+                ->where('id', '!=', $dosen->user->id)
+                ->first();
+            if ($existingOtherUser) {
+                return redirect()->back()->withErrors([
+                    'email' => "Email {$validated['email']} sudah digunakan oleh akun lain.",
+                ])->withInput();
+            }
+        }
 
         $oldValues = $dosen->toArray();
         $dosen->update($validated);

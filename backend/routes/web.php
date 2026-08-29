@@ -189,8 +189,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':KOORDINATOR
         // Generator Template Lembar Soal
         Route::get('soal-generator', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'index'])->name('soal.generator');
         Route::get('soal-generator/course-data', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'getCourseData'])->name('soal.generator.course-data');
-        Route::post('soal-generator/export-pdf', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'exportPdf'])->name('soal.generator.export-pdf');
-        Route::post('soal-generator/export-docx', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'exportDocx'])->name('soal.generator.export-docx');
+        Route::post('soal-generator/export-pdf', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'exportPdf'])->name('soal.generator.export-pdf')->middleware('throttle:30,1');
+        Route::post('soal-generator/export-docx', [\App\Http\Controllers\Koordinator\SoalGeneratorController::class, 'exportDocx'])->name('soal.generator.export-docx')->middleware('throttle:30,1');
     });
 
 // ─── Verifikator Routes ───────────────────────────────────────────────────────

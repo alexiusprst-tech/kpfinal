@@ -56,11 +56,12 @@ class LoginController extends Controller
                 $user = \App\Models\User::firstOrCreate(
                     ['email' => $emailToAuth],
                     [
-                        'id'       => (string) \Illuminate\Support\Str::uuid(),
-                        'name'     => $dosen->nama_lengkap,
-                        'password' => \Illuminate\Support\Facades\Hash::make('password'),
-                        'role'     => $initialRole,
-                        'status'   => 'ACTIVE',
+                        'id'                   => (string) \Illuminate\Support\Str::uuid(),
+                        'name'                 => $dosen->nama_lengkap,
+                        'password'             => \Illuminate\Support\Facades\Hash::make('password'),
+                        'role'                 => $initialRole,
+                        'status'               => 'ACTIVE',
+                        'must_change_password' => true,
                     ]
                 );
                 $dosen->update([
@@ -153,6 +154,10 @@ class LoginController extends Controller
      */
     protected function redirectByRole($user)
     {
+        if ($user->must_change_password) {
+            return redirect()->route('profile.show')->with('warning', 'Demi keamanan akun Anda, silakan ubah password default terlebih dahulu pada login pertama ini.');
+        }
+
         if ($user->role === 'SUPER_ADMIN') {
             return redirect()->route('superadmin.dashboard');
         }

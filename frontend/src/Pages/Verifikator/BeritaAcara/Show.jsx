@@ -1,9 +1,9 @@
 import React from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     ArrowLeft, FileText, CheckCircle2, Clock, Download, BookOpen,
-    User, Calendar, Award, AlertCircle, RotateCcw, XCircle, Printer, ShieldCheck
+    User, Calendar, Award, AlertCircle, RotateCcw, XCircle, Printer, ShieldCheck, Filter
 } from 'lucide-react';
 import FlashAlert from '@/Components/FlashAlert';
 
@@ -45,10 +45,31 @@ function formatSize(bytes) {
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
 
-export default function BeritaAcaraShow({ mataKuliah, activePeriod, soalApproved = [], stats, koordinator, existingBA }) {
+export default function BeritaAcaraShow({
+    mataKuliah,
+    activePeriod,
+    allPeriods = [],
+    selectedPeriodeId,
+    selectedKategori = 'ALL',
+    soalApproved = [],
+    stats,
+    koordinator,
+    existingBA
+}) {
     const { flash } = usePage().props;
 
-    const downloadUrl = `/verifikator/mata-kuliah/${mataKuliah.id}/berita-acara/download`;
+    const downloadUrl = `/verifikator/mata-kuliah/${mataKuliah.id}/berita-acara/download?periode_id=${selectedPeriodeId || 'ALL'}&kategori=${selectedKategori || 'ALL'}`;
+
+    const handleFilterChange = (newPeriodeId, newKategori) => {
+        router.get(
+            `/verifikator/mata-kuliah/${mataKuliah.id}/berita-acara`,
+            {
+                periode_id: newPeriodeId !== undefined ? newPeriodeId : selectedPeriodeId,
+                kategori: newKategori !== undefined ? newKategori : selectedKategori,
+            },
+            { preserveState: true, preserveScroll: true }
+        );
+    };
 
     return (
         <AuthenticatedLayout title={`Berita Acara — ${mataKuliah.nama_mk}`}>
@@ -59,7 +80,7 @@ export default function BeritaAcaraShow({ mataKuliah, activePeriod, soalApproved
                 {/* Back + Title */}
                 <div className="flex items-center justify-between">
                     <Link
-                        href="/verifikator/berita-acara"
+                        href={`/verifikator/berita-acara?periode_id=${selectedPeriodeId || 'ALL'}&kategori=${selectedKategori || 'ALL'}`}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors"
                     >
                         <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Berita Acara
@@ -70,12 +91,79 @@ export default function BeritaAcaraShow({ mataKuliah, activePeriod, soalApproved
                         <a
                             href={downloadUrl}
                             className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
-                            title="Unduh seluruh berkas BAP untuk mata kuliah ini"
+                            title="Unduh seluruh berkas BAP untuk mata kuliah dan filter ini"
                         >
                             <Download className="w-4 h-4" />
                             Unduh Semua BAP {soalApproved.length > 1 ? '(ZIP)' : '(PDF)'}
                         </a>
                     )}
+                </div>
+
+                {/* Filter Control Bar */}
+                <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                        {/* Select Periode */}
+                        <div className="flex-1 space-y-1.5">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
+                                <Calendar className="w-3.5 h-3.5 text-[#801720]" />
+                                <span>Periode Verifikasi</span>
+                            </label>
+                            <select
+                                value={selectedPeriodeId || 'ALL'}
+                                onChange={(e) => handleFilterChange(e.target.value, undefined)}
+                                className="w-full px-3.5 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all cursor-pointer"
+                            >
+                                {allPeriods.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.nama} {p.tahun_ajaran?.nama ? `(${p.tahun_ajaran.nama})` : ''} {p.status === 'ACTIVE' ? '— [AKTIF]' : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Filter Jenis Ujian (UTS / UAS / ALL) */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
+                                <Filter className="w-3.5 h-3.5 text-[#801720]" />
+                                <span>Jenis Ujian</span>
+                            </label>
+                            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+                                <button
+                                    type="button"
+                                    onClick={() => handleFilterChange(undefined, 'ALL')}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                        selectedKategori === 'ALL'
+                                            ? 'bg-white text-[#801720] shadow-xs'
+                                            : 'text-slate-500 hover:text-slate-800'
+                                    }`}
+                                >
+                                    Semua
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleFilterChange(undefined, 'UTS')}
+                                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                        selectedKategori === 'UTS'
+                                            ? 'bg-white text-[#801720] shadow-xs'
+                                            : 'text-slate-500 hover:text-slate-800'
+                                    }`}
+                                >
+                                    UTS
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleFilterChange(undefined, 'UAS')}
+                                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                        selectedKategori === 'UAS'
+                                            ? 'bg-white text-[#801720] shadow-xs'
+                                            : 'text-slate-500 hover:text-slate-800'
+                                    }`}
+                                >
+                                    UAS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Header Card */}

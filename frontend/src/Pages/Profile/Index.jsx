@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useForm, usePage, router, Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import {
@@ -211,13 +211,20 @@ function SectionDataDiri({ user, dosen }) {
 }
 
 /* ── Section 2: Keamanan Akun ──────────────────────────────────── */
-function SectionPassword() {
+function SectionPassword({ mustChange }) {
+    const passwordCardRef = useRef(null);
     const { data, setData, post, processing, errors, reset } = useForm({
         current_password: "",
         password:         "",
         password_confirmation: "",
     });
     const [show, setShow] = useState({ current: false, new: false, confirm: false });
+
+    useEffect(() => {
+        if (mustChange && passwordCardRef.current) {
+            passwordCardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }, [mustChange]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -241,7 +248,14 @@ function SectionPassword() {
     );
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-7">
+        <div
+            ref={passwordCardRef}
+            id="password-section"
+            className={[
+                "bg-white rounded-2xl border transition-all p-6 sm:p-7",
+                mustChange ? "border-amber-400 ring-4 ring-amber-500/20 shadow-xl" : "border-slate-200/80 shadow-sm"
+            ].join(" ")}
+        >
             <div className="flex items-center justify-between gap-3 pb-5 mb-5 border-b border-slate-100">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
@@ -592,6 +606,7 @@ export default function ProfileIndex({ user, dosen }) {
     const { flash } = usePage().props;
     const isSuperAdmin = user?.role === "SUPER_ADMIN" || user?.role === "SUPERADMIN";
     const isDosen = !!dosen;
+    const mustChange = !!user?.must_change_password;
 
     return (
         <AuthenticatedLayout title="Profil Saya">
@@ -599,6 +614,18 @@ export default function ProfileIndex({ user, dosen }) {
             <FlashAlert type="toast" flash={flash} />
 
             <div className="max-w-6xl mx-auto space-y-6">
+                {mustChange && (
+                    <div className="bg-amber-500 text-white rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/20 flex items-start gap-4 border border-amber-400">
+                        <AlertCircle className="w-6 h-6 flex-shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <h3 className="font-extrabold text-sm uppercase tracking-wider">Perhatian: Wajib Ubah Password Login Pertama</h3>
+                            <p className="text-xs font-semibold text-amber-50 leading-relaxed">
+                                Demi keamanan akun Anda, silakan ubah password default pada form <strong>Keamanan & Kata Sandi</strong> di bawah ini. Anda baru dapat mengakses menu aplikasi lainnya setelah memperbarui password.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header Banner Card */}
                 <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 relative overflow-hidden">
                     <div className="absolute right-0 top-0 w-96 h-96 bg-[#801720]/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
@@ -645,7 +672,7 @@ export default function ProfileIndex({ user, dosen }) {
                     {/* Left Column (7 cols): Data Diri & Keamanan Kata Sandi */}
                     <div className="lg:col-span-7 space-y-6">
                         <SectionDataDiri user={user} dosen={dosen} />
-                        <SectionPassword />
+                        <SectionPassword mustChange={mustChange} />
                     </div>
 
                     {/* Right Column (5 cols): Tanda Tangan Digital & Info Hak Akses */}

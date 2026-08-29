@@ -72,6 +72,7 @@ function StatCard({ label, value, icon: Icon, color, href }) {
 
 export default function Dashboard({
     activePeriod,
+    activePeriodSummary,
     allPeriods = [],
     totalDosen = 0,
     totalMataKuliah = 0,
@@ -160,8 +161,12 @@ export default function Dashboard({
 
     // Modal state for Generate Laporan
     const [showReportModal, setShowReportModal] = useState(false);
+    const [periodFilter, setPeriodFilter] = useState('ACTIVE_ONLY'); // 'ACTIVE_ONLY' | 'ALL'
     const [selectedPeriodeId, setSelectedPeriodeId] = useState(activePeriod?.id || 'ALL');
     const [isExporting, setIsExporting] = useState(false);
+
+    const activePeriods = (allPeriods || []).filter(p => p.status === 'ACTIVE');
+    const displayedPeriods = periodFilter === 'ACTIVE_ONLY' ? activePeriods : allPeriods;
 
     const handleDownloadReport = () => {
         setIsExporting(true);
@@ -344,44 +349,121 @@ export default function Dashboard({
                     <StatCard label="Ditolak"             value={statusCounts.REJECTED}  icon={XCircle}       color="bg-red-500" />
                 </div>
 
-                {/* 2-Column Section: Left (Diagram Tren Verifikasi - col-span-7) & Right (Perlu Perhatian & Aktivitas - col-span-5) */}
+                {/* 2-Column Section: Left (Ringkasan Periode Aktif - col-span-7) & Right (Perlu Perhatian & Aktivitas - col-span-5) */}
                 <div className="grid lg:grid-cols-12 gap-6 items-stretch">
-                    {/* Left: Tren Verifikasi Soal */}
-                    <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
+                    {/* Left: Ringkasan Periode Aktif */}
+                    <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between">
                         <div>
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                                        <BarChart3 className="w-4 h-4 text-[#801720]" /> Tren Verifikasi Soal
-                                    </h2>
-                                    <p className="text-xs text-gray-500 font-medium mt-0.5">Perbandingan soal Menunggu, Disetujui, dan Ditolak harian</p>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                                    <span className="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-[11px]">
-                                        {trendData?.labels?.length > 0 ? `${trendData.labels[0]} - ${trendData.labels[trendData.labels.length - 1]}` : '7 Hari Terakhir'}
+                            {/* Card Header */}
+                            <div className="flex items-center justify-between mb-5">
+                                <h2 className="font-bold text-gray-800 flex items-center gap-2.5 text-base">
+                                    <div className="w-8 h-8 rounded-xl bg-[#801720]/10 flex items-center justify-center text-[#801720]">
+                                        <Calendar className="w-4.5 h-4.5" />
+                                    </div>
+                                    <span>Periode Aktif</span>
+                                </h2>
+                                {activePeriodSummary && (
+                                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        {activePeriodSummary.status_label || 'Aktif'}
                                     </span>
-                                    <button
-                                        type="button"
-                                        onClick={downloadChart}
-                                        className="flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-200 hover:border-gray-300 hover:bg-slate-50 text-gray-700 rounded-xl transition-all shadow-xs cursor-pointer text-xs"
-                                        title="Unduh Diagram sebagai PNG"
-                                    >
-                                        <Download className="w-3.5 h-3.5 text-[#801720]" />
-                                        <span>PNG</span>
-                                    </button>
+                                )}
+                            </div>
+
+                            {activePeriodSummary ? (
+                                <div className="space-y-6">
+                                    {/* Title & Dates */}
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-800 tracking-tight">
+                                            {activePeriodSummary.nama} {activePeriodSummary.tahun_ajaran ? `(${activePeriodSummary.tahun_ajaran})` : ''}
+                                        </h3>
+                                        <p className="text-xs font-semibold text-slate-500 mt-1">
+                                            {activePeriodSummary.tanggal_mulai} - {activePeriodSummary.tanggal_selesai}
+                                        </p>
+                                    </div>
+
+                                    {/* Progress Section */}
+                                    <div className="space-y-2 pt-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-700">Progress Keseluruhan</span>
+                                            <span className="text-lg font-black text-emerald-600">
+                                                {activePeriodSummary.progress_pct}%
+                                            </span>
+                                        </div>
+                                        <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden p-0.5 border border-slate-200/60">
+                                            <div
+                                                className="h-full rounded-full bg-emerald-500 transition-all duration-700 shadow-xs"
+                                                style={{ width: `${Math.min(100, Math.max(0, activePeriodSummary.progress_pct))}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-xs font-medium text-slate-500 pt-0.5">
+                                            <strong className="text-slate-800 font-bold">{activePeriodSummary.completed_mk}</strong> / {activePeriodSummary.total_mk} Mata Kuliah selesai
+                                        </p>
+                                    </div>
+
+                                    {/* Metadata Items List */}
+                                    <div className="space-y-3.5 pt-4 border-t border-gray-100">
+                                        <div className="flex items-center justify-between text-xs py-0.5">
+                                            <span className="flex items-center gap-2.5 text-slate-500 font-medium">
+                                                <Calendar className="w-4 h-4 text-slate-400" />
+                                                <span>Deadline Upload</span>
+                                            </span>
+                                            <span className="font-bold text-slate-800">
+                                                {activePeriodSummary.deadline_upload}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-xs py-0.5">
+                                            <span className="flex items-center gap-2.5 text-slate-500 font-medium">
+                                                <Clock className="w-4 h-4 text-slate-400" />
+                                                <span>Sisa Waktu</span>
+                                            </span>
+                                            <span className="font-bold text-slate-800">
+                                                {activePeriodSummary.sisa_waktu}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-xs py-0.5">
+                                            <span className="flex items-center gap-2.5 text-slate-500 font-medium">
+                                                <ShieldCheck className="w-4 h-4 text-slate-400" />
+                                                <span>Status Periode</span>
+                                            </span>
+                                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                {activePeriodSummary.status_label}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div className="h-64 sm:h-72 w-full pt-2">
-                                <Bar ref={chartRef} data={chartData} options={chartOptions} />
-                            </div>
+                            ) : (
+                                <div className="py-12 text-center text-slate-400 space-y-3">
+                                    <Calendar className="w-12 h-12 mx-auto text-slate-300 stroke-[1.5]" />
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-700">Belum Ada Periode Aktif</p>
+                                        <p className="text-xs font-medium text-slate-400 mt-0.5">Aktifkan periode verifikasi soal untuk melihat ringkasan real-time</p>
+                                    </div>
+                                    <Link
+                                        href="/superadmin/tahun-ajaran"
+                                        className="inline-flex items-center gap-2 mt-2 px-4 py-2 bg-[#801720] hover:bg-[#9B1B26] text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+                                    >
+                                        <span>Kelola Periode Verifikasi</span>
+                                        <ArrowUpRight className="w-3.5 h-3.5" />
+                                    </Link>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100 mt-4 text-center">
-                            <p className="text-[11px] font-semibold text-slate-400">
-                                Pemantauan tren harian verifikasi soal akademik
-                            </p>
-                        </div>
+                        {/* Bottom Action Button */}
+                        {activePeriodSummary && (
+                            <div className="pt-4 border-t border-gray-100 mt-5">
+                                <Link
+                                    href="/superadmin/tahun-ajaran"
+                                    className="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 transition-all cursor-pointer group"
+                                >
+                                    <span>Lihat Detail Periode</span>
+                                    <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#801720] transition-colors" />
+                                </Link>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right: Perlu Perhatian & Aktivitas Terkini (col-span-5) */}
@@ -500,37 +582,70 @@ export default function Dashboard({
 
                         {/* Body Form */}
                         <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
-                            {/* 1. Pilih Periode */}
+                            {/* Filter Status Periode */}
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                    <Calendar className="w-3.5 h-3.5 text-[#801720]" />
-                                    <span>Pilih Periode Verifikasi</span>
+                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                    <span className="flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5 text-[#801720]" />
+                                        <span>Filter Periode Verifikasi</span>
+                                    </span>
                                 </label>
+
+                                {/* Tabs Filter Periode */}
+                                <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl mb-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setPeriodFilter('ACTIVE_ONLY');
+                                            if (activePeriod) setSelectedPeriodeId(activePeriod.id);
+                                        }}
+                                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            periodFilter === 'ACTIVE_ONLY'
+                                                ? 'bg-white text-[#801720] shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-800'
+                                        }`}
+                                    >
+                                        Hanya Periode Aktif
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPeriodFilter('ALL')}
+                                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            periodFilter === 'ALL'
+                                                ? 'bg-white text-[#801720] shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-800'
+                                        }`}
+                                    >
+                                        Semua Riwayat Periode
+                                    </button>
+                                </div>
+
+                                {/* Select Dropdown */}
                                 <div className="relative">
                                     <select
                                         value={selectedPeriodeId}
                                         onChange={(e) => setSelectedPeriodeId(e.target.value)}
                                         className="w-full px-3.5 py-2.5 text-xs font-semibold bg-slate-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all cursor-pointer"
                                     >
-                                        <option value="ALL">Semua Periode (Keseluruhan Riwayat)</option>
-                                        {allPeriods.length > 0 ? (
-                                            allPeriods.map((p) => (
+                                        {periodFilter === 'ALL' && (
+                                            <option value="ALL">Semua Periode (Keseluruhan Riwayat)</option>
+                                        )}
+                                        {displayedPeriods.length > 0 ? (
+                                            displayedPeriods.map((p) => (
                                                 <option key={p.id} value={p.id}>
-                                                    {p.nama} {p.tahun_ajaran?.nama ? `(${p.tahun_ajaran.nama})` : ''} {p.status === 'ACTIVE' ? '— [AKTIF]' : ''}
+                                                    {p.nama} {p.tahun_ajaran?.nama ? `(${p.tahun_ajaran.nama})` : ''} {p.status === 'ACTIVE' ? '— [AKTIF]' : '— [SELESAI]'}
                                                 </option>
                                             ))
                                         ) : (
-                                            activePeriod && (
-                                                <option value={activePeriod.id}>
-                                                    {activePeriod.nama} [Periode Aktif]
-                                                </option>
-                                            )
+                                            <option value="" disabled>
+                                                Tidak ada periode {periodFilter === 'ACTIVE_ONLY' ? 'aktif' : ''} ditemukan
+                                            </option>
                                         )}
                                     </select>
                                 </div>
                             </div>
 
-                            {/* 2. Format Dokumen */}
+                            {/* Format Dokumen (PDF) */}
                             <div>
                                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <FileDown className="w-3.5 h-3.5 text-[#801720]" />
@@ -546,7 +661,7 @@ export default function Dashboard({
                                                 <span>PDF Document</span>
                                                 <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-200/70 text-red-800">.pdf</span>
                                             </div>
-                                            <p className="text-[11px] text-gray-500 font-medium mt-0.5">Format resmi cetak & arsip laporan verifikasi soal</p>
+                                            <p className="text-[11px] text-gray-500 font-medium mt-0.5">Format PDF resmi cetak & arsip laporan verifikasi soal</p>
                                         </div>
                                     </div>
                                     <span className="w-5 h-5 rounded-full bg-[#801720] text-white flex items-center justify-center text-[10px] flex-shrink-0 shadow-xs">

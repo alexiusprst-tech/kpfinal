@@ -54,7 +54,7 @@ function TahunAjaranForm({ form, setForm, onSubmit, processing, editItem }) {
             {editItem && (
                 <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Status</label>
-                    <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                    <select value={form.status || 'ACTIVE'} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none bg-white">
                         <option value="ACTIVE">ACTIVE</option>
                         <option value="INACTIVE">INACTIVE</option>

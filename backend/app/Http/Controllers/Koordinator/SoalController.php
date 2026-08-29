@@ -93,18 +93,15 @@ class SoalController extends Controller
         }
 
         $categories = $this->getKategoriForPeriode($activePeriod);
-        
+
+        $examType = $this->detectPeriodeExamType($activePeriod);
         $defaultKategori = null;
-        if ($activePeriod) {
-            $periodText = mb_strtolower(($activePeriod->nama ?? '') . ' ' . ($activePeriod->catatan ?? ''));
-            $isUas = str_contains($periodText, 'uas') || str_contains($periodText, 'akhir semester');
-            if ($isUas) {
-                $defaultKategori = $categories->first(fn($c) => strtolower($c->nama) === 'uas') 
-                    ?? $categories->first(fn($c) => str_contains(strtolower($c->nama), 'uas'));
-            } else {
-                $defaultKategori = $categories->first(fn($c) => strtolower($c->nama) === 'uts')
-                    ?? $categories->first(fn($c) => str_contains(strtolower($c->nama), 'uts'));
-            }
+        if ($examType === 'UAS') {
+            $defaultKategori = $categories->first(fn($c) => strtolower($c->nama) === 'uas')
+                ?? $categories->first(fn($c) => str_contains(strtolower($c->nama), 'uas'));
+        } elseif ($examType === 'UTS') {
+            $defaultKategori = $categories->first(fn($c) => strtolower($c->nama) === 'uts')
+                ?? $categories->first(fn($c) => str_contains(strtolower($c->nama), 'uts'));
         }
         $defaultKategori = $defaultKategori ?? $categories->first();
 
@@ -401,18 +398,21 @@ class SoalController extends Controller
     }
 
     /**
-     * Get all active assessment categories (UTS, UAS, Quiz, Tugas, Tugas Besar, Praktikum, etc.).
+     * Get all active assessment categories (UTS, UAS, Quiz, Tugas, Tugas Besar, Praktikum, etc.),
+     * filtered down to the category matching the active periode's exam type (UTS/UAS) when detectable.
      */
     private function getKategoriForPeriode(?PeriodeVerifikasi $periode)
     {
+        $orderRaw = "CASE
+                WHEN UPPER(nama) = 'UTS' THEN 1
+                WHEN UPPER(nama) = 'UAS' THEN 2
+                WHEN UPPER(nama) = 'QUIZ' THEN 3
+                WHEN UPPER(nama) = 'TUGAS' THEN 4
+                WHEN UPPER(nama) LIKE 'TUGAS BESAR%' THEN 5
+                ELSE 6 END";
+
         $categories = KategoriSoal::where('status', 'ACTIVE')
-            ->orderByRaw("CASE 
-                WHEN UPPER(nama) = 'UTS' THEN 1 
-                WHEN UPPER(nama) = 'UAS' THEN 2 
-                WHEN UPPER(nama) = 'QUIZ' THEN 3 
-                WHEN UPPER(nama) = 'TUGAS' THEN 4 
-                WHEN UPPER(nama) LIKE 'TUGAS BESAR%' THEN 5 
-                ELSE 6 END")
+            ->orderByRaw($orderRaw)
             ->orderBy('nama', 'asc')
             ->get(['id', 'nama', 'deskripsi']);
 
@@ -432,17 +432,57 @@ class SoalController extends Controller
                 );
             }
             $categories = KategoriSoal::where('status', 'ACTIVE')
-                ->orderByRaw("CASE 
-                    WHEN UPPER(nama) = 'UTS' THEN 1 
-                    WHEN UPPER(nama) = 'UAS' THEN 2 
-                    WHEN UPPER(nama) = 'QUIZ' THEN 3 
-                    WHEN UPPER(nama) = 'TUGAS' THEN 4 
-                    WHEN UPPER(nama) LIKE 'TUGAS BESAR%' THEN 5 
-                    ELSE 6 END")
+                ->orderByRaw($orderRaw)
                 ->orderBy('nama', 'asc')
                 ->get(['id', 'nama', 'deskripsi']);
         }
 
-        return $categories;
+        return $this->filterKategoriByPeriodeType($categories, $periode);
+    }
+
+    /**
+     * Restrict the category list to the one matching the periode's exam type
+     * (UTS/UAS) when the periode name/catatan clearly identifies it as such.
+     * Falls back to the unfiltered list if nothing matches, so upload is never
+     * blocked entirely by an over-eager filter.
+     */
+    private function filterKategoriByPeriodeType($categories, ?PeriodeVerifikasi $periode)
+    {
+        $examType = $this->detectPeriodeExamType($periode);
+        if (!$examType) {
+            return $categories;
+        }
+
+        $needle = strtolower($examType);
+        $filtered = $categories->filter(fn ($c) => str_contains(mb_strtolower($c->nama), $needle))->values();
+        return $filtered->isEmpty() ? $categories : $filtered;
+    }
+
+    /**
+     * Detect whether a periode is a UTS or UAS period from its name/catatan.
+     * Uses word-boundary matching (\b) rather than a plain substring search,
+     * because "uas"/"uts" as bare substrings false-positive on common
+     * Indonesian words — e.g. "Evaluasi", "Penguasaan", "Kuasa" all contain
+     * "uas", and would otherwise be misread as a UAS period.
+     */
+    private function detectPeriodeExamType(?PeriodeVerifikasi $periode): ?string
+    {
+        if (!$periode) {
+            return null;
+        }
+
+        $periodText = mb_strtolower(($periode->nama ?? '') . ' ' . ($periode->catatan ?? ''));
+        $isUas = (bool) preg_match('/\buas\b/u', $periodText) || str_contains($periodText, 'akhir semester');
+        $isUts = (bool) preg_match('/\buts\b/u', $periodText) || str_contains($periodText, 'tengah semester');
+
+        if ($isUas && !$isUts) {
+            return 'UAS';
+        }
+
+        if ($isUts && !$isUas) {
+            return 'UTS';
+        }
+
+        return null;
     }
 }

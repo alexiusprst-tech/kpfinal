@@ -42,29 +42,45 @@ function getNavSections(user, pathname = "") {
         ];
     }
 
-    const isVerifikatorPage = pathname.startsWith("/verifikator");
+    const isDualRole = user.has_dual_role || (user.is_koordinator && user.is_verifikator);
 
-    if (user.has_dual_role || (user.is_koordinator && user.is_verifikator)) {
+    if (isDualRole) {
+        let activeRole = "koordinator";
+        if (pathname.startsWith("/verifikator")) {
+            activeRole = "verifikator";
+            if (typeof window !== "undefined") {
+                sessionStorage.setItem("active_dual_role", "verifikator");
+            }
+        } else if (pathname.startsWith("/koordinator")) {
+            activeRole = "koordinator";
+            if (typeof window !== "undefined") {
+                sessionStorage.setItem("active_dual_role", "koordinator");
+            }
+        } else if (typeof window !== "undefined") {
+            const savedRole = sessionStorage.getItem("active_dual_role");
+            if (savedRole) activeRole = savedRole;
+        }
+
+        if (activeRole === "verifikator") {
+            return [
+                { type: "item", label: "Dashboard", href: "/verifikator/dashboard", icon: LayoutDashboard },
+                { type: "divider", label: "Verifikator Soal" },
+                { type: "item", label: "Verifikasi Soal", href: "/verifikator/soal", icon: FileCheck },
+                { type: "item", label: "Berita Acara", href: "/verifikator/berita-acara", icon: FileText },
+            ];
+        }
+
         return [
-            {
-                type: "item",
-                label: "Dashboard",
-                href: isVerifikatorPage ? "/verifikator/dashboard" : "/koordinator/dashboard",
-                icon: LayoutDashboard,
-                matchPaths: ["/koordinator/dashboard", "/verifikator/dashboard"],
-            },
+            { type: "item", label: "Dashboard", href: "/koordinator/dashboard", icon: LayoutDashboard },
             { type: "divider", label: "Koordinator MK" },
             { type: "item", label: "Upload Soal", href: "/koordinator/soal", icon: FileText },
-            { type: "divider", label: "Verifikator Soal" },
-            { type: "item", label: "Verifikasi Soal", href: "/verifikator/soal", icon: FileCheck },
-            { type: "item", label: "Berita Acara", href: "/verifikator/berita-acara", icon: FileText },
         ];
     }
 
     if (user.is_verifikator || user.role === "VERIFIKATOR") {
         return [
             { type: "item", label: "Dashboard", href: "/verifikator/dashboard", icon: LayoutDashboard },
-            { type: "divider", label: "Verifikasi Soal" },
+            { type: "divider", label: "Verifikator Soal" },
             { type: "item", label: "Verifikasi Soal", href: "/verifikator/soal", icon: FileCheck },
             { type: "item", label: "Berita Acara", href: "/verifikator/berita-acara", icon: FileText },
         ];
@@ -73,7 +89,7 @@ function getNavSections(user, pathname = "") {
     // Default Koordinator
     return [
         { type: "item", label: "Dashboard", href: "/koordinator/dashboard", icon: LayoutDashboard },
-        { type: "divider", label: "Lembar Soal" },
+        { type: "divider", label: "Koordinator MK" },
         { type: "item", label: "Upload Soal", href: "/koordinator/soal", icon: FileText },
     ];
 }
@@ -279,7 +295,9 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
                                             {user?.name || "User"}
                                         </p>
                                         <p className="text-[10px] text-slate-500 truncate font-semibold">
-                                            {user?.has_dual_role ? "Koordinator & Verifikator" : (user?.role || "User")}
+                                            {user?.has_dual_role
+                                                ? (pathname.startsWith("/verifikator") ? "Dosen Verifikator" : "Koordinator MK")
+                                                : (user?.role || "User")}
                                         </p>
                                     </div>
                                 </Link>
