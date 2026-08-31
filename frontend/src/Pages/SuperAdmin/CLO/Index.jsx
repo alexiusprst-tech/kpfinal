@@ -470,8 +470,13 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
             const clo = row.kode_clo;
             if (!tree[plo]) tree[plo] = {};
             if (!tree[plo][clo]) tree[plo][clo] = { deskripsi: row.deskripsi, bloom: row.bloom, mks: [] };
-            if (row.mk && !tree[plo][clo].mks.includes(row.mk)) {
-                tree[plo][clo].mks.push(row.mk);
+            if (row.mk) {
+                const individualMks = row.mk.split(';').map(m => m.trim()).filter(Boolean);
+                individualMks.forEach(mkName => {
+                    if (!tree[plo][clo].mks.includes(mkName)) {
+                        tree[plo][clo].mks.push(mkName);
+                    }
+                });
             }
         });
         return tree;
@@ -729,7 +734,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                         <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
                                             <FileText className="w-4 h-4" /> Format Template CLO
                                         </h3>
-                                        <p className="text-xs text-blue-600 mb-3">Satu CLO bisa dipetakan ke banyak Mata Kuliah. Tulis satu baris per Mata Kuliah.</p>
+                                        <p className="text-xs text-blue-600 mb-3">Satu CLO dapat dipetakan ke satu atau banyak Mata Kuliah. Beberapa Mata Kuliah pada baris yang sama dapat dipisahkan dengan simbol titik koma (;).</p>
                                         <div className="bg-white rounded-xl border border-blue-200 overflow-hidden">
                                             <table className="w-full text-xs">
                                                 <thead className="bg-[#801720] text-white">
@@ -741,9 +746,8 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                                 </thead>
                                                 <tbody>
                                                     {[
-                                                        ['PLO02', 'PLO02-CLO01', 'Mampu menganalisis kebutuhan sistem...', '4 - Analyze', 'Analisis Sistem'],
-                                                        ['PLO02', 'PLO02-CLO01', 'Mampu menganalisis kebutuhan sistem...', '4 - Analyze', 'Basis Data'],
-                                                        ['PLO02', 'PLO02-CLO02', 'Mampu mengembangkan solusi...', '6 - Create', 'Pemrograman Web'],
+                                                        ['PLO02', 'PLO02-CLO01', 'Mampu menganalisis kebutuhan sistem...', '4 - Analyze', 'Analisis Sistem; Basis Data'],
+                                                        ['PLO02', 'PLO02-CLO02', 'Mampu mengembangkan solusi...', '6 - Create', 'Pemrograman Web; Proyek Perangkat Lunak'],
                                                     ].map((row, i) => (
                                                         <tr key={i} className="border-t border-blue-100">
                                                             {row.map((cell, j) => <td key={j} className="p-2.5 text-gray-600">{cell}</td>)}

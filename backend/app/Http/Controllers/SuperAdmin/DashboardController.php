@@ -251,21 +251,76 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Comparison Chart Data: Status Upload Soal per Mata Kuliah
+        $courseComparisonData = [
+            'labels'      => [],
+            'approved'    => [],
+            'submitted'   => [],
+            'revision'    => [],
+            'belumUpload' => [],
+            'courses'     => [],
+        ];
+
+        // Fetch all active Mata Kuliah in master data for complete comparison
+        $allActiveMkList = MataKuliah::where('status', 'ACTIVE')
+            ->orderBy('nama_mk', 'asc')
+            ->get();
+
+        if ($allActiveMkList->isNotEmpty()) {
+            // Load soal for active period if active period exists
+            if ($activePeriod) {
+                $allActiveMkList->load(['soal' => fn ($q) => $q->where('periode_id', $activePeriod->id)]);
+            }
+
+            foreach ($allActiveMkList as $mk) {
+                $soals = $mk->relationLoaded('soal') ? $mk->soal : collect();
+                $isAssigned = $assignedMkIds->contains($mk->id);
+
+                $approvedCount  = $soals->where('status', 'APPROVED')->count();
+                $submittedCount = $soals->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count();
+                $revisionCount  = $soals->where('status', 'REVISION')->count();
+                
+                // Belum upload hanya dihitung jika MK tersebut ditugaskan di periode ini tapi belum mengunggah soal
+                $belumCount     = ($isAssigned && $soals->isEmpty()) ? 1 : 0;
+
+                $shortLabel = \Illuminate\Support\Str::limit($mk->nama_mk, 22);
+
+                $courseComparisonData['labels'][]      = $shortLabel;
+                $courseComparisonData['approved'][]    = $approvedCount;
+                $courseComparisonData['submitted'][]   = $submittedCount;
+                $courseComparisonData['revision'][]    = $revisionCount;
+                $courseComparisonData['belumUpload'][] = $belumCount;
+
+                $courseComparisonData['courses'][] = [
+                    'id'           => $mk->id,
+                    'kode_mk'      => $mk->kode_mk,
+                    'nama_mk'      => $mk->nama_mk,
+                    'short_label'  => $shortLabel,
+                    'is_assigned'  => $isAssigned,
+                    'approved'     => $approvedCount,
+                    'submitted'    => $submittedCount,
+                    'revision'     => $revisionCount,
+                    'belumUpload'  => $belumCount,
+                ];
+            }
+        }
+
         return \Inertia\Inertia::render('SuperAdmin/Dashboard', [
-            'activePeriod'        => $activePeriod,
-            'activePeriodSummary' => $activePeriodSummary,
-            'allPeriods'          => $allPeriods,
-            'totalDosen'          => $totalDosen,
-            'totalMataKuliah'     => $totalMataKuliah,
-            'totalPlo'            => $totalPlo,
-            'totalClo'            => $totalClo,
-            'totalBankSoal'       => $totalBankSoal,
-            'progressPct'         => $progressPct,
-            'statusCounts'        => $statusCounts,
-            'recentActivities'    => $recentActivities,
-            'urgentMataKuliah'    => $urgentMataKuliah,
-            'urgentSoal'          => $urgentMataKuliah,
-            'trendData'           => [
+            'activePeriod'         => $activePeriod,
+            'activePeriodSummary'  => $activePeriodSummary,
+            'allPeriods'           => $allPeriods,
+            'totalDosen'           => $totalDosen,
+            'totalMataKuliah'      => $totalMataKuliah,
+            'totalPlo'             => $totalPlo,
+            'totalClo'             => $totalClo,
+            'totalBankSoal'        => $totalBankSoal,
+            'progressPct'          => $progressPct,
+            'statusCounts'         => $statusCounts,
+            'recentActivities'     => $recentActivities,
+            'urgentMataKuliah'     => $urgentMataKuliah,
+            'urgentSoal'           => $urgentMataKuliah,
+            'courseComparisonData' => $courseComparisonData,
+            'trendData'            => [
                 'labels'    => $dates,
                 'menunggu'  => $menungguData,
                 'disetujui' => $disetujuiData,

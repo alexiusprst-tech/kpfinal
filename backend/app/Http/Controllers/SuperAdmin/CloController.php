@@ -236,6 +236,23 @@ class CloController extends Controller
      */
     public function template()
     {
+        $possiblePaths = [
+            storage_path('app/template-master-clo-mapping.xlsx'),
+            base_path('../template-master-clo-mapping.xlsx'),
+            base_path('template-master-clo-mapping.xlsx'),
+            storage_path('app/template-master-clo-mapping-2026-08-31 (2).xlsx'),
+            base_path('../template-master-clo-mapping-2026-08-31 (2).xlsx'),
+            base_path('template-master-clo-mapping-2026-08-31 (2).xlsx'),
+        ];
+
+        foreach ($possiblePaths as $filePath) {
+            if (file_exists($filePath)) {
+                return response()->download($filePath, 'template-master-clo-mapping.xlsx', [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ]);
+            }
+        }
+
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Template CLO');
@@ -372,7 +389,7 @@ class CloController extends Controller
         // Catatan
         $sheet->setCellValue("A{$row}", '');
         $row++;
-        $sheet->setCellValue("A{$row}", 'Catatan: Setiap PLO memiliki daftar CLO masing-masing. Satu CLO dapat dipetakan ke banyak Mata Kuliah (buat 1 baris per Mata Kuliah).');
+        $sheet->setCellValue("A{$row}", 'Catatan: Setiap PLO memiliki daftar CLO masing-masing. Satu CLO dapat dipetakan ke satu atau banyak Mata Kuliah. Jika memasukkan beberapa Mata Kuliah pada baris yang sama, pisahkan dengan simbol titik koma (;).');
         $sheet->getStyle("A{$row}")->getFont()->setItalic(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF666666'));
         $sheet->mergeCells("A{$row}:E{$row}");
 
@@ -448,7 +465,7 @@ class CloController extends Controller
 
             $bloomOptions = ['1', '2', '3', '4', '5', '6',
                              '1 - remember', '2 - understand', '3 - apply',
-                             '4 - analyze', '5 - evaluate', '6 - create'];
+                             '4 - analyze', '4 - analyse', '5 - evaluate', '6 - create'];
 
             $rows = [];
             $errors = [];
@@ -510,11 +527,20 @@ class CloController extends Controller
                     $rowErrors[] = "Bloom '{$bloom}' tidak valid. Gunakan format: '4 - Analyze'";
                 }
 
-                // Validasi Mata Kuliah
+                // Validasi Mata Kuliah (dapat berisi multiple MK dipisahkan dengan ';')
                 if ($mk === '') {
                     $rowErrors[] = 'Mata Kuliah tidak boleh kosong';
-                } elseif (!in_array(strtolower($mk), $validMk)) {
-                    $rowErrors[] = "Mata Kuliah '{$mk}' tidak ditemukan di master data";
+                } else {
+                    $individualMks = array_filter(array_map('trim', explode(';', $mk)));
+                    if (empty($individualMks)) {
+                        $rowErrors[] = 'Mata Kuliah tidak boleh kosong';
+                    } else {
+                        foreach ($individualMks as $indMk) {
+                            if (!in_array(strtolower($indMk), $validMk)) {
+                                $rowErrors[] = "Mata Kuliah '{$indMk}' tidak ditemukan di master data";
+                            }
+                        }
+                    }
                 }
 
                 // Cek duplikasi CLO-MK pair
@@ -613,8 +639,13 @@ class CloController extends Controller
                 if ($ploVal && !in_array($ploVal, $grouped[$kode]['plo_codes'])) {
                     $grouped[$kode]['plo_codes'][] = $ploVal;
                 }
-                if ($mkVal && !in_array($mkVal, $grouped[$kode]['mk_names'])) {
-                    $grouped[$kode]['mk_names'][] = $mkVal;
+                if ($mkVal !== '') {
+                    $individualMks = array_filter(array_map('trim', explode(';', $mkVal)));
+                    foreach ($individualMks as $indMk) {
+                        if (!in_array($indMk, $grouped[$kode]['mk_names'])) {
+                            $grouped[$kode]['mk_names'][] = $indMk;
+                        }
+                    }
                 }
             }
 

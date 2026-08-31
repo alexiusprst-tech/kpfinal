@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
@@ -21,7 +21,9 @@ import {
     Layers,
     Download,
     ShieldCheck,
-    BarChart3
+    BarChart3,
+    Filter,
+    Search
 } from 'lucide-react';
 import {
     Chart as ChartJS,
@@ -83,6 +85,7 @@ export default function Dashboard({
     recentActivities = [],
     urgentMataKuliah = [],
     urgentSoal = [],
+    courseComparisonData = { labels: [], approved: [], submitted: [], revision: [], belumUpload: [] },
     trendData = { labels: [], menunggu: [], disetujui: [], ditolak: [] }
 }) {
     const { auth } = usePage().props;
@@ -90,14 +93,27 @@ export default function Dashboard({
 
     const attentionList = (urgentMataKuliah && urgentMataKuliah.length > 0) ? urgentMataKuliah : (urgentSoal || []);
 
-    // Chart ref and download handler
+    // Chart refs and download handlers
     const chartRef = useRef(null);
+    const courseChartRef = useRef(null);
+
     const downloadChart = () => {
         if (chartRef.current) {
             const chartInstance = chartRef.current;
             const url = chartInstance.toBase64Image ? chartInstance.toBase64Image() : chartInstance.canvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.download = 'tren-verifikasi-soal.png';
+            link.href = url;
+            link.click();
+        }
+    };
+
+    const downloadCourseChart = () => {
+        if (courseChartRef.current) {
+            const chartInstance = courseChartRef.current;
+            const url = chartInstance.toBase64Image ? chartInstance.toBase64Image() : chartInstance.canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'perbandingan-upload-soal-mata-kuliah.png';
             link.href = url;
             link.click();
         }
@@ -154,24 +170,22 @@ export default function Dashboard({
             'DELETE_SOAL': 'Menghapus berkas soal',
             'CHANGE_PASSWORD': 'Mengubah kata sandi akun',
         };
-        if (dict[action]) return dict[action];
-        return action.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+        return dict[action] || action.replace(/_/g, ' ').toLowerCase();
     };
 
-    // Modal state for Generate Laporan
+    // Modal state for Laporan Download
     const [showReportModal, setShowReportModal] = useState(false);
-    const [periodFilter, setPeriodFilter] = useState('ACTIVE_ONLY'); // 'ACTIVE_ONLY' | 'ALL'
     const [selectedPeriodeId, setSelectedPeriodeId] = useState(activePeriod?.id || 'ALL');
+    const [periodFilter, setPeriodFilter] = useState(activePeriod ? 'ACTIVE_ONLY' : 'ALL');
+    const [reportType, setReportType] = useState('rekap');
     const [isExporting, setIsExporting] = useState(false);
-
-    const activePeriods = (allPeriods || []).filter(p => p.status === 'ACTIVE');
-    const displayedPeriods = periodFilter === 'ACTIVE_ONLY' ? activePeriods : allPeriods;
 
     const handleDownloadReport = () => {
         setIsExporting(true);
         const params = new URLSearchParams({
             periode_id: selectedPeriodeId,
             format: 'pdf',
+            type: reportType
         });
 
         // Trigger download
@@ -253,6 +267,133 @@ export default function Dashboard({
                 },
             },
             y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1,
+                    precision: 0,
+                    font: { size: 11 },
+                    color: '#94A3B8',
+                },
+                grid: {
+                    color: '#F1F5F9',
+                },
+            },
+        },
+    };
+
+    // State Filter Scope & Selection Mata Kuliah
+    const rawCourseList = useMemo(() => courseComparisonData?.courses || [], [courseComparisonData]);
+    const assignedCoursesCount = useMemo(() => rawCourseList.filter(c => c.is_assigned).length, [rawCourseList]);
+
+    const [scopeFilter, setScopeFilter] = useState(assignedCoursesCount > 0 ? 'ASSIGNED' : 'ALL'); // 'ALL' | 'ASSIGNED'
+    const [selectedCourseFilter, setSelectedCourseFilter] = useState('ALL');
+    const [searchCourseKeyword, setSearchCourseKeyword] = useState('');
+
+    const filteredCourses = useMemo(() => {
+        let list = rawCourseList;
+
+        if (scopeFilter === 'ASSIGNED') {
+            list = list.filter(c => c.is_assigned);
+        }
+
+        if (selectedCourseFilter !== 'ALL') {
+            list = list.filter(c => String(c.id) === String(selectedCourseFilter));
+        }
+
+        if (searchCourseKeyword) {
+            const kw = searchCourseKeyword.toLowerCase();
+            list = list.filter(c => 
+                (c.nama_mk && c.nama_mk.toLowerCase().includes(kw)) || 
+                (c.kode_mk && c.kode_mk.toLowerCase().includes(kw))
+            );
+        }
+
+        return list;
+    }, [rawCourseList, scopeFilter, selectedCourseFilter, searchCourseKeyword]);
+
+    // Chart data for "Perbandingan Upload Soal per Mata Kuliah" (Stacked Bar Chart)
+    const courseComparisonChartData = {
+        labels: filteredCourses.map(c => c.short_label || c.nama_mk),
+        datasets: [
+            {
+                label: 'Disetujui (Approved)',
+                data: filteredCourses.map(c => c.approved),
+                backgroundColor: '#10B981',
+                hoverBackgroundColor: '#059669',
+                borderRadius: 6,
+                borderSkipped: false,
+                stack: 'Stack0',
+            },
+            {
+                label: 'Menunggu Verifikasi',
+                data: filteredCourses.map(c => c.submitted),
+                backgroundColor: '#8B5CF6',
+                hoverBackgroundColor: '#7C3AED',
+                borderRadius: 6,
+                borderSkipped: false,
+                stack: 'Stack0',
+            },
+            {
+                label: 'Perlu Revisi',
+                data: filteredCourses.map(c => c.revision),
+                backgroundColor: '#F59E0B',
+                hoverBackgroundColor: '#D97706',
+                borderRadius: 6,
+                borderSkipped: false,
+                stack: 'Stack0',
+            },
+            {
+                label: 'Belum Upload',
+                data: filteredCourses.map(c => c.belumUpload),
+                backgroundColor: '#EF4444',
+                hoverBackgroundColor: '#DC2626',
+                borderRadius: 6,
+                borderSkipped: false,
+                stack: 'Stack0',
+            },
+        ],
+    };
+
+    const courseComparisonChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+            duration: 400,
+        },
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    font: { size: 11, weight: '600' },
+                    usePointStyle: true,
+                    boxWidth: 8,
+                    color: '#475569',
+                },
+            },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleColor: '#FFFFFF',
+                bodyColor: '#F8FAFC',
+                titleFont: { size: 12, weight: 'bold' },
+                bodyFont: { size: 12, weight: '600' },
+                padding: { top: 8, bottom: 8, left: 12, right: 12 },
+                cornerRadius: 10,
+                boxPadding: 6,
+            },
+        },
+        scales: {
+            x: {
+                stacked: true,
+                grid: { display: false },
+                ticks: {
+                    font: { size: 10, weight: '600' },
+                    color: '#64748B',
+                    maxRotation: 45,
+                    minRotation: 0,
+                },
+            },
+            y: {
+                stacked: true,
                 beginAtZero: true,
                 ticks: {
                     stepSize: 1,
@@ -543,6 +684,125 @@ export default function Dashboard({
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {/* Full Width Comparison Chart: Status Upload Soal vs Mata Kuliah */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
+                        <div>
+                            <h2 className="font-bold text-gray-800 flex items-center gap-2.5 text-base">
+                                <div className="w-8 h-8 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center">
+                                    <BarChart3 className="w-4.5 h-4.5" />
+                                </div>
+                                <span>Perbandingan Status Upload Soal per Mata Kuliah</span>
+                            </h2>
+                            <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                                Visualisasi perbandingan progres pengunggahan dan status verifikasi berkas soal untuk setiap Mata Kuliah
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={downloadCourseChart}
+                            disabled={!courseComparisonData?.labels?.length}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            title="Unduh Diagram sebagai PNG"
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Unduh Chart</span>
+                        </button>
+                    </div>
+
+                    {/* Filter Bar per MK */}
+                    {rawCourseList.length > 0 && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+                                {/* Scope Filter Tabs */}
+                                <div className="inline-flex items-center p-0.5 bg-slate-200/70 rounded-lg text-xs font-semibold mr-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setScopeFilter('ALL'); setSelectedCourseFilter('ALL'); }}
+                                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${scopeFilter === 'ALL' ? 'bg-white text-slate-800 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+                                    >
+                                        Semua MK ({rawCourseList.length})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setScopeFilter('ASSIGNED'); setSelectedCourseFilter('ALL'); }}
+                                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${scopeFilter === 'ASSIGNED' ? 'bg-white text-[#801720] shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+                                    >
+                                        MK Ditugaskan ({assignedCoursesCount})
+                                    </button>
+                                </div>
+
+                                <span className="text-xs font-bold text-slate-600 flex items-center gap-1 flex-shrink-0">
+                                    <Filter className="w-3.5 h-3.5 text-[#801720]" />
+                                    <span>Pilih MK:</span>
+                                </span>
+
+                                {/* Dropdown Select MK */}
+                                <select
+                                    value={selectedCourseFilter}
+                                    onChange={(e) => setSelectedCourseFilter(e.target.value)}
+                                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all cursor-pointer max-w-xs"
+                                >
+                                    <option value="ALL">Pilih Spesifik Mata Kuliah...</option>
+                                    {(scopeFilter === 'ASSIGNED' ? rawCourseList.filter(c => c.is_assigned) : rawCourseList).map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            [{c.kode_mk}] {c.nama_mk}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {/* Search Input */}
+                                <div className="relative max-w-xs flex-1">
+                                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="text"
+                                        value={searchCourseKeyword}
+                                        onChange={(e) => setSearchCourseKeyword(e.target.value)}
+                                        placeholder="Cari nama / kode MK..."
+                                        className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all"
+                                    />
+                                    {searchCourseKeyword && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchCourseKeyword('')}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Reset Filter Button */}
+                            {(selectedCourseFilter !== 'ALL' || searchCourseKeyword || scopeFilter !== 'ALL') && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setScopeFilter('ALL'); setSelectedCourseFilter('ALL'); setSearchCourseKeyword(''); }}
+                                    className="px-2.5 py-1 text-xs font-bold text-[#801720] hover:bg-red-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                    <X className="w-3 h-3" /> Reset Filter
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="h-80 w-full pt-2">
+                        {filteredCourses.length > 0 ? (
+                            <Bar ref={courseChartRef} data={courseComparisonChartData} options={courseComparisonChartOptions} />
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
+                                <BarChart3 className="w-10 h-10 stroke-[1.5] text-slate-300" />
+                                <p className="text-xs font-semibold text-slate-500">
+                                    {rawCourseList.length > 0 
+                                        ? 'Tidak ada mata kuliah yang cocok dengan kata kunci filter' 
+                                        : 'Belum ada data mata kuliah yang ditugaskan pada periode aktif'}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -918,29 +918,32 @@ class CurriculumImportService
 
             foreach ($closMappingData as $cloRow) {
 
-                $courseName =
-                    trim(
-                        $cloRow['course_name']
-                        ?? ''
-                    );
+                $courseNameRaw = trim($cloRow['course_name'] ?? '');
+                $courseCodeRaw = trim($cloRow['course_code'] ?? '');
 
-                $courseCode =
-                    trim(
-                        $cloRow['course_code']
-                        ?? ''
-                    );
+                $matchedCourses = [];
 
-                $course = null;
-
-                if ($courseName !== '') {
-                    $course = $courseMapByName[strtolower($courseName)] ?? null;
+                if ($courseNameRaw !== '') {
+                    $individualCourseNames = array_filter(array_map('trim', explode(';', $courseNameRaw)));
+                    foreach ($individualCourseNames as $cName) {
+                        $cObj = $courseMapByName[strtolower($cName)] ?? null;
+                        if ($cObj && !in_array($cObj, $matchedCourses, true)) {
+                            $matchedCourses[] = $cObj;
+                        }
+                    }
                 }
 
-                if (!$course && $courseCode !== '') {
-                    $course = $courseMapByCode[strtolower($courseCode)] ?? null;
+                if (empty($matchedCourses) && $courseCodeRaw !== '') {
+                    $individualCourseCodes = array_filter(array_map('trim', explode(';', $courseCodeRaw)));
+                    foreach ($individualCourseCodes as $cCode) {
+                        $cObj = $courseMapByCode[strtolower($cCode)] ?? null;
+                        if ($cObj && !in_array($cObj, $matchedCourses, true)) {
+                            $matchedCourses[] = $cObj;
+                        }
+                    }
                 }
 
-                if (!$course) {
+                if (empty($matchedCourses)) {
                     continue;
                 }
 
@@ -997,12 +1000,16 @@ class CurriculumImportService
 
                     if ($plo) {
                         $clo->plo()->syncWithoutDetaching([$plo->id]);
-                        $course->plo()->syncWithoutDetaching([$plo->id]);
+                        foreach ($matchedCourses as $course) {
+                            $course->plo()->syncWithoutDetaching([$plo->id]);
+                        }
                     }
                 }
 
                 // Map MataKuliah to CLO
-                $course->clo()->syncWithoutDetaching([$clo->id]);
+                foreach ($matchedCourses as $course) {
+                    $course->clo()->syncWithoutDetaching([$clo->id]);
+                }
 
                 $totalCloMapping++;
             }
