@@ -84,7 +84,7 @@ Aplikasi ini dibagi menjadi 2 area utama:
 |              | MAIN CONTENT (2 Columns Layout)                          |
 |              | +----------------------------------+ +------------------+|
 |              | | Left Col (Grouped Bar Chart)     | | Right Col        ||
-|              | | "Tren Verifikasi Soal"           | | - Perlu Perhatian||
+|              | | "Tren Verifikasi Soal"           | | - Perhatian||
 |              | |                                  | | - Aktivitas      ||
 |              | +----------------------------------+ +------------------+|
 +-------------------------------------------------------------------------+
@@ -124,7 +124,7 @@ Kartu dengan angka besar dan indikator dot berwarna:
 - **Kolom Kiri (Wide ~68%)**:
   - Panel **Tren Verifikasi Soal**: Grouped Bar Chart (Chart.js) yang menampilkan data batangan **Menunggu** (Orange) dan **Disetujui** (Hijau) per tanggal (`20 Mei` hingga `17 Jun`).
 - **Kolom Kanan (Side ~32%)**:
-  - Panel **Perlu Perhatian**: Daftar 3 item tugas mendesak (*Sistem Informasi (UTS)*, *Pemrograman Web*, *Basis Data (UAS)*) dengan badge angka serta link `Lihat Semua Tugas ->`.
+  - Panel **Perhatian**: Daftar 3 item tugas mendesak (*Sistem Informasi (UTS)*, *Pemrograman Web*, *Basis Data (UAS)*) dengan badge angka serta link `Lihat Semua Tugas ->`.
   - Panel **Aktivitas Terkini**: Timeline vertical dengan indikator dot hijau berisi log aktivitas terbaru (*Import PLO berhasil*).
 
 ---

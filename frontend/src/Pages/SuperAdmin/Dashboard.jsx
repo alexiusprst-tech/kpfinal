@@ -39,9 +39,8 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, ChartTooltip, Ch
 
 function StatCard({ label, value, icon: Icon, color, href }) {
     const cardContent = (
-        <div className={`bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex flex-col gap-3 transition-all duration-200 ${
-            href ? 'hover:shadow-md hover:border-gray-200 hover:-translate-y-0.5 group cursor-pointer' : ''
-        }`}>
+        <div className={`bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex flex-col gap-3 transition-all duration-200 ${href ? 'hover:shadow-md hover:border-gray-200 hover:-translate-y-0.5 group cursor-pointer' : ''
+            }`}>
             <div className="flex items-center justify-between">
                 <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center flex-shrink-0 transition-transform duration-200 ${href ? 'group-hover:scale-105' : ''} shadow-xs`}>
                     <Icon className="w-5 h-5 text-white" />
@@ -336,20 +335,20 @@ export default function Dashboard({
 
                 {/* StatCards Grid (Master Data & Bank Soal Overview) */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <StatCard label="Total Dosen"           value={totalDosen}                     icon={Users}    color="bg-slate-700" href="/superadmin/dosen" />
-                    <StatCard label="Total Mata Kuliah"     value={totalMataKuliah}                icon={BookOpen} color="bg-blue-600"  href="/superadmin/mata-kuliah" />
+                    <StatCard label="Total Dosen" value={totalDosen} icon={Users} color="bg-slate-700" href="/superadmin/dosen" />
+                    <StatCard label="Total Mata Kuliah" value={totalMataKuliah} icon={BookOpen} color="bg-blue-600" href="/superadmin/mata-kuliah" />
                     <StatCard label="Bank Soal (Disetujui)" value={totalBankSoal.toLocaleString()} icon={FileText} color="bg-emerald-600" />
                 </div>
 
                 {/* 4 Status Verification Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <StatCard label="Menunggu Verifikasi" value={statusCounts.SUBMITTED} icon={Clock}         color="bg-purple-600" />
-                    <StatCard label="Perlu Revisi"        value={statusCounts.REVISION}  icon={AlertTriangle} color="bg-amber-500" />
-                    <StatCard label="Disetujui"           value={statusCounts.APPROVED}  icon={CheckCircle2}  color="bg-emerald-600" />
-                    <StatCard label="Ditolak"             value={statusCounts.REJECTED}  icon={XCircle}       color="bg-red-500" />
+                    <StatCard label="Menunggu Verifikasi" value={statusCounts.SUBMITTED} icon={Clock} color="bg-purple-600" />
+                    <StatCard label="Perlu Revisi" value={statusCounts.REVISION} icon={AlertTriangle} color="bg-amber-500" />
+                    <StatCard label="Disetujui" value={statusCounts.APPROVED} icon={CheckCircle2} color="bg-emerald-600" />
+                    <StatCard label="Ditolak" value={statusCounts.REJECTED} icon={XCircle} color="bg-red-500" />
                 </div>
 
-                {/* 2-Column Section: Left (Ringkasan Periode Aktif - col-span-7) & Right (Perlu Perhatian & Aktivitas - col-span-5) */}
+                {/* 2-Column Section: Left (Ringkasan Periode Aktif - col-span-7) & Right (Perhatian & Aktivitas - col-span-5) */}
                 <div className="grid lg:grid-cols-12 gap-6 items-stretch">
                     {/* Left: Ringkasan Periode Aktif */}
                     <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between">
@@ -375,7 +374,7 @@ export default function Dashboard({
                                     {/* Title & Dates */}
                                     <div>
                                         <h3 className="text-xl font-black text-slate-800 tracking-tight">
-                                            {activePeriodSummary.nama} {activePeriodSummary.tahun_ajaran ? `(${activePeriodSummary.tahun_ajaran})` : ''}
+                                            {activePeriodSummary.nama}
                                         </h3>
                                         <p className="text-xs font-semibold text-slate-500 mt-1">
                                             {activePeriodSummary.tanggal_mulai} - {activePeriodSummary.tanggal_selesai}
@@ -403,6 +402,18 @@ export default function Dashboard({
 
                                     {/* Metadata Items List */}
                                     <div className="space-y-3.5 pt-4 border-t border-gray-100">
+                                        {activePeriodSummary.tahun_ajaran && (
+                                            <div className="flex items-center justify-between text-xs py-0.5">
+                                                <span className="flex items-center gap-2.5 text-slate-500 font-medium">
+                                                    <BookOpen className="w-4 h-4 text-slate-400" />
+                                                    <span>Tahun Ajaran</span>
+                                                </span>
+                                                <span className="font-bold text-slate-800">
+                                                    {activePeriodSummary.tahun_ajaran}
+                                                </span>
+                                            </div>
+                                        )}
+
                                         <div className="flex items-center justify-between text-xs py-0.5">
                                             <span className="flex items-center gap-2.5 text-slate-500 font-medium">
                                                 <Calendar className="w-4 h-4 text-slate-400" />
@@ -451,29 +462,16 @@ export default function Dashboard({
                                 </div>
                             )}
                         </div>
-
-                        {/* Bottom Action Button */}
-                        {activePeriodSummary && (
-                            <div className="pt-4 border-t border-gray-100 mt-5">
-                                <Link
-                                    href="/superadmin/tahun-ajaran"
-                                    className="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 transition-all cursor-pointer group"
-                                >
-                                    <span>Lihat Detail Periode</span>
-                                    <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#801720] transition-colors" />
-                                </Link>
-                            </div>
-                        )}
                     </div>
 
-                    {/* Right: Perlu Perhatian & Aktivitas Terkini (col-span-5) */}
+                    {/* Right: Perhatian & Aktivitas Terkini (col-span-5) */}
                     <div className="lg:col-span-5 space-y-6 flex flex-col justify-between">
-                        {/* Perlu Perhatian */}
+                        {/* Perhatian */}
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between flex-1">
                             <div>
                                 <div className="flex items-center justify-between mb-3">
                                     <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                                        <AlertTriangle className="w-4 h-4 text-amber-500" /> Perlu Perhatian
+                                        <AlertTriangle className="w-4 h-4 text-amber-500" /> Perhatian
                                     </h2>
                                     <span className="text-xs font-semibold text-slate-500">
                                         {attentionList.length} Mata Kuliah
@@ -553,7 +551,7 @@ export default function Dashboard({
             {showReportModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
                     {/* Backdrop */}
-                    <div 
+                    <div
                         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
                         onClick={() => !isExporting && setShowReportModal(false)}
                     />
@@ -599,22 +597,20 @@ export default function Dashboard({
                                             setPeriodFilter('ACTIVE_ONLY');
                                             if (activePeriod) setSelectedPeriodeId(activePeriod.id);
                                         }}
-                                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                            periodFilter === 'ACTIVE_ONLY'
+                                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${periodFilter === 'ACTIVE_ONLY'
                                                 ? 'bg-white text-[#801720] shadow-xs'
                                                 : 'text-slate-500 hover:text-slate-800'
-                                        }`}
+                                            }`}
                                     >
                                         Hanya Periode Aktif
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPeriodFilter('ALL')}
-                                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                            periodFilter === 'ALL'
+                                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${periodFilter === 'ALL'
                                                 ? 'bg-white text-[#801720] shadow-xs'
                                                 : 'text-slate-500 hover:text-slate-800'
-                                        }`}
+                                            }`}
                                     >
                                         Semua Riwayat Periode
                                     </button>

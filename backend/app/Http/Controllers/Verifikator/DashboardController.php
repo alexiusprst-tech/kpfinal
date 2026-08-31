@@ -19,17 +19,24 @@ class DashboardController extends Controller
 
         $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
 
-        $assignments = $dosen
+        $assignments = ($dosen && $activePeriod)
             ? PenugasanVerifikator::with('mataKuliah')
                 ->where('dosen_id', $dosen->id)
+                ->where('periode_id', $activePeriod->id)
                 ->where('status', 'ACTIVE')
                 ->get()
-            : collect();
+            : ($dosen
+                ? PenugasanVerifikator::with('mataKuliah')
+                    ->where('dosen_id', $dosen->id)
+                    ->where('status', 'ACTIVE')
+                    ->get()
+                : collect());
 
         $assignedMkIds = $assignments->pluck('mata_kuliah_id');
 
         $soalList = Soal::with(['mataKuliah', 'uploadedBy', 'kategori', 'latestVerifikasi'])
             ->whereIn('mata_kuliah_id', $assignedMkIds)
+            ->when($activePeriod, fn ($q) => $q->where('periode_id', $activePeriod->id))
             ->orderBy('updated_at', 'desc')
             ->get();
 

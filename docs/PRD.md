@@ -864,7 +864,7 @@ Notifikasi.
 
 Tren verifikasi.
 
-Perlu perhatian.
+Perhatian.
 
 Aktivitas terbaru.
 

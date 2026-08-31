@@ -50,6 +50,7 @@ class DashboardController extends Controller
 
         // Mata kuliah yang dipilih/ditugaskan oleh Super Admin pada periode aktif yang soalnya belum disetujui
         $urgentMataKuliah = [];
+        $assignedMkIds = collect();
 
         if ($activePeriod) {
             // Ambil ID mata kuliah yang dipilih/ditugaskan pada periode ini
@@ -80,7 +81,7 @@ class DashboardController extends Controller
                 $urgentMataKuliah = $mataKuliahList
                     ->filter(function ($mk) {
                         $approvedSoal = $mk->soal->where('status', 'APPROVED');
-                        // Jika belum ada soal yang disetujui (APPROVED == 0), maka belum bisa mencetak berita acara (perlu perhatian)
+                        // Jika belum ada soal yang disetujui (APPROVED == 0), maka belum bisa mencetak berita acara (Perhatian)
                         return $approvedSoal->isEmpty();
                     })
                     ->map(function ($mk) {
@@ -192,11 +193,16 @@ class DashboardController extends Controller
         $activePeriodSummary = null;
         if ($activePeriod) {
             $activePeriod->loadMissing('tahunAjaran');
-            $totalMkCount = MataKuliah::where('status', 'ACTIVE')->count();
 
-            $completedMkCount = MataKuliah::whereHas('soal', function ($q) use ($activePeriod) {
-                $q->where('periode_id', $activePeriod->id)->where('status', 'APPROVED');
-            })->count();
+            // Hanya menghitung mata kuliah yang sudah dipilih oleh superadmin saat membuat kelompok verifikasi pada periode aktif
+            $totalMkCount = $assignedMkIds->count();
+
+            $completedMkCount = $assignedMkIds->isNotEmpty()
+                ? MataKuliah::whereIn('id', $assignedMkIds)
+                    ->whereHas('soal', function ($q) use ($activePeriod) {
+                        $q->where('periode_id', $activePeriod->id)->where('status', 'APPROVED');
+                    })->count()
+                : 0;
 
             $periodProgressPct = $totalMkCount > 0 ? round(($completedMkCount / $totalMkCount) * 100) : 0;
 

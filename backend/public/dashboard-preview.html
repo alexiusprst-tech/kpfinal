@@ -558,7 +558,7 @@
             border-radius: 3px;
         }
 
-        /* PERLU PERHATIAN LIST */
+        /* Perhatian LIST */
         .attention-item-box {
             display: flex;
             align-items: center;
@@ -1024,15 +1024,15 @@
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: PERLU PERHATIAN & AKTIVITAS TERKINI -->
+        <!-- RIGHT COLUMN: Perhatian & AKTIVITAS TERKINI -->
         <div>
 
-            <!-- PERLU PERHATIAN CARD -->
+            <!-- Perhatian CARD -->
             <div class="card-panel">
                 <div class="panel-header" style="margin-bottom:12px">
                     <div style="display:flex;align-items:center;gap:8px">
                         <svg fill="none" stroke="#DC2626" stroke-width="2" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        <span class="panel-title">Perlu Perhatian</span>
+                        <span class="panel-title">Perhatian</span>
                     </div>
                     <span class="pill-badge pill-pink">4 Tugas</span>
                 </div>

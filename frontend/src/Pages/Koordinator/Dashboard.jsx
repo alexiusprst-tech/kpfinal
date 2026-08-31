@@ -32,24 +32,22 @@ function StatusBadge({ status }) {
 
 function StatCard({ label, value, icon: Icon, color, href }) {
     const cardContent = (
-        <div className={`bg-white border border-slate-100/90 shadow-xs rounded-2xl p-4 flex flex-col justify-between gap-3 transition-all duration-200 ${
-            href ? 'hover:shadow-md hover:border-slate-200 hover:-translate-y-0.5 group cursor-pointer' : ''
+        <div className={`bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex flex-col gap-3 transition-all duration-200 ${
+            href ? 'hover:shadow-md hover:border-gray-200 hover:-translate-y-0.5 group cursor-pointer' : ''
         }`}>
             <div className="flex items-center justify-between">
                 <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center flex-shrink-0 transition-transform duration-200 ${href ? 'group-hover:scale-105' : ''} shadow-xs`}>
                     <Icon className="w-5 h-5 text-white" />
                 </div>
-                {href ? (
-                    <div className="w-6 h-6 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-[#801720]/10 group-hover:text-[#801720] transition-colors">
+                {href && (
+                    <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#801720]/10 group-hover:text-[#801720] transition-colors">
                         <ArrowUpRight className="w-3.5 h-3.5" />
                     </div>
-                ) : (
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</span>
                 )}
             </div>
             <div className="min-w-0">
-                <p className="text-2xl font-black text-slate-800 leading-tight tracking-tight">{value}</p>
-                <p className={`text-xs text-slate-500 font-medium leading-snug truncate mt-0.5 ${href ? 'group-hover:text-slate-900' : ''} transition-colors`}>{label}</p>
+                <p className="text-2xl font-extrabold text-gray-800 leading-tight tracking-tight">{value}</p>
+                <p className={`text-xs text-gray-500 font-medium leading-snug truncate ${href ? 'group-hover:text-gray-900' : ''} transition-colors`}>{label}</p>
             </div>
         </div>
     );
@@ -118,7 +116,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
         <AuthenticatedLayout title="Dashboard Koordinator">
             <Head title="Dashboard Koordinator - Sistem Verifikasi Soal" />
 
-            <div className="space-y-6 max-w-7xl mx-auto">
+            <div className="space-y-6">
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
@@ -155,9 +153,9 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                 </div>
 
                 {/* Banner Hero */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-[#801720] via-[#941A25] to-[#6E121A] text-white rounded-3xl p-6 lg:p-7 shadow-xl shadow-[#801720]/15">
+                <div className="relative overflow-hidden bg-gradient-to-r from-[#801720] via-[#941A25] to-[#6E121A] text-white rounded-3xl p-6 lg:p-8 shadow-xl shadow-[#801720]/15">
                     <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 pointer-events-none flex items-center justify-end pr-8">
-                        <img src="/images/logo-telkom.png" alt="Telkom University" className="w-44 h-44 object-contain filter brightness-0 invert" />
+                        <img src="/images/logo-telkom.png" alt="Telkom University" className="w-48 h-48 object-contain filter brightness-0 invert" />
                     </div>
 
                     <div className="relative z-10 max-w-3xl space-y-3">
@@ -202,18 +200,18 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                     </div>
                 </div>
 
-                {/* Summary Cards (6 Cards Grid) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-                    <StatCard label="Mata Kuliah Saya" value={stats.total_mk || 0}     icon={BookOpen}      color="bg-slate-700" href="/koordinator/soal" />
-                    <StatCard label="Belum Diupload"   value={stats.belum_upload || 0} icon={FilePlus2}     color="bg-slate-500" href="/koordinator/soal/create" />
-                    <StatCard label="In Review"        value={stats.in_review || 0}    icon={Clock}         color="bg-purple-600" href="/koordinator/soal" />
-                    <StatCard label="Perlu Revisi"     value={stats.revisi || 0}       icon={AlertTriangle} color="bg-amber-500" href="/koordinator/soal" />
-                    <StatCard label="Disetujui"        value={stats.approved || 0}     icon={CheckCircle2}  color="bg-emerald-600" href="/koordinator/soal" />
-                    <StatCard label="Ditolak"          value={stats.rejected || 0}     icon={XCircle}       color="bg-red-500" href="/koordinator/soal" />
+                {/* Summary Cards (6 Cards Grid - Status & Progress Only) */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <StatCard label="Mata Kuliah Saya" value={stats.total_mk || 0}     icon={BookOpen}      color="bg-slate-700" />
+                    <StatCard label="Belum Diupload"   value={stats.belum_upload || 0} icon={FilePlus2}     color="bg-slate-500" />
+                    <StatCard label="In Review"        value={stats.in_review || 0}    icon={Clock}         color="bg-purple-600" />
+                    <StatCard label="Perlu Revisi"     value={stats.revisi || 0}       icon={AlertTriangle} color="bg-amber-500" />
+                    <StatCard label="Disetujui"        value={stats.approved || 0}     icon={CheckCircle2}  color="bg-emerald-600" />
+                    <StatCard label="Ditolak"          value={stats.rejected || 0}     icon={XCircle}       color="bg-red-500" />
                 </div>
 
                 {/* Mata Kuliah Saya (Primary Card / Workspace) */}
-                <div className="bg-white rounded-3xl border border-slate-100/90 shadow-sm p-6 space-y-5">
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-5">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-100">
                         <div>
                             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -409,114 +407,41 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                     )}
                 </div>
 
-                {/* Bottom Row: Quick Navigation & Panduan (Left 5) & Aktivitas Terbaru (Right 7) */}
-                <div className="grid lg:grid-cols-12 gap-6 items-start">
-                    {/* Left: Pintasan Cepat & Panduan Alur */}
-                    <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-100/90 shadow-sm p-6 space-y-5">
-                        <div className="pb-3 border-b border-slate-100">
+                {/* Aktivitas Terbaru (Full Width) */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div>
                             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-[#801720]" /> Pintasan &amp; Generator
+                                <ActivityIcon className="w-5 h-5 text-[#801720]" /> Aktivitas Terbaru
                             </h2>
                             <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                Akses cepat penyusunan dan pengunduhan template lembar soal
+                                Riwayat aktivitas sistem verifikasi terkini Anda
                             </p>
                         </div>
-
-                        <div className="space-y-3">
-                            <Link
-                                href="/koordinator/soal/create"
-                                className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#801720]/5 to-[#801720]/10 border border-[#801720]/20 hover:border-[#801720]/40 hover:shadow-xs transition-all group cursor-pointer"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-[#801720] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-                                        <Upload className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-800 group-hover:text-[#801720] transition-colors">Buat &amp; Upload Soal Baru</h4>
-                                        <p className="text-[10px] text-slate-500 mt-0.5">Unggah draf soal PDF/DOCX untuk diverifikasi</p>
-                                    </div>
-                                </div>
-                                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#801720] group-hover:translate-x-0.5 transition-all" />
-                            </Link>
-
-                            <Link
-                                href="/koordinator/soal-generator"
-                                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100/80 hover:border-slate-300 transition-all group cursor-pointer"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-slate-800 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-                                        <FileSpreadsheet className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-800 group-hover:text-slate-900 transition-colors">Generator Template Soal</h4>
-                                        <p className="text-[10px] text-slate-500 mt-0.5">Generate lembar soal resmi Word &amp; PDF</p>
-                                    </div>
-                                </div>
-                                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-800 group-hover:translate-x-0.5 transition-all" />
-                            </Link>
-
-                            <Link
-                                href="/koordinator/soal"
-                                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100/80 hover:border-slate-300 transition-all group cursor-pointer"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-                                        <FileText className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-800 group-hover:text-slate-900 transition-colors">Semua Naskah Soal Saya</h4>
-                                        <p className="text-[10px] text-slate-500 mt-0.5">Lihat riwayat dan status seluruh lembar soal</p>
-                                    </div>
-                                </div>
-                                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-800 group-hover:translate-x-0.5 transition-all" />
-                            </Link>
-                        </div>
+                        <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl">
+                            {activity.length} Aktivitas
+                        </span>
                     </div>
 
-                    {/* Right: Aktivitas Terbaru */}
-                    <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-100/90 shadow-sm p-6 space-y-4 flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                                <div>
-                                    <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                        <ActivityIcon className="w-5 h-5 text-[#801720]" /> Aktivitas Terbaru
-                                    </h2>
-                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                        Riwayat aktivitas sistem verifikasi terkini Anda
-                                    </p>
-                                </div>
-                                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl">
-                                    {activity.length} Aktivitas
-                                </span>
-                            </div>
-
-                            {activity.length === 0 ? (
-                                <div className="text-center py-10 text-slate-400">
-                                    <ActivityIcon className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                                    <p className="text-xs font-semibold">Belum Ada Aktivitas</p>
-                                    <p className="text-[11px] text-slate-400 mt-0.5">Log aktivitas Anda akan tercatat secara otomatis di sini.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 mt-3">
-                                    {activity.map(item => (
-                                        <div key={item.id} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100 hover:bg-slate-100/70 transition-colors">
-                                            <div className="w-2 h-2 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-xs text-slate-700 leading-snug">{item.description}</p>
-                                                <p className="text-[10px] text-slate-400 mt-1 font-semibold">{relativeTime(item.created_at)}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                    {activity.length === 0 ? (
+                        <div className="text-center py-10 text-slate-400">
+                            <ActivityIcon className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                            <p className="text-xs font-semibold">Belum Ada Aktivitas</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">Log aktivitas Anda akan tercatat secara otomatis di sini.</p>
                         </div>
-
-                        <div className="pt-3 border-t border-slate-100 text-center">
-                            <p className="text-[11px] font-semibold text-slate-400">
-                                Terakhir diperbarui secara otomatis dari sistem audit
-                            </p>
+                    ) : (
+                        <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
+                            {activity.map(item => (
+                                <div key={item.id} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100 hover:bg-slate-100/70 transition-colors">
+                                    <div className="w-2 h-2 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs text-slate-700 leading-snug">{item.description}</p>
+                                        <p className="text-[10px] text-slate-400 mt-1 font-semibold">{relativeTime(item.created_at)}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

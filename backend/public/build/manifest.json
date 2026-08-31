@@ -335,14 +335,13 @@
     ]
   },
   "src/Pages/Koordinator/Dashboard.jsx": {
-    "file": "assets/Dashboard-DJOCrZwP.js",
+    "file": "assets/Dashboard-CSBE6zWy.js",
     "name": "Dashboard",
     "src": "src/Pages/Koordinator/Dashboard.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-CJx-KmyE.js",
       "_AuthenticatedLayout-YNs4Xajt.js",
-      "_arrow-right-DcOn5FIT.js",
       "_arrow-up-right-CbSF3o0u.js",
       "_chevron-left-COzOfSKw.js",
       "_chevron-right-6upNr1MN.js",
@@ -350,10 +349,8 @@
       "_circle-x-BB2d1klN.js",
       "_eye-CcAHPLTf.js",
       "_file-plus-corner-U-nHmf2P.js",
-      "_file-spreadsheet-Ssdw-IrD.js",
       "_search-Dtni8MIp.js",
       "_shield-check-iFkehs1r.js",
-      "_sparkles-Cqic3VB-.js",
       "_triangle-alert-ClQF1OCD.js",
       "_upload-CGFtN7PU.js"
     ]
@@ -547,7 +544,7 @@
     ]
   },
   "src/Pages/SuperAdmin/Dashboard.jsx": {
-    "file": "assets/Dashboard-Cs8aq-3d.js",
+    "file": "assets/Dashboard-CYznxdv0.js",
     "name": "Dashboard",
     "src": "src/Pages/SuperAdmin/Dashboard.jsx",
     "isDynamicEntry": true,
@@ -837,7 +834,7 @@
     ]
   },
   "src/Pages/Verifikator/Dashboard.jsx": {
-    "file": "assets/Dashboard-BFjY--eM.js",
+    "file": "assets/Dashboard-BjFcbUSD.js",
     "name": "Dashboard",
     "src": "src/Pages/Verifikator/Dashboard.jsx",
     "isDynamicEntry": true,
@@ -893,7 +890,7 @@
     ]
   },
   "src/app.jsx": {
-    "file": "assets/app-DPbjCp1D.js",
+    "file": "assets/app-IfeN7tS3.js",
     "name": "app",
     "src": "src/app.jsx",
     "isEntry": true,
@@ -932,11 +929,11 @@
       "src/Pages/Verifikator/Soal/Show.jsx"
     ],
     "css": [
-      "assets/app-Cyovq-QG.css"
+      "assets/app-wDTIq-B3.css"
     ]
   },
   "src/css/app.css": {
-    "file": "assets/app-Cyovq-QG.css",
+    "file": "assets/app-wDTIq-B3.css",
     "name": "app",
     "names": [
       "app.css"
