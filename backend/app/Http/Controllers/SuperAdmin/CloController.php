@@ -47,7 +47,7 @@ class CloController extends Controller
 
         $cloList = $query->orderBy('kode_clo', 'asc')->paginate(10)->withQueryString();
         $allPlo  = Plo::orderBy('kode_plo', 'asc')->get();
-        $allMk   = MataKuliah::where('status', 'ACTIVE')->orderBy('nama_mk', 'asc')->get(['id', 'kode_mk', 'nama_mk']);
+        $allMk   = MataKuliah::orderBy('nama_mk', 'asc')->get(['id', 'kode_mk', 'nama_mk']);
 
         // Data flat mapping untuk tampilan detail per Mata Kuliah (seperti Excel)
         $flatQuery = Clo::with(['plo', 'mataKuliah'])->orderBy('kode_clo', 'asc');
@@ -261,8 +261,8 @@ class CloController extends Controller
         $mkSheet = $spreadsheet->createSheet();
         $mkSheet->setTitle('Mata Kuliah');
 
-        // Load active courses (Mata Kuliah) list directly from the database
-        $validMks = MataKuliah::where('status', 'ACTIVE')->orderBy('nama_mk', 'asc')->pluck('nama_mk')->toArray();
+        // Load courses (Mata Kuliah) list directly from the database
+        $validMks = MataKuliah::orderBy('nama_mk', 'asc')->pluck('nama_mk')->toArray();
         $mkCount = count($validMks);
 
         // Populate the second sheet with the courses list in Column A

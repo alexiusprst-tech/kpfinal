@@ -45,7 +45,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
     const initialVerifikatorMap = {};
     (kelompok.mata_kuliah || []).forEach((kmk) => {
         const vForThisMk = (kelompok.verifikator || [])
-            .filter((kv) => kv.mata_kuliah_id === kmk.mata_kuliah_id || !kv.mata_kuliah_id)
+            .filter((kv) => kv.mata_kuliah_id === kmk.mata_kuliah_id)
             .map((kv) => kv.dosen_id);
         initialVerifikatorMap[kmk.mata_kuliah_id] = vForThisMk;
     });

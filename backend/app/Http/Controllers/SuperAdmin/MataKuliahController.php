@@ -15,6 +15,8 @@ class MataKuliahController extends Controller
 {
     public function index(Request $request)
     {
+        $this->syncMataKuliahStatusWithActiveKelompok();
+
         $query = MataKuliah::with(['plo', 'clo']);
 
         if ($request->search) {
@@ -172,5 +174,36 @@ class MataKuliahController extends Controller
         );
 
         return redirect()->back()->with('success', 'Mata Kuliah berhasil dihapus.');
+    }
+
+    /**
+     * Sinkronisasi status Mata Kuliah berdasarkan penugasan di Kelompok Verifikasi yang aktif
+     */
+    protected function syncMataKuliahStatusWithActiveKelompok(): void
+    {
+        $activePeriod = \App\Models\PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+
+        if (!$activePeriod) {
+            $hasActiveAssignment = \App\Models\PenugasanKoordinator::where('status', 'ACTIVE')->pluck('mata_kuliah_id')->unique()->toArray();
+            MataKuliah::whereIn('id', $hasActiveAssignment)->update(['status' => 'ACTIVE']);
+            MataKuliah::whereNotIn('id', $hasActiveAssignment)->update(['status' => 'INACTIVE']);
+            return;
+        }
+
+        $activeGroupMkIds = \App\Models\KelompokMataKuliah::whereHas('kelompok', function ($q) use ($activePeriod) {
+            $q->where('periode_id', $activePeriod->id)
+              ->where('status', 'ACTIVE');
+        })->pluck('mata_kuliah_id')->unique()->toArray();
+
+        $activePenugasanMkIds = \App\Models\PenugasanKoordinator::where('periode_id', $activePeriod->id)
+            ->where('status', 'ACTIVE')
+            ->pluck('mata_kuliah_id')
+            ->unique()
+            ->toArray();
+
+        $allActiveMkIds = array_unique(array_merge($activeGroupMkIds, $activePenugasanMkIds));
+
+        MataKuliah::whereIn('id', $allActiveMkIds)->update(['status' => 'ACTIVE']);
+        MataKuliah::whereNotIn('id', $allActiveMkIds)->update(['status' => 'INACTIVE']);
     }
 }

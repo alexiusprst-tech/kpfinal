@@ -550,17 +550,27 @@ class BeritaAcaraController extends Controller
         $domPdf = Pdf::loadView('pdf.berita-acara', $viewData)->setPaper('a4', 'portrait');
         $bapPdfContent = $domPdf->output();
 
-        if (!$soalItem || empty($soalItem->file_path)) {
+        if (!$soalItem) {
+            return $bapPdfContent;
+        }
+
+        // Ambil berkas revisi terbaru jika ada, jika tidak ada gunakan berkas asli soal
+        $latestRevisi = $soalItem->revisi()->first();
+        $targetRelativePath = ($latestRevisi && !empty($latestRevisi->file_path))
+            ? $latestRevisi->file_path
+            : $soalItem->file_path;
+
+        if (empty($targetRelativePath)) {
             return $bapPdfContent;
         }
 
         $filePath = null;
-        if (Storage::disk('private')->exists($soalItem->file_path)) {
-            $filePath = Storage::disk('private')->path($soalItem->file_path);
-        } elseif (file_exists(storage_path('app/' . $soalItem->file_path))) {
-            $filePath = storage_path('app/' . $soalItem->file_path);
-        } elseif (file_exists(storage_path('app/private/' . $soalItem->file_path))) {
-            $filePath = storage_path('app/private/' . $soalItem->file_path);
+        if (Storage::disk('private')->exists($targetRelativePath)) {
+            $filePath = Storage::disk('private')->path($targetRelativePath);
+        } elseif (file_exists(storage_path('app/' . $targetRelativePath))) {
+            $filePath = storage_path('app/' . $targetRelativePath);
+        } elseif (file_exists(storage_path('app/private/' . $targetRelativePath))) {
+            $filePath = storage_path('app/private/' . $targetRelativePath);
         }
 
         if (!$filePath || !file_exists($filePath)) {
@@ -575,8 +585,14 @@ class BeritaAcaraController extends Controller
         }
 
         try {
-            require_once base_path('vendor/setasign/fpdf/fpdf.php');
-            require_once base_path('vendor/setasign/fpdi/src/autoload.php');
+            if (!class_exists(\setasign\Fpdi\Fpdi::class)) {
+                if (file_exists(base_path('vendor/setasign/fpdf/fpdf.php'))) {
+                    require_once base_path('vendor/setasign/fpdf/fpdf.php');
+                }
+                if (file_exists(base_path('vendor/setasign/fpdi/src/autoload.php'))) {
+                    require_once base_path('vendor/setasign/fpdi/src/autoload.php');
+                }
+            }
 
             $fpdi = new \setasign\Fpdi\Fpdi();
 
