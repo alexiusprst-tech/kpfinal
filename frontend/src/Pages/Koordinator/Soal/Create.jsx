@@ -19,9 +19,6 @@ function formatSize(bytes) {
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 export default function SoalCreate({ assignments, kategoriAll, defaultKategori, activePeriode, selectedMataKuliahId, uploadOpen }) {
     const { flash } = usePage().props;
@@ -368,7 +365,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
     return (
         <AuthenticatedLayout title="Buat & Upload Lembar Soal">
             <Head title="Buat & Upload Lembar Soal" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="w-full space-y-6 pb-12">
                 {/* Back link */}

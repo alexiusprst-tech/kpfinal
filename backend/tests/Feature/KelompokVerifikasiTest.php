@@ -167,8 +167,8 @@ class KelompokVerifikasiTest extends TestCase
             'keterangan'  => 'Draft pengujian kelompok verifikasi',
             'status'      => 'DRAFT',
             'mata_kuliah' => [
-                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id],
-                ['mata_kuliah_id' => $this->mk2->id, 'koordinator_id' => $this->dosen3->id],
+                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id, 'verifikator_ids' => [$this->dosen2->id]],
+                ['mata_kuliah_id' => $this->mk2->id, 'koordinator_id' => $this->dosen3->id, 'verifikator_ids' => [$this->dosen2->id]],
             ],
             'verifikator' => [$this->dosen2->id],
         ];
@@ -194,8 +194,8 @@ class KelompokVerifikasiTest extends TestCase
             'keterangan'  => 'Kelompok langsung aktif',
             'status'      => 'ACTIVE',
             'mata_kuliah' => [
-                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id],
-                ['mata_kuliah_id' => $this->mk2->id, 'koordinator_id' => $this->dosen3->id],
+                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id, 'verifikator_ids' => [$this->dosen2->id]],
+                ['mata_kuliah_id' => $this->mk2->id, 'koordinator_id' => $this->dosen3->id, 'verifikator_ids' => [$this->dosen2->id]],
             ],
             'verifikator' => [$this->dosen2->id],
         ];
@@ -262,10 +262,7 @@ class KelompokVerifikasiTest extends TestCase
 
         $kelompok->refresh();
         $this->assertEquals('INACTIVE', $kelompok->status);
-        $this->assertDatabaseHas('penugasan_koordinator', [
-            'kelompok_id' => $kelompok->id,
-            'status'      => 'ENDED',
-        ]);
+        $this->assertEquals(0, PenugasanKoordinator::where('kelompok_id', $kelompok->id)->count());
     }
 
     public function test_superadmin_can_create_group_with_per_mk_verifikator_assignment(): void
@@ -531,6 +528,91 @@ class KelompokVerifikasiTest extends TestCase
             'dosen_id'       => $this->dosen3->id,
             'mata_kuliah_id' => $this->mk2->id,
             'status'         => 'ACTIVE',
+        ]);
+    }
+
+    public function test_superadmin_can_remove_individual_koordinator_and_verifikator_assignment(): void
+    {
+        $kelompok = KelompokVerifikasi::create([
+            'id'          => (string) Str::uuid(),
+            'nama'        => 'Kelompok Test Removal',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'ACTIVE',
+            'created_by'  => $this->superAdmin->id,
+        ]);
+
+        \App\Models\KelompokKoordinator::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+        ]);
+
+        \App\Models\KelompokVerifikator::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+
+        PenugasanKoordinator::create([
+            'id'             => (string) Str::uuid(),
+            'dosen_id'       => $this->dosen1->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'periode_id'     => $this->periode->id,
+            'kelompok_id'    => $kelompok->id,
+            'assigned_by'    => $this->superAdmin->id,
+            'status'         => 'ACTIVE',
+        ]);
+
+        PenugasanVerifikator::create([
+            'id'             => (string) Str::uuid(),
+            'dosen_id'       => $this->dosen2->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'periode_id'     => $this->periode->id,
+            'kelompok_id'    => $kelompok->id,
+            'assigned_by'    => $this->superAdmin->id,
+            'status'         => 'ACTIVE',
+        ]);
+
+        // Remove verifikator
+        $responseVerif = $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.remove-verifikator', $kelompok->id), [
+                'mata_kuliah_id' => $this->mk1->id,
+                'dosen_id'       => $this->dosen2->id,
+            ]);
+
+        $responseVerif->assertRedirect();
+        $this->assertDatabaseMissing('kelompok_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+        $this->assertDatabaseHas('penugasan_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+            'status'         => 'ENDED',
+        ]);
+
+        // Remove koordinator
+        $responseKoor = $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.remove-koordinator', $kelompok->id), [
+                'mata_kuliah_id' => $this->mk1->id,
+                'dosen_id'       => $this->dosen1->id,
+            ]);
+
+        $responseKoor->assertRedirect();
+        $this->assertDatabaseMissing('kelompok_koordinator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+        ]);
+        $this->assertDatabaseHas('penugasan_koordinator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+            'status'         => 'ENDED',
         ]);
     }
 }

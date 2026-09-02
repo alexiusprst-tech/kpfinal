@@ -228,4 +228,111 @@ class AuthSecurityTest extends TestCase
         $response->assertRedirect('/verifikator/dashboard');
         $this->assertEquals('VERIFIKATOR', $verifUser->fresh()->role);
     }
+
+    public function test_only_dosen_lb_is_enforced_to_change_password(): void
+    {
+        $lbUser = User::create([
+            'id'                   => (string) Str::uuid(),
+            'name'                 => 'Dosen LB User',
+            'email'                => 'dosen_lb@telkomuniversity.ac.id',
+            'password'             => Hash::make('secret123'),
+            'role'                 => 'KOORDINATOR',
+            'status'               => 'ACTIVE',
+            'must_change_password' => true,
+        ]);
+
+        Dosen::create([
+            'id'             => (string) Str::uuid(),
+            'kode_dosen'     => 'DLB',
+            'nama_lengkap'   => 'Dosen LB Test',
+            'email'          => 'dosen_lb@telkomuniversity.ac.id',
+            'kategori_dosen' => 'LUAR_BIASA',
+            'user_id'        => $lbUser->id,
+            'status'         => 'ACTIVE',
+        ]);
+
+        $this->assertTrue($lbUser->isMustChangePasswordEnforced());
+
+        $this->actingAs($lbUser)
+            ->get('/koordinator/dashboard')
+            ->assertStatus(200);
+    }
+
+    public function test_dosen_tetap_is_not_forced_to_change_password(): void
+    {
+        $tetapUser = User::create([
+            'id'                   => (string) Str::uuid(),
+            'name'                 => 'Dosen Tetap User',
+            'email'                => 'dosen_tetap@telkomuniversity.ac.id',
+            'password'             => Hash::make('secret123'),
+            'role'                 => 'KOORDINATOR',
+            'status'               => 'ACTIVE',
+            'must_change_password' => true,
+        ]);
+
+        $dosenObj = Dosen::create([
+            'id'             => (string) Str::uuid(),
+            'kode_dosen'     => 'DTP',
+            'nama_lengkap'   => 'Dosen Tetap Test',
+            'email'          => 'dosen_tetap@telkomuniversity.ac.id',
+            'kategori_dosen' => 'Dosen Tetap',
+            'user_id'        => $tetapUser->id,
+            'status'         => 'ACTIVE',
+        ]);
+
+        $activePeriod = \App\Models\PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+        $activeMk = \App\Models\MataKuliah::where('status', 'ACTIVE')->first();
+
+        if ($activePeriod && $activeMk) {
+            \App\Models\PenugasanKoordinator::create([
+                'id'             => (string) Str::uuid(),
+                'dosen_id'       => $dosenObj->id,
+                'mata_kuliah_id' => $activeMk->id,
+                'periode_id'     => $activePeriod->id,
+                'assigned_by'    => $tetapUser->id,
+                'status'         => 'ACTIVE',
+            ]);
+        }
+
+        $this->assertFalse($tetapUser->isMustChangePasswordEnforced());
+
+        $this->actingAs($tetapUser)
+            ->get('/koordinator/dashboard')
+            ->assertStatus(200);
+    }
+
+    public function test_dosen_without_active_assignment_can_login_and_access_dashboard(): void
+    {
+        $unassignedUser = User::create([
+            'id'                   => (string) Str::uuid(),
+            'name'                 => 'Dosen Unassigned User',
+            'email'                => 'unassigned@telkomuniversity.ac.id',
+            'password'             => Hash::make('secret123'),
+            'role'                 => null,
+            'status'               => 'ACTIVE',
+            'must_change_password' => false,
+        ]);
+
+        $unassignedDosen = Dosen::create([
+            'id'             => (string) Str::uuid(),
+            'kode_dosen'     => 'UNA',
+            'nama_lengkap'   => 'Dr. Andri Ardiansyah, S.Pd.I., M.Pd.',
+            'email'          => 'unassigned@telkomuniversity.ac.id',
+            'kategori_dosen' => 'Dosen Tetap',
+            'user_id'        => $unassignedUser->id,
+            'status'         => 'ACTIVE',
+        ]);
+
+        $response = $this->post('/login', [
+            'email'    => 'UNA',
+            'password' => 'secret123',
+        ]);
+
+        $response->assertRedirect('/koordinator/dashboard');
+        $this->assertAuthenticatedAs($unassignedUser);
+
+        $this->actingAs($unassignedUser)
+            ->get('/koordinator/dashboard')
+            ->assertStatus(200);
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +17,7 @@ class ProfileController extends Controller
      */
     public function show()
     {
+        /** @var User $user */
         $user  = Auth::user();
         $dosen = $user->dosen;
 
@@ -41,6 +43,7 @@ class ProfileController extends Controller
      */
     public function updateProfile(Request $request)
     {
+        /** @var User $user */
         $user  = Auth::user();
         $dosen = $user->dosen;
 
@@ -72,16 +75,25 @@ class ProfileController extends Controller
      */
     public function updatePassword(Request $request)
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password'         => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
-        ], [
+        /** @var User $user */
+        $user = Auth::user();
+        $isEnforced = $user instanceof User && $user->isMustChangePasswordEnforced();
+
+        $rules = [
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ];
+
+        if (!$isEnforced) {
+            $rules['current_password'] = ['required', 'current_password'];
+        }
+
+        $validated = $request->validate($rules, [
             'current_password.current_password' => 'Password saat ini tidak sesuai.',
-            'password.min'         => 'Password baru minimal 8 karakter.',
-            'password.confirmed'   => 'Konfirmasi password tidak cocok.',
+            'password.min'                       => 'Password baru minimal 8 karakter.',
+            'password.confirmed'                 => 'Konfirmasi password tidak cocok.',
         ]);
 
-        Auth::user()->update([
+        $user->update([
             'password'             => Hash::make($validated['password']),
             'must_change_password' => false,
         ]);
@@ -103,6 +115,7 @@ class ProfileController extends Controller
             'tanda_tangan.max'      => 'Ukuran file maksimal 2 MB.',
         ]);
 
+        /** @var User $user */
         $user  = Auth::user();
         $dosen = $user->dosen;
 
@@ -127,6 +140,7 @@ class ProfileController extends Controller
      */
     public function deleteSignature()
     {
+        /** @var User $user */
         $user  = Auth::user();
         $dosen = $user->dosen;
 

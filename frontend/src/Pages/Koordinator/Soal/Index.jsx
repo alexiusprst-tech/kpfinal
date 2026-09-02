@@ -54,7 +54,8 @@ const formatSize = (bytes) => {
 };
 
 export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAll, periodeAll, filters }) {
-    const { flash } = usePage().props;
+    const { flash, auth } = usePage().props;
+    const hasNoAssignment = auth?.user?.has_no_assignment;
     const [showUpload, setShowUpload] = useState(false);
     const [showRevisi, setShowRevisi] = useState(null); // soal item
     const [deleteItem, setDeleteItem] = useState(null);
@@ -146,6 +147,19 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
             <FlashAlert flash={flash} />
 
             <div className="space-y-6">
+                {/* No Assignment Banner */}
+                {hasNoAssignment && (
+                    <div className="bg-amber-500 text-white rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/20 flex items-start gap-4 border border-amber-400">
+                        <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-0.5 text-amber-100" />
+                        <div className="space-y-1">
+                            <h3 className="font-extrabold text-sm uppercase tracking-wider">Akses Terbatas</h3>
+                            <p className="text-xs font-semibold text-amber-50 leading-relaxed">
+                                Akun Anda saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin. Upload soal tidak dapat dilakukan.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
@@ -155,10 +169,19 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                         <p className="text-sm text-gray-500 mt-0.5">Upload, submit, dan pantau status soal Anda</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href="/koordinator/soal/create"
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#6a1219] transition-all shadow-sm cursor-pointer select-none">
-                            <Plus className="w-3.5 h-3.5" /> Upload Soal Baru
-                        </Link>
+                        {hasNoAssignment ? (
+                            <span
+                                title="Belum ada penugasan aktif"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-200 text-slate-400 rounded-xl text-xs font-bold cursor-not-allowed select-none opacity-70"
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Upload Soal Baru
+                            </span>
+                        ) : (
+                            <Link href="/koordinator/soal/create"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#6a1219] transition-all shadow-sm cursor-pointer select-none">
+                                <Plus className="w-3.5 h-3.5" /> Upload Soal Baru
+                            </Link>
+                        )}
                     </div>
                 </div>
 

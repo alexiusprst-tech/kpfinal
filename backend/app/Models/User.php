@@ -60,6 +60,21 @@ class User extends Authenticatable
         return $this->status === 'ACTIVE';
     }
 
+    public function isDosenLuarBiasa(): bool
+    {
+        $dosen = $this->dosen;
+        if (!$dosen || !$dosen->kategori_dosen) {
+            return false;
+        }
+        $kategori = strtoupper(trim($dosen->kategori_dosen));
+        return in_array($kategori, ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA', 'LUAR BIASA']);
+    }
+
+    public function isMustChangePasswordEnforced(): bool
+    {
+        return $this->must_change_password && $this->isDosenLuarBiasa();
+    }
+
     // ─── Relationships ─────────────────────────────────────────────────────────
 
     public function dosen()

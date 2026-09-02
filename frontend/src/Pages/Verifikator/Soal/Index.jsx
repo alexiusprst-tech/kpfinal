@@ -25,9 +25,6 @@ function StatusBadge({ status }) {
 
 import FlashAlert from '@/Components/FlashAlert';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 const STATUS_FILTERS = [
     { key: '', label: 'Semua Status' },
@@ -49,7 +46,7 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
     return (
         <AuthenticatedLayout title="Verifikasi Soal">
             <Head title="Verifikasi Soal" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 <div>

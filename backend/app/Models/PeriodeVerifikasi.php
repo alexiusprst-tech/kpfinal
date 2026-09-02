@@ -62,7 +62,7 @@ class PeriodeVerifikasi extends Model
 
     public function tahunAjaran()
     {
-        return $this->belongsTo(TahunAjaran::class, 'tahun_ajaran_id');
+        return $this->belongsTo(TahunAjaran::class, 'tahun_ajaran_id')->withDefault(['nama' => '-']);
     }
 
     public function penugasanKoordinator()

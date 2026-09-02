@@ -6,7 +6,6 @@ import {
     BookOpen,
     Target,
     Activity,
-    Calendar,
     Clock,
     FileCheck,
     FileText,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { showToast, showConfirm } from "@/Utils/sweetalert";
 import NotificationDropdown from "@/Components/NotificationDropdown";
+import MustChangePasswordModal from "@/Components/MustChangePasswordModal";
 
 function getNavSections(user, pathname = "") {
     if (!user) return [];
@@ -31,7 +31,6 @@ function getNavSections(user, pathname = "") {
         return [
             { type: "item", label: "Dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
             { type: "divider", label: "Master Data" },
-            { type: "item", label: "Tahun Ajaran", href: "/superadmin/tahun-ajaran", icon: Calendar },
             { type: "item", label: "Periode Verifikasi", href: "/superadmin/periode", icon: Clock },
             { type: "item", label: "Mata Kuliah", href: "/superadmin/mata-kuliah", icon: BookOpen },
             { type: "item", label: "PLO", href: "/superadmin/plo", icon: Target },
@@ -43,6 +42,7 @@ function getNavSections(user, pathname = "") {
     }
 
     const isDualRole = user.has_dual_role || (user.is_koordinator && user.is_verifikator);
+    const noAssignment = user.has_no_assignment;
 
     if (isDualRole) {
         let activeRole = "koordinator";
@@ -86,7 +86,7 @@ function getNavSections(user, pathname = "") {
         ];
     }
 
-    // Default Koordinator
+    // Default Koordinator (may have no assignment)
     return [
         { type: "item", label: "Dashboard", href: "/koordinator/dashboard", icon: LayoutDashboard },
         { type: "divider", label: "Koordinator MK" },
@@ -116,6 +116,33 @@ function isPathActive(item) {
 function NavLink({ item, collapsed }) {
     const Icon = item.icon;
     const active = isPathActive(item);
+
+    if (item.disabled) {
+        return (
+            <div
+                title={collapsed ? item.label : "Belum ada penugasan aktif"}
+                className={[
+                    "flex items-center gap-3.5 rounded-2xl text-sm font-bold transition-all duration-200 group relative",
+                    collapsed ? "justify-center p-3" : "px-3 py-2.5",
+                    "text-slate-300 cursor-not-allowed opacity-60 select-none",
+                ].join(" ")}
+            >
+                <Icon className="w-5 h-5 flex-shrink-0 text-slate-300" />
+                {!collapsed && (
+                    <span className="tracking-tight truncate flex items-center gap-1.5">
+                        {item.label}
+                        <span className="text-[9px] font-extrabold uppercase bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-md border border-amber-200">Terkunci</span>
+                    </span>
+                )}
+                {collapsed && (
+                    <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-lg">
+                        {item.label} (Belum ada penugasan)
+                    </span>
+                )}
+            </div>
+        );
+    }
+
     return (
         <Link
             href={item.href}
@@ -314,6 +341,9 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
             <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 {children}
             </main>
+
+            {/* MUST CHANGE PASSWORD POP-UP MODAL */}
+            <MustChangePasswordModal open={!!user?.must_change_password_enforced} />
         </div>
     );
 }

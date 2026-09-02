@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\PeriodeVerifikasi;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,6 +38,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+        /** @var User|null $user */
         $user = $request->user();
         $hasActiveKoor = false;
         $hasActiveVerif = false;
@@ -80,9 +82,12 @@ class HandleInertiaRequests extends Middleware
                     'name'           => $user->name,
                     'email'          => $user->email,
                     'role'           => $user->role,
-                    'is_koordinator' => (bool)$hasActiveKoor,
-                    'is_verifikator' => (bool)$hasActiveVerif,
-                    'has_dual_role'  => (bool)($hasActiveKoor && $hasActiveVerif),
+                    'is_koordinator'    => (bool)$hasActiveKoor,
+                    'is_verifikator'    => (bool)$hasActiveVerif,
+                    'has_dual_role'     => (bool)($hasActiveKoor && $hasActiveVerif),
+                    'has_no_assignment'            => (bool)($user->role !== 'SUPER_ADMIN' && !$hasActiveKoor && !$hasActiveVerif),
+                    'must_change_password'         => (bool)$user->must_change_password,
+                    'must_change_password_enforced' => (bool)$user->isMustChangePasswordEnforced(),
                     'dosen' => $user->dosen ? [
                         'id'          => $user->dosen->id,
                         'kode_dosen'  => $user->dosen->kode_dosen,

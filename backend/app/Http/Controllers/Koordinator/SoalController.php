@@ -42,7 +42,7 @@ class SoalController extends Controller
         }
 
         $soalList   = $query->orderBy('updated_at', 'desc')->paginate(10)->withQueryString();
-        $kategoriAll = KategoriSoal::where('status', 'ACTIVE')->get();
+        $kategoriAll = $this->activeExamCategoriesQuery();
         $periodeAll  = PeriodeVerifikasi::where('status', 'ACTIVE')->get();
 
         return Inertia::render('Koordinator/Soal/Index', [
@@ -81,12 +81,7 @@ class SoalController extends Controller
 
         // Blokir upload baru jika sudah ada soal aktif (belum diputuskan final) untuk MK + Periode ini.
         if ($selectedMkId && $activePeriod) {
-            $nonFinalStatuses = [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED, Soal::STATUS_REVISION];
-            $existingActive = Soal::where('mata_kuliah_id', $selectedMkId)
-                ->where('periode_id', $activePeriod->id)
-                ->whereIn('status', $nonFinalStatuses)
-                ->exists();
-            if ($existingActive) {
+            if ($this->hasActiveSoal($selectedMkId, $activePeriod->id)) {
                 return redirect()->route('koordinator.mata-kuliah.show', $selectedMkId)
                     ->with('error', 'Anda sudah memiliki soal yang sedang dalam proses verifikasi untuk mata kuliah ini. Tunggu hingga verifikator memberikan keputusan sebelum mengunggah soal baru.');
             }
@@ -163,12 +158,7 @@ class SoalController extends Controller
         }
 
         // Blokir upload soal baru jika sudah ada soal yang sedang aktif (belum final) untuk MK + Periode ini.
-        $nonFinalStatuses = [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED, Soal::STATUS_REVISION];
-        $existingActive = Soal::where('mata_kuliah_id', $request->mata_kuliah_id)
-            ->where('periode_id', $request->periode_id)
-            ->whereIn('status', $nonFinalStatuses)
-            ->exists();
-        if ($existingActive) {
+        if ($this->hasActiveSoal($request->mata_kuliah_id, $request->periode_id)) {
             return redirect()->back()->with('error', 'Anda sudah memiliki soal yang sedang dalam proses verifikasi. Tunggu keputusan verifikator sebelum mengunggah soal baru.');
         }
 
@@ -337,11 +327,7 @@ class SoalController extends Controller
         $user = $request->user();
         $dosen = $user->dosen;
         $isOwner = $soal->uploaded_by === $user->id;
-        $isAssigned = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
-            ->where('periode_id', $soal->periode_id)
-            ->where('status', 'ACTIVE')
-            ->exists();
+        $isAssigned = $this->isAssignedKoordinator($dosen, $soal);
 
         if (!$isOwner && !$isAssigned && !$user->isSuperAdmin()) {
             abort(403, 'Anda tidak memiliki akses ke soal ini.');
@@ -362,11 +348,7 @@ class SoalController extends Controller
         $user = $request->user();
         $dosen = $user->dosen;
         $isOwner = $soal->uploaded_by === $user->id;
-        $isAssigned = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
-            ->where('periode_id', $soal->periode_id)
-            ->where('status', 'ACTIVE')
-            ->exists();
+        $isAssigned = $this->isAssignedKoordinator($dosen, $soal);
 
         if (!$isOwner && !$isAssigned && !$user->isSuperAdmin()) {
             abort(403, 'Anda tidak memiliki akses ke soal ini.');
@@ -403,41 +385,63 @@ class SoalController extends Controller
      */
     private function getKategoriForPeriode(?PeriodeVerifikasi $periode)
     {
-        $orderRaw = "CASE
-                WHEN UPPER(nama) = 'UTS' THEN 1
-                WHEN UPPER(nama) = 'UAS' THEN 2
-                WHEN UPPER(nama) = 'QUIZ' THEN 3
-                WHEN UPPER(nama) = 'TUGAS' THEN 4
-                WHEN UPPER(nama) LIKE 'TUGAS BESAR%' THEN 5
-                ELSE 6 END";
-
-        $categories = KategoriSoal::where('status', 'ACTIVE')
-            ->orderByRaw($orderRaw)
-            ->orderBy('nama', 'asc')
-            ->get(['id', 'nama', 'deskripsi']);
+        $categories = $this->activeExamCategoriesQuery();
 
         if ($categories->isEmpty()) {
-            $defaultList = [
-                ['nama' => 'UTS', 'deskripsi' => 'Ujian Tengah Semester (UTS)'],
-                ['nama' => 'UAS', 'deskripsi' => 'Ujian Akhir Semester (UAS)'],
-                ['nama' => 'Quiz', 'deskripsi' => 'Quiz / Kuis'],
-                ['nama' => 'Tugas', 'deskripsi' => 'Tugas Mandiri / Terstruktur'],
-                ['nama' => 'Tugas Besar', 'deskripsi' => 'Tugas Besar / Proyek (Tubus)'],
-                ['nama' => 'Praktikum', 'deskripsi' => 'Praktikum / Responsi'],
-            ];
-            foreach ($defaultList as $cat) {
+            foreach ([
+                ['nama' => 'UTS', 'deskripsi' => 'Ujian Tengah Semester'],
+                ['nama' => 'UAS', 'deskripsi' => 'Ujian Akhir Semester'],
+                ['nama' => 'Quiz', 'deskripsi' => 'Quiz'],
+            ] as $cat) {
                 KategoriSoal::firstOrCreate(
                     ['nama' => $cat['nama']],
                     ['id' => (string) Str::uuid(), 'deskripsi' => $cat['deskripsi'], 'status' => 'ACTIVE']
                 );
             }
-            $categories = KategoriSoal::where('status', 'ACTIVE')
-                ->orderByRaw($orderRaw)
-                ->orderBy('nama', 'asc')
-                ->get(['id', 'nama', 'deskripsi']);
+            $categories = $this->activeExamCategoriesQuery();
         }
 
         return $this->filterKategoriByPeriodeType($categories, $periode);
+    }
+
+    /**
+     * Whether a non-final (not yet finally decided) Soal already exists for
+     * this mata kuliah + periode, blocking a new upload.
+     */
+    private function hasActiveSoal(string $mataKuliahId, string $periodeId): bool
+    {
+        $nonFinalStatuses = [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED, Soal::STATUS_REVISION];
+
+        return Soal::where('mata_kuliah_id', $mataKuliahId)
+            ->where('periode_id', $periodeId)
+            ->whereIn('status', $nonFinalStatuses)
+            ->exists();
+    }
+
+    private function isAssignedKoordinator(?object $dosen, Soal $soal): bool
+    {
+        return $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
+            ->where('periode_id', $soal->periode_id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+    }
+
+    /**
+     * Raw query for active assessment categories matching UTS/UAS/Kuis/Quiz,
+     * sorted UTS, UAS, then everything else.
+     */
+    private function activeExamCategoriesQuery()
+    {
+        return KategoriSoal::where('status', 'ACTIVE')
+            ->get(['id', 'nama', 'deskripsi'])
+            ->filter(fn ($c) => preg_match('/(uts|uas|kuis|quiz)/i', $c->nama))
+            ->sortBy(fn ($c) => match (true) {
+                (bool) preg_match('/uts/i', $c->nama) => 1,
+                (bool) preg_match('/uas/i', $c->nama) => 2,
+                default => 3,
+            })
+            ->values();
     }
 
     /**

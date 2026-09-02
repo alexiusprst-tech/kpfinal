@@ -9,10 +9,8 @@ import {
 
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { formatDate, formatDateTime } from '@/Utils/date';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 function Modal({ open, onClose, title, children, maxWidth = 'max-w-md' }) {
     if (!open) return null;
@@ -102,8 +100,6 @@ const periodeStatusBadge = (s) => {
     return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>;
 };
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-const formatDateTime = (d) => d ? new Date(d).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
 export default function TahunAjaranIndex({ list, stats, filters, selectedTahunAjaran }) {
     const { flash } = usePage().props;
@@ -222,7 +218,7 @@ export default function TahunAjaranIndex({ list, stats, filters, selectedTahunAj
     return (
         <AuthenticatedLayout title="Tahun Ajaran">
             <Head title="Tahun Ajaran" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 {/* Header */}

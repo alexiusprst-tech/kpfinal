@@ -32,28 +32,12 @@ Route::get('/', function () {
                 }
                 return redirect()->route('verifikator.dashboard');
             } else {
-                if ($user->role !== null) {
-                    $user->update(['role' => null]);
-                    $user->role = null;
-                }
-                Auth::logout();
-                request()->session()->invalidate();
-                request()->session()->regenerateToken();
-                return redirect()->route('login')->withErrors([
-                    'email' => 'Akun Anda (' . $dosen->nama_lengkap . ') saat ini belum diberikan penugasan aktif (Koordinator/Verifikator).',
-                ]);
+                return redirect()->route('koordinator.dashboard');
             }
         }
 
         if ($user->isVerifikator()) return redirect()->route('verifikator.dashboard');
-        if ($user->isKoordinator()) return redirect()->route('koordinator.dashboard');
-
-        Auth::logout();
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
-        return redirect()->route('login')->withErrors([
-            'email' => 'Akun Anda belum memiliki role atau penugasan aktif.',
-        ]);
+        return redirect()->route('koordinator.dashboard');
     }
     return view('login');
 });
@@ -88,28 +72,12 @@ Route::get('/dashboard', function () {
             }
             return redirect()->route('verifikator.dashboard');
         } else {
-            if ($user->role !== null) {
-                $user->update(['role' => null]);
-                $user->role = null;
-            }
-            Auth::logout();
-            request()->session()->invalidate();
-            request()->session()->regenerateToken();
-            return redirect()->route('login')->withErrors([
-                'email' => 'Akun Anda (' . $dosen->nama_lengkap . ') saat ini belum diberikan penugasan aktif (Koordinator/Verifikator).',
-            ]);
+            return redirect()->route('koordinator.dashboard');
         }
     }
 
     if ($user->isVerifikator()) return redirect()->route('verifikator.dashboard');
-    if ($user->isKoordinator()) return redirect()->route('koordinator.dashboard');
-
-    Auth::logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
-    return redirect()->route('login')->withErrors([
-        'email' => 'Akun Anda belum memiliki role atau penugasan aktif.',
-    ]);
+    return redirect()->route('koordinator.dashboard');
 })->middleware('auth');
 
 // ─── SuperAdmin Routes ────────────────────────────────────────────────────────
@@ -147,9 +115,9 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
         Route::resource('kategori-soal', \App\Http\Controllers\SuperAdmin\KategoriSoalController::class)->except(['create', 'edit', 'show']);
         Route::get('kategori-soal/{kategori_soal}', [\App\Http\Controllers\SuperAdmin\KategoriSoalController::class, 'show'])->name('kategori-soal.show');
 
-        // Tahun Ajaran & Periode
-        Route::resource('tahun-ajaran', \App\Http\Controllers\SuperAdmin\TahunAjaranController::class)->except(['create', 'edit', 'show']);
-        Route::get('tahun-ajaran/{tahun_ajaran}', [\App\Http\Controllers\SuperAdmin\TahunAjaranController::class, 'show'])->name('tahun-ajaran.show');
+        // Tahun Ajaran deprecated — redirect to Periode Verifikasi
+        Route::any('tahun-ajaran/{any?}', fn () => redirect()->route('periode.index'))->where('any', '.*');
+
         Route::post('periode/{periode}/activate',  [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'activate'])->name('periode.activate');
         Route::post('periode/{periode}/close',     [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'close'])->name('periode.close');
         Route::resource('periode', \App\Http\Controllers\SuperAdmin\PeriodeController::class)->except(['create', 'edit', 'show']);
@@ -158,6 +126,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
         // Kelompok Verifikasi (Unified Assignment)
         Route::post('kelompok-verifikasi/{kelompok_verifikasi}/activate', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'activate'])->name('kelompok-verifikasi.activate');
         Route::post('kelompok-verifikasi/{kelompok_verifikasi}/deactivate', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'deactivate'])->name('kelompok-verifikasi.deactivate');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/remove-koordinator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'removeKoordinator'])->name('kelompok-verifikasi.remove-koordinator');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/remove-verifikator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'removeVerifikator'])->name('kelompok-verifikasi.remove-verifikator');
         Route::resource('kelompok-verifikasi', \App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class);
     });
 

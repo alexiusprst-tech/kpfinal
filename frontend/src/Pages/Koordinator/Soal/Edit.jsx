@@ -15,9 +15,6 @@ function formatSize(bytes) {
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert } from '@/Utils/sweetalert';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 
 export default function SoalEdit({ soal, kategoriAll }) {
@@ -56,7 +53,7 @@ export default function SoalEdit({ soal, kategoriAll }) {
     return (
         <AuthenticatedLayout title="Edit Soal">
             <Head title="Edit Soal" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="max-w-2xl mx-auto space-y-6">
                 <Link href={`/koordinator/soal/${soal.id}`}

@@ -44,11 +44,7 @@ class SoalController extends Controller
         $user  = $request->user();
         $dosen = $user->dosen;
 
-        $isAssigned = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
-            ->where('periode_id', $soal->periode_id)
-            ->where('status', 'ACTIVE')
-            ->exists();
+        $isAssigned = $this->isAssignedVerifikator($dosen, $soal);
 
         if (!$isAssigned) {
             abort(403, 'Anda tidak memiliki akses verifikasi untuk mata kuliah ini.');
@@ -66,11 +62,7 @@ class SoalController extends Controller
         $user  = $request->user();
         $dosen = $user->dosen;
 
-        $isAssigned = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
-            ->where('periode_id', $soal->periode_id)
-            ->where('status', 'ACTIVE')
-            ->exists();
+        $isAssigned = $this->isAssignedVerifikator($dosen, $soal);
 
         if (!$isAssigned && !$user->isSuperAdmin()) {
             abort(403, 'Anda tidak memiliki akses untuk mengunduh naskah soal mata kuliah ini.');
@@ -90,11 +82,7 @@ class SoalController extends Controller
         $user  = $request->user();
         $dosen = $user->dosen;
 
-        $isAssigned = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
-            ->where('periode_id', $soal->periode_id)
-            ->where('status', 'ACTIVE')
-            ->exists();
+        $isAssigned = $this->isAssignedVerifikator($dosen, $soal);
 
         if (!$isAssigned && !$user->isSuperAdmin()) {
             abort(403, 'Anda tidak memiliki akses untuk melihat naskah soal mata kuliah ini.');
@@ -110,5 +98,14 @@ class SoalController extends Controller
         return $disk->response($soal->file_path, $soal->nama_file, [
             'Content-Disposition' => 'inline; filename="' . $soal->nama_file . '"',
         ]);
+    }
+
+    private function isAssignedVerifikator(?object $dosen, Soal $soal): bool
+    {
+        return $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
+            ->where('periode_id', $soal->periode_id)
+            ->where('status', 'ACTIVE')
+            ->exists();
     }
 }

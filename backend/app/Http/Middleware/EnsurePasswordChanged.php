@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,24 +15,26 @@ class EnsurePasswordChanged
      */
     public function handle(Request $request, Closure $next): Response
     {
+        /** @var User|null $user */
         $user = Auth::user();
 
-        if ($user && $user->must_change_password) {
-            $path = $request->path();
-            $routeName = $request->route()?->getName();
+        if ($user instanceof User && $user->isMustChangePasswordEnforced()) {
+            // Block non-GET mutation requests if password is not changed yet (except password update and logout)
+            if (!$request->isMethod('GET')) {
+                $path = $request->path();
+                $routeName = $request->route()?->getName();
 
-            // Allow profile routes, password update routes, and logout routes
-            if (
-                str_starts_with($path, 'profile') ||
-                str_starts_with($path, 'logout') ||
-                in_array($routeName, ['profile.show', 'profile.password', 'profile.update', 'logout'])
-            ) {
-                return $next($request);
+                if (
+                    !in_array($routeName, ['profile.password', 'logout']) &&
+                    !str_starts_with($path, 'logout') &&
+                    !str_starts_with($path, 'profile/password')
+                ) {
+                    return back()->with('error', 'Silakan ganti password Anda terlebih dahulu.');
+                }
             }
-
-            return redirect()->route('profile.show')->with('warning', 'Demi keamanan akun Anda, silakan ubah password default terlebih dahulu pada login pertama ini.');
         }
 
         return $next($request);
     }
 }
+

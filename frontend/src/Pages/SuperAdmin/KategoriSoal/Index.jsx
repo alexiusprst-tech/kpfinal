@@ -12,10 +12,8 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { formatDate, formatDateTime, relativeTime } from '@/Utils/date';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 
 function Modal({ open, onClose, title, children }) {
@@ -90,20 +88,6 @@ const statusBadge = (s) => (
         {s === 'ACTIVE' ? 'Aktif' : 'Nonaktif'}
     </span>
 );
-
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-const formatDateTime = (d) => d ? new Date(d).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
-const relativeTime = (dateStr) => {
-    if (!dateStr) return '-';
-    const diffMs = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diffMs / 60000);
-    if (mins < 1) return 'Baru saja';
-    if (mins < 60) return `${mins} menit lalu`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} jam lalu`;
-    const days = Math.floor(hours / 24);
-    return `${days} hari lalu`;
-};
 
 export default function KategoriSoalIndex({ list, stats, filters, selectedKategori }) {
     const { flash } = usePage().props;
@@ -199,7 +183,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
     return (
         <AuthenticatedLayout title="Kategori Soal">
             <Head title="Kategori Soal" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 <div>

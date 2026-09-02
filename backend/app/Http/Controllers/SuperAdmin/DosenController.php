@@ -79,24 +79,31 @@ class DosenController extends Controller
             $existingUser = User::whereRaw('LOWER(email) = ?', [$emailClean])->first();
 
             if ($existingUser) {
-                $linkedDosen = Dosen::where('user_id', $existingUser->id)->first();
+                $linkedDosen = Dosen::withTrashed()->where('user_id', $existingUser->id)->first();
                 if ($linkedDosen) {
-                    return redirect()->back()->withErrors([
-                        'email' => "Email {$validated['email']} sudah terdaftar untuk pengguna/dosen lain ({$linkedDosen->nama_lengkap}).",
-                    ])->withInput();
+                    if ($linkedDosen->trashed()) {
+                        // Unlink soft-deleted dosen so unique constraint on user_id is satisfied
+                        $linkedDosen->update(['user_id' => null]);
+                        $userId = $existingUser->id;
+                    } else {
+                        return redirect()->back()->withErrors([
+                            'email' => "Email {$validated['email']} sudah terdaftar untuk pengguna/dosen lain ({$linkedDosen->nama_lengkap}).",
+                        ])->withInput();
+                    }
+                } else {
+                    $userId = $existingUser->id;
                 }
-                $userId = $existingUser->id;
             } else {
-                $userId = (string) Str::uuid();
-                User::create([
-                    'id'                   => $userId,
+                $isLB = in_array(strtoupper(trim($validated['kategori_dosen'] ?? '')), ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA']);
+                $createdUser = User::create([
                     'name'                 => $validated['nama_lengkap'],
                     'email'                => $validated['email'],
                     'password'             => Hash::make('password'),
                     'role'                 => null, // Belum ada penugasan, role null
                     'status'               => 'ACTIVE',
-                    'must_change_password' => true,
+                    'must_change_password' => $isLB,
                 ]);
+                $userId = $createdUser->id;
             }
         }
 
@@ -207,21 +214,44 @@ class DosenController extends Controller
                 $endedVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)
                     ->where('status', 'ACTIVE')
                     ->update(['status' => 'ENDED']);
+
+                \App\Models\KelompokKoordinator::where('dosen_id', $dosen->id)->delete();
+                \App\Models\KelompokVerifikator::where('dosen_id', $dosen->id)->delete();
             } elseif ($type === 'KOORDINATOR') {
                 $endedKoor = PenugasanKoordinator::where('dosen_id', $dosen->id)
                     ->where('status', 'ACTIVE')
                     ->update(['status' => 'ENDED']);
+
+                \App\Models\KelompokKoordinator::where('dosen_id', $dosen->id)->delete();
             } elseif ($type === 'VERIFIKATOR') {
                 $endedVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)
                     ->where('status', 'ACTIVE')
                     ->update(['status' => 'ENDED']);
+
+                \App\Models\KelompokVerifikator::where('dosen_id', $dosen->id)->delete();
             } elseif ($type === 'SPECIFIC' && !empty($validated['penugasan_id'])) {
                 if ($validated['penugasan_type'] === 'KOORDINATOR') {
+                    $pk = PenugasanKoordinator::find($validated['penugasan_id']);
+                    if ($pk && $pk->kelompok_id) {
+                        \App\Models\KelompokKoordinator::where('kelompok_id', $pk->kelompok_id)
+                            ->where('mata_kuliah_id', $pk->mata_kuliah_id)
+                            ->where('dosen_id', $dosen->id)
+                            ->delete();
+                    }
+
                     $endedKoor = PenugasanKoordinator::where('id', $validated['penugasan_id'])
                         ->where('dosen_id', $dosen->id)
                         ->where('status', 'ACTIVE')
                         ->update(['status' => 'ENDED']);
                 } elseif ($validated['penugasan_type'] === 'VERIFIKATOR') {
+                    $pv = PenugasanVerifikator::find($validated['penugasan_id']);
+                    if ($pv && $pv->kelompok_id) {
+                        \App\Models\KelompokVerifikator::where('kelompok_id', $pv->kelompok_id)
+                            ->where('mata_kuliah_id', $pv->mata_kuliah_id)
+                            ->where('dosen_id', $dosen->id)
+                            ->delete();
+                    }
+
                     $endedVerif = PenugasanVerifikator::where('id', $validated['penugasan_id'])
                         ->where('dosen_id', $dosen->id)
                         ->where('status', 'ACTIVE')
@@ -239,7 +269,7 @@ class DosenController extends Controller
                 } elseif ($remainingVerif > 0) {
                     $dosen->user->update(['role' => 'VERIFIKATOR']);
                 } else {
-                    $dosen->user->update(['role' => null]);
+                    $dosen->user->update(['role' => 'DOSEN']);
                 }
             }
 

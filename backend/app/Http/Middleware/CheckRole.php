@@ -49,6 +49,18 @@ class CheckRole
                 return $next($request);
             }
 
+            // Allow dosen without active assignment to access dashboard pages and soal index (GET only)
+            if ($request->isMethod('GET') && $request->routeIs(
+                'koordinator.dashboard',
+                'verifikator.dashboard',
+                'koordinator.soal.index',
+                'koordinator.soal.create',
+                'koordinator.soal.show',
+                'koordinator.mata-kuliah.show'
+            )) {
+                return $next($request);
+            }
+
             // Dosen does not have active assignment for this role
             abort(403, 'Anda belum memiliki penugasan aktif untuk mengakses halaman ini.');
         }

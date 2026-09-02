@@ -8,9 +8,6 @@ import {
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 const STATUS_CONFIG = {
     IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
@@ -71,7 +68,7 @@ export default function SoalShow({ soal }) {
     return (
         <AuthenticatedLayout title={soal.judul}>
             <Head title={soal.judul} />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="w-full space-y-6 pb-12">
                 <Link href={`/koordinator/mata-kuliah/${soal.mata_kuliah_id}`}

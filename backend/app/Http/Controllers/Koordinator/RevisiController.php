@@ -79,16 +79,8 @@ class RevisiController extends Controller
 
         $dosen = $user->dosen;
         $isOwner = $soal->uploaded_by === $user->id;
-        $isAssignedKoor = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
-            ->where('periode_id', $soal->periode_id)
-            ->where('status', 'ACTIVE')
-            ->exists();
-        $isAssignedVerif = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
-            ->where('periode_id', $soal->periode_id)
-            ->where('status', 'ACTIVE')
-            ->exists();
+        $isAssignedKoor = $this->isAssignedKoordinator($dosen, $soal);
+        $isAssignedVerif = $this->isAssignedVerifikator($dosen, $soal);
 
         if (!$isOwner && !$isAssignedKoor && !$isAssignedVerif && !$user->isSuperAdmin()) {
             abort(403, 'Anda tidak memiliki wewenang untuk mengunduh berkas revisi soal ini.');
@@ -115,16 +107,8 @@ class RevisiController extends Controller
 
         $dosen = $user->dosen;
         $isOwner = $soal->uploaded_by === $user->id;
-        $isAssignedKoor = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
-            ->where('periode_id', $soal->periode_id)
-            ->where('status', 'ACTIVE')
-            ->exists();
-        $isAssignedVerif = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
-            ->where('periode_id', $soal->periode_id)
-            ->where('status', 'ACTIVE')
-            ->exists();
+        $isAssignedKoor = $this->isAssignedKoordinator($dosen, $soal);
+        $isAssignedVerif = $this->isAssignedVerifikator($dosen, $soal);
 
         if (!$isOwner && !$isAssignedKoor && !$isAssignedVerif && !$user->isSuperAdmin()) {
             abort(403, 'Anda tidak memiliki wewenang untuk melihat berkas revisi soal ini.');
@@ -140,5 +124,23 @@ class RevisiController extends Controller
         return $disk->response($revisi->file_path, $revisi->nama_file, [
             'Content-Disposition' => 'inline; filename="' . $revisi->nama_file . '"',
         ]);
+    }
+
+    private function isAssignedKoordinator(?object $dosen, Soal $soal): bool
+    {
+        return $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
+            ->where('periode_id', $soal->periode_id)
+            ->where('status', 'ACTIVE')
+            ->exists();
+    }
+
+    private function isAssignedVerifikator(?object $dosen, Soal $soal): bool
+    {
+        return $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $soal->mata_kuliah_id)
+            ->where('periode_id', $soal->periode_id)
+            ->where('status', 'ACTIVE')
+            ->exists();
     }
 }

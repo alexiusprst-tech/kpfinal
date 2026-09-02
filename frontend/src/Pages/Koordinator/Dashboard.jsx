@@ -3,11 +3,12 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     FileText, CheckCircle2, AlertTriangle, Eye, FilePlus2,
-    LayoutDashboard, ArrowRight, ArrowUpRight, BookOpen, Upload, Search, ChevronLeft, ChevronRight,
+    LayoutDashboard, ArrowRight, BookOpen, Upload, Search, ChevronLeft, ChevronRight,
     Users, Target, Activity as ActivityIcon, CalendarClock, Bell, ShieldCheck, Calendar,
     Clock, XCircle, Sparkles, Check, FileCheck, Layers, FileSpreadsheet
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
+import StatCard from '@/Components/StatCard';
 
 const STATUS_CONFIG = {
     BELUM_UPLOAD: { label: 'Belum Upload', color: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' },
@@ -30,39 +31,6 @@ function StatusBadge({ status }) {
     );
 }
 
-function StatCard({ label, value, icon: Icon, color, href }) {
-    const cardContent = (
-        <div className={`bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex flex-col gap-3 transition-all duration-200 ${
-            href ? 'hover:shadow-md hover:border-gray-200 hover:-translate-y-0.5 group cursor-pointer' : ''
-        }`}>
-            <div className="flex items-center justify-between">
-                <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center flex-shrink-0 transition-transform duration-200 ${href ? 'group-hover:scale-105' : ''} shadow-xs`}>
-                    <Icon className="w-5 h-5 text-white" />
-                </div>
-                {href && (
-                    <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#801720]/10 group-hover:text-[#801720] transition-colors">
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                    </div>
-                )}
-            </div>
-            <div className="min-w-0">
-                <p className="text-2xl font-extrabold text-gray-800 leading-tight tracking-tight">{value}</p>
-                <p className={`text-xs text-gray-500 font-medium leading-snug truncate ${href ? 'group-hover:text-gray-900' : ''} transition-colors`}>{label}</p>
-            </div>
-        </div>
-    );
-
-    if (href) {
-        return (
-            <Link href={href} className="block focus:outline-none focus:ring-2 focus:ring-[#801720]/20 rounded-2xl">
-                {cardContent}
-            </Link>
-        );
-    }
-
-    return cardContent;
-}
-
 function formatDate(dateStr) {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -82,7 +50,7 @@ function relativeTime(dateStr) {
 
 const PER_PAGE = 6;
 
-export default function KoordinatorDashboard({ activePeriod, deadline, stats, mataKuliahList = [], attention = [], verifikators = [], cloPloOverview = [], activity = [] }) {
+export default function KoordinatorDashboard({ activePeriod, deadline, stats, mataKuliahList = [], attention = [], verifikators = [], cloPloOverview = [], activity = [], noAssignmentMessage }) {
     const { auth, notifications } = usePage().props;
     const notifCount = notifications?.count || 0;
     const userName = auth?.user?.name || 'Koordinator';
@@ -117,6 +85,17 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
             <Head title="Dashboard Koordinator - Sistem Verifikasi Soal" />
 
             <div className="space-y-6">
+                {noAssignmentMessage && (
+                    <div className="bg-amber-500 text-white rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/20 flex items-start gap-4 border border-amber-400">
+                        <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-0.5 text-amber-100" />
+                        <div className="space-y-1">
+                            <h3 className="font-extrabold text-sm uppercase tracking-wider">Pemberitahuan Penugasan</h3>
+                            <p className="text-xs font-semibold text-amber-50 leading-relaxed">
+                                Akun Anda saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin.
+                            </p>
+                        </div>
+                    </div>
+                )}
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>

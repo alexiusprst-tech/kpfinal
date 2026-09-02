@@ -8,9 +8,6 @@ import {
 
 import FlashAlert from '@/Components/FlashAlert';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 export default function BeritaAcaraIndex({
     activePeriod,
@@ -43,7 +40,7 @@ export default function BeritaAcaraIndex({
     return (
         <AuthenticatedLayout title="Kelola Berita Acara">
             <Head title="Kelola Berita Acara Verifikasi - Sistem Verifikasi Soal" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 {/* Header Title */}

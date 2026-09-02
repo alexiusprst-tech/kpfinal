@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Clo;
 use App\Models\Dosen;
 use App\Models\KelompokMataKuliah;
+use App\Models\KelompokVerifikasi;
 use App\Models\MataKuliah;
 use App\Models\PenugasanKoordinator;
 use App\Models\PenugasanVerifikator;
@@ -251,7 +252,7 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Comparison Chart Data: Status Upload Soal per Mata Kuliah
+        // Comparison Chart Data: Status Upload Soal per Mata Kuliah (Legacy support)
         $courseComparisonData = [
             'labels'      => [],
             'approved'    => [],
@@ -267,7 +268,6 @@ class DashboardController extends Controller
             ->get();
 
         if ($allActiveMkList->isNotEmpty()) {
-            // Load soal for active period if active period exists
             if ($activePeriod) {
                 $allActiveMkList->load(['soal' => fn ($q) => $q->where('periode_id', $activePeriod->id)]);
             }
@@ -279,8 +279,6 @@ class DashboardController extends Controller
                 $approvedCount  = $soals->where('status', 'APPROVED')->count();
                 $submittedCount = $soals->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count();
                 $revisionCount  = $soals->where('status', 'REVISION')->count();
-                
-                // Belum upload hanya dihitung jika MK tersebut ditugaskan di periode ini tapi belum mengunggah soal
                 $belumCount     = ($isAssigned && $soals->isEmpty()) ? 1 : 0;
 
                 $shortLabel = \Illuminate\Support\Str::limit($mk->nama_mk, 22);
@@ -305,22 +303,165 @@ class DashboardController extends Controller
             }
         }
 
+        // Macro Agregasi 1: Per Kelompok Verifikasi
+        $groupComparisonData = [
+            'labels'      => [],
+            'tuntas'      => [],
+            'proses'      => [],
+            'belumUpload' => [],
+            'groups'      => [],
+        ];
+
+        if ($activePeriod) {
+            $kelompokList = KelompokVerifikasi::where('periode_id', $activePeriod->id)
+                ->with(['mataKuliah.mataKuliah.soal' => fn ($q) => $q->where('periode_id', $activePeriod->id)])
+                ->orderBy('nama', 'asc')
+                ->get();
+
+            foreach ($kelompokList as $kelompok) {
+                $mkItems = $kelompok->mataKuliah;
+                $totalMk = $mkItems->count();
+
+                $tuntasCount = 0;
+                $prosesCount = 0;
+                $belumCount  = 0;
+
+                $mkDetails = [];
+                foreach ($mkItems as $item) {
+                    $mk = $item->mataKuliah;
+                    if (!$mk) continue;
+                    $soals = $mk->relationLoaded('soal') ? $mk->soal : collect();
+
+                    if ($soals->isEmpty()) {
+                        $belumCount++;
+                        $statusMk = 'BELUM_UPLOAD';
+                        $statusLabel = 'Belum Upload';
+                    } elseif ($soals->contains('status', 'APPROVED')) {
+                        $tuntasCount++;
+                        $statusMk = 'APPROVED';
+                        $statusLabel = 'Disetujui';
+                    } elseif ($soals->contains('status', 'REVISION')) {
+                        $prosesCount++;
+                        $statusMk = 'REVISION';
+                        $statusLabel = 'Perlu Revisi';
+                    } else {
+                        $prosesCount++;
+                        $statusMk = 'IN_REVIEW';
+                        $statusLabel = 'Menunggu Verifikasi';
+                    }
+
+                    $mkDetails[] = [
+                        'id'           => $mk->id,
+                        'kode_mk'      => $mk->kode_mk,
+                        'nama_mk'      => $mk->nama_mk,
+                        'semester'     => $mk->semester,
+                        'status'       => $statusMk,
+                        'status_label' => $statusLabel,
+                    ];
+                }
+
+                $pct = $totalMk > 0 ? round(($tuntasCount / $totalMk) * 100) : 0;
+
+                $groupComparisonData['labels'][]      = $kelompok->nama;
+                $groupComparisonData['tuntas'][]      = $tuntasCount;
+                $groupComparisonData['proses'][]      = $prosesCount;
+                $groupComparisonData['belumUpload'][] = $belumCount;
+
+                $groupComparisonData['groups'][] = [
+                    'id'           => $kelompok->id,
+                    'nama'         => $kelompok->nama,
+                    'total_mk'     => $totalMk,
+                    'tuntas'       => $tuntasCount,
+                    'proses'       => $prosesCount,
+                    'belum_upload' => $belumCount,
+                    'progress_pct' => $pct,
+                    'mk_details'   => $mkDetails,
+                ];
+            }
+        }
+
+        // Macro Agregasi 2: Per Semester
+        $semesterComparisonData = [
+            'labels'      => [],
+            'tuntas'      => [],
+            'proses'      => [],
+            'belumUpload' => [],
+            'semesters'   => [],
+        ];
+
+        $semesters = MataKuliah::where('status', 'ACTIVE')
+            ->select('semester')
+            ->distinct()
+            ->orderBy('semester', 'asc')
+            ->pluck('semester');
+
+        foreach ($semesters as $sem) {
+            if (!$sem) continue;
+            $mkListInSem = MataKuliah::where('status', 'ACTIVE')
+                ->where('semester', $sem)
+                ->get();
+
+            if ($activePeriod) {
+                $mkListInSem->load(['soal' => fn ($q) => $q->where('periode_id', $activePeriod->id)]);
+            }
+
+            $totalMkInSem = $mkListInSem->count();
+            $tuntasCount = 0;
+            $prosesCount = 0;
+            $belumCount  = 0;
+
+            foreach ($mkListInSem as $mk) {
+                $soals = $mk->relationLoaded('soal') ? $mk->soal : collect();
+                $isAssigned = $assignedMkIds->contains($mk->id);
+
+                if ($soals->isEmpty()) {
+                    if ($isAssigned) {
+                        $belumCount++;
+                    }
+                } elseif ($soals->contains('status', 'APPROVED')) {
+                    $tuntasCount++;
+                } else {
+                    $prosesCount++;
+                }
+            }
+
+            $semLabel = 'Semester ' . $sem;
+            $pct = $totalMkInSem > 0 ? round(($tuntasCount / $totalMkInSem) * 100) : 0;
+
+            $semesterComparisonData['labels'][]      = $semLabel;
+            $semesterComparisonData['tuntas'][]      = $tuntasCount;
+            $semesterComparisonData['proses'][]      = $prosesCount;
+            $semesterComparisonData['belumUpload'][] = $belumCount;
+
+            $semesterComparisonData['semesters'][] = [
+                'semester'     => $sem,
+                'label'        => $semLabel,
+                'total_mk'     => $totalMkInSem,
+                'tuntas'       => $tuntasCount,
+                'proses'       => $prosesCount,
+                'belum_upload' => $belumCount,
+                'progress_pct' => $pct,
+            ];
+        }
+
         return \Inertia\Inertia::render('SuperAdmin/Dashboard', [
-            'activePeriod'         => $activePeriod,
-            'activePeriodSummary'  => $activePeriodSummary,
-            'allPeriods'           => $allPeriods,
-            'totalDosen'           => $totalDosen,
-            'totalMataKuliah'      => $totalMataKuliah,
-            'totalPlo'             => $totalPlo,
-            'totalClo'             => $totalClo,
-            'totalBankSoal'        => $totalBankSoal,
-            'progressPct'          => $progressPct,
-            'statusCounts'         => $statusCounts,
-            'recentActivities'     => $recentActivities,
-            'urgentMataKuliah'     => $urgentMataKuliah,
-            'urgentSoal'           => $urgentMataKuliah,
-            'courseComparisonData' => $courseComparisonData,
-            'trendData'            => [
+            'activePeriod'           => $activePeriod,
+            'activePeriodSummary'    => $activePeriodSummary,
+            'allPeriods'             => $allPeriods,
+            'totalDosen'             => $totalDosen,
+            'totalMataKuliah'        => $totalMataKuliah,
+            'totalPlo'               => $totalPlo,
+            'totalClo'               => $totalClo,
+            'totalBankSoal'          => $totalBankSoal,
+            'progressPct'            => $progressPct,
+            'statusCounts'           => $statusCounts,
+            'recentActivities'       => $recentActivities,
+            'urgentMataKuliah'       => $urgentMataKuliah,
+            'urgentSoal'             => $urgentMataKuliah,
+            'courseComparisonData'   => $courseComparisonData,
+            'groupComparisonData'    => $groupComparisonData,
+            'semesterComparisonData' => $semesterComparisonData,
+            'trendData'              => [
                 'labels'    => $dates,
                 'menunggu'  => $menungguData,
                 'disetujui' => $disetujuiData,

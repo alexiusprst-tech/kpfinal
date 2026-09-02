@@ -7,10 +7,8 @@ import {
 } from 'lucide-react';
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { relativeTime } from '@/Utils/date';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 
 const STATUS_CONFIG = {
@@ -34,18 +32,6 @@ function StatusBadge({ status }) {
     );
 }
 
-
-function relativeTime(dateStr) {
-    if (!dateStr) return '-';
-    const diffMs = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diffMs / 60000);
-    if (mins < 1) return 'Baru saja';
-    if (mins < 60) return `${mins} menit lalu`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} jam lalu`;
-    const days = Math.floor(hours / 24);
-    return `${days} hari lalu`;
-}
 
 const TABS = [
     { key: 'soal',      label: 'Soal',      icon: FileText },
@@ -163,7 +149,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
     return (
         <AuthenticatedLayout title={mataKuliah.nama_mk}>
             <Head title={mataKuliah.nama_mk} />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">

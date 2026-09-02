@@ -8,7 +8,6 @@ use App\Models\PenugasanKoordinator;
 use App\Models\PenugasanVerifikator;
 use App\Models\PeriodeVerifikasi;
 use App\Models\Soal;
-use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -30,16 +29,12 @@ class PeriodeController extends Controller
 
     private function buildIndexProps(Request $request): array
     {
-        $query = PeriodeVerifikasi::with('tahunAjaran')
-            ->withCount(['penugasanKoordinator as koordinator_count' => fn($q) => $q->where('status', 'ACTIVE')])
+        $query = PeriodeVerifikasi::withCount(['penugasanKoordinator as koordinator_count' => fn($q) => $q->where('status', 'ACTIVE')])
             ->withCount(['penugasanVerifikator as verifikator_count' => fn($q) => $q->where('status', 'ACTIVE')])
             ->withCount('soal as soal_count');
 
         if ($search = $request->string('search')->trim()->value()) {
             $query->where('nama', 'ilike', "%{$search}%");
-        }
-        if ($tahunAjaranId = $request->input('tahun_ajaran_id')) {
-            $query->where('tahun_ajaran_id', $tahunAjaranId);
         }
         if ($status = $request->input('status')) {
             $query->where('status', $status);
@@ -63,16 +58,14 @@ class PeriodeController extends Controller
                 'akan_datang' => (int) ($statCounts['DRAFT'] ?? 0),
                 'selesai'     => (int) ($statCounts['CLOSED'] ?? 0) + (int) ($statCounts['INACTIVE'] ?? 0),
             ],
-            'tahunAjaranAll'    => TahunAjaran::orderBy('tahun_mulai', 'desc')->get(['id', 'nama']),
-            'tahunAjaranActive' => TahunAjaran::where('status', 'ACTIVE')->orderBy('tahun_mulai', 'desc')->get(['id', 'nama']),
-            'filters' => $request->only(['search', 'tahun_ajaran_id', 'status', 'sort']),
+            'tahunAjaranAll'    => [],
+            'tahunAjaranActive' => [],
+            'filters' => $request->only(['search', 'status', 'sort']),
         ];
     }
 
     private function buildDetail(PeriodeVerifikasi $periode): array
     {
-        $periode->load('tahunAjaran');
-
         $createdLog = AuditLog::where('model_type', 'PeriodeVerifikasi')
             ->where('model_id', $periode->id)
             ->where('action', 'CREATE_PERIODE')
@@ -100,28 +93,24 @@ class PeriodeController extends Controller
             ->where('status', 'ACTIVE')
             ->with(['dosen', 'mataKuliah'])
             ->get()
-            ->map(fn ($pk) => [
-                'id'          => $pk->id,
-                'dosen_id'    => $pk->dosen_id,
-                'dosen_nama'  => $pk->dosen?->nama_lengkap ?? $pk->dosen?->nama ?? '-',
-                'dosen_kode'  => $pk->dosen?->kode_dosen ?? '-',
-                'mk_id'       => $pk->mata_kuliah_id,
-                'mk_nama'     => $pk->mataKuliah?->nama_mk ?? '-',
-                'mk_kode'     => $pk->mataKuliah?->kode_mk ?? '-',
+            ->map(fn ($p) => [
+                'dosen_id'   => $p->dosen_id,
+                'dosen_nama' => $p->dosen?->nama ?? 'Unknown',
+                'dosen_kode' => $p->dosen?->kode_dosen ?? '-',
+                'mk_kode'    => $p->mataKuliah?->kode_mk ?? '-',
+                'mk_nama'    => $p->mataKuliah?->nama_mk ?? '-',
             ]);
 
         $penugasanVerifikator = PenugasanVerifikator::where('periode_id', $periode->id)
             ->where('status', 'ACTIVE')
             ->with(['dosen', 'mataKuliah'])
             ->get()
-            ->map(fn ($pv) => [
-                'id'          => $pv->id,
-                'dosen_id'    => $pv->dosen_id,
-                'dosen_nama'  => $pv->dosen?->nama_lengkap ?? $pv->dosen?->nama ?? '-',
-                'dosen_kode'  => $pv->dosen?->kode_dosen ?? '-',
-                'mk_id'       => $pv->mata_kuliah_id,
-                'mk_nama'     => $pv->mataKuliah?->nama_mk ?? '-',
-                'mk_kode'     => $pv->mataKuliah?->kode_mk ?? '-',
+            ->map(fn ($p) => [
+                'dosen_id'   => $p->dosen_id,
+                'dosen_nama' => $p->dosen?->nama ?? 'Unknown',
+                'dosen_kode' => $p->dosen?->kode_dosen ?? '-',
+                'mk_kode'    => $p->mataKuliah?->kode_mk ?? '-',
+                'mk_nama'    => $p->mataKuliah?->nama_mk ?? '-',
             ]);
 
         $uniqueKoordinator = $penugasanKoordinator->groupBy('dosen_id')->map(function ($items) {
@@ -194,48 +183,12 @@ class PeriodeController extends Controller
 
     public function store(Request $request)
     {
-        $tahunAjaranInput = $request->input('tahun_ajaran') ?? $request->input('tahun_ajaran_nama') ?? $request->input('tahun_ajaran_id');
-        $tahunAjaranId = null;
-
-        if ($tahunAjaranInput) {
-            if (Str::isUuid($tahunAjaranInput)) {
-                $ta = TahunAjaran::find($tahunAjaranInput);
-                if ($ta) {
-                    $tahunAjaranId = $ta->id;
-                }
-            }
-
-            if (!$tahunAjaranId) {
-                $ta = TahunAjaran::where('nama', $tahunAjaranInput)->first();
-                if (!$ta) {
-                    preg_match('/(\d{4})\s*[\/-]\s*(\d{4})/', $tahunAjaranInput, $matches);
-                    $tahunMulai = isset($matches[1]) ? (int) $matches[1] : (int) date('Y');
-                    $tahunSelesai = isset($matches[2]) ? (int) $matches[2] : $tahunMulai + 1;
-
-                    $ta = TahunAjaran::create([
-                        'id'            => (string) Str::uuid(),
-                        'nama'          => $tahunAjaranInput,
-                        'tahun_mulai'   => $tahunMulai,
-                        'tahun_selesai' => $tahunSelesai,
-                        'status'        => 'ACTIVE',
-                    ]);
-                }
-                $tahunAjaranId = $ta->id;
-            }
-        }
-
-        $request->merge(['tahun_ajaran_id' => $tahunAjaranId]);
-
         $validated = $request->validate([
-            'tahun_ajaran_id'  => ['required', 'exists:tahun_ajaran,id'],
             'nama'             => ['required', 'string', 'max:100'],
             'tanggal_mulai'    => ['required', 'date'],
             'tanggal_selesai'  => ['required', 'date', 'after:tanggal_mulai'],
             'deadline_upload'  => ['required', 'date'],
             'catatan'          => ['nullable', 'string', 'max:2000'],
-        ], [
-            'tahun_ajaran_id.required' => 'Tahun ajaran wajib diisi.',
-            'tahun_ajaran_id.exists'   => 'Tahun ajaran tidak valid.',
         ]);
 
         $item = PeriodeVerifikasi::create(['id' => (string) Str::uuid()] + $validated + ['status' => 'DRAFT']);
@@ -245,35 +198,7 @@ class PeriodeController extends Controller
 
     public function update(Request $request, PeriodeVerifikasi $periode)
     {
-        $tahunAjaranInput = $request->input('tahun_ajaran') ?? $request->input('tahun_ajaran_nama') ?? $request->input('tahun_ajaran_id');
-        if ($tahunAjaranInput) {
-            $tahunAjaranId = null;
-            if (Str::isUuid($tahunAjaranInput)) {
-                $ta = TahunAjaran::find($tahunAjaranInput);
-                if ($ta) $tahunAjaranId = $ta->id;
-            }
-            if (!$tahunAjaranId) {
-                $ta = TahunAjaran::where('nama', $tahunAjaranInput)->first();
-                if (!$ta) {
-                    preg_match('/(\d{4})\s*[\/-]\s*(\d{4})/', $tahunAjaranInput, $matches);
-                    $tahunMulai = isset($matches[1]) ? (int) $matches[1] : (int) date('Y');
-                    $tahunSelesai = isset($matches[2]) ? (int) $matches[2] : $tahunMulai + 1;
-
-                    $ta = TahunAjaran::create([
-                        'id'            => (string) Str::uuid(),
-                        'nama'          => $tahunAjaranInput,
-                        'tahun_mulai'   => $tahunMulai,
-                        'tahun_selesai' => $tahunSelesai,
-                        'status'        => 'ACTIVE',
-                    ]);
-                }
-                $tahunAjaranId = $ta->id;
-            }
-            $request->merge(['tahun_ajaran_id' => $tahunAjaranId]);
-        }
-
         $validated = $request->validate([
-            'tahun_ajaran_id' => ['nullable', 'exists:tahun_ajaran,id'],
             'nama'            => ['required', 'string', 'max:100'],
             'tanggal_mulai'   => ['required', 'date'],
             'tanggal_selesai' => ['required', 'date'],

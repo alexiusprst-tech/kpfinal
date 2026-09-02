@@ -1,0 +1,1 @@
+import{f as e,l as t}from"./jsx-runtime-CJx-KmyE.js";import{a as n}from"./AuthenticatedLayout-Ac02S_ol.js";var r=e(t(),1);function i({flash:e}){return(0,r.useEffect)(()=>{if(!e)return;let t=e.success||e.error||e.warning||e.info;if(!t)return;let r=e.success?`success`:e.error?`error`:e.warning?`warning`:`info`;n(r,t)},[e?.success,e?.error,e?.info,e?.warning]),null}export{i as t};

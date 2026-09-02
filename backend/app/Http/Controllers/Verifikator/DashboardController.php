@@ -90,12 +90,19 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $hasActiveKoor = $dosen && \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+        $hasActiveVerif = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+        $noAssignmentMessage = ($dosen && !$hasActiveKoor && !$hasActiveVerif)
+            ? 'Akun Anda belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin.'
+            : null;
+
         return Inertia::render('Verifikator/Dashboard', [
             'activePeriod'         => $activePeriod,
             'stats'                => $stats,
             'pendingSoal'          => $pendingSoal,
             'assignments'          => $assignmentsWithStats,
             'recentVerifikasis'    => $recentVerifikasis,
+            'noAssignmentMessage' => $noAssignmentMessage,
         ]);
     }
 }

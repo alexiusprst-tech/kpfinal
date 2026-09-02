@@ -9,10 +9,8 @@ import {
 
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { formatDate } from '@/Utils/date';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 
 const STATUS_CONFIG = {
@@ -47,9 +45,7 @@ function StatCard({ icon: Icon, iconBg, iconColor, value, label, sublabel }) {
     );
 }
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-
-export default function KelompokVerifikasiIndex({ 
+export default function KelompokVerifikasiIndex({
     list = { data: [], current_page: 1, per_page: 10, total: 0, last_page: 1, links: [] }, 
     kelompokList, 
     stats = { total: 0, active: 0, draft: 0, inactive: 0, closed: 0 }, 
@@ -118,24 +114,28 @@ export default function KelompokVerifikasiIndex({
                 router.post(`/superadmin/kelompok-verifikasi/${item.id}/deactivate`, {}, { preserveScroll: true });
             }
         } else if (type === 'delete') {
+            const isActive = item.status === 'ACTIVE';
             const result = await showConfirm({
                 title: 'Hapus Kelompok Verifikasi?',
-                text: `Apakah Anda yakin ingin menghapus kelompok "${item.nama}"?`,
+                text: isActive
+                    ? `Kelompok "${item.nama}" sedang AKTIF. Menghapusnya akan menghapus semua penugasan koordinator & verifikator di dalamnya. Lanjutkan?`
+                    : `Hapus kelompok "${item.nama}"? Semua data penugasan terkait juga akan dihapus permanen.`,
                 icon: 'warning',
-                confirmButtonText: 'Ya, Hapus Data',
+                confirmButtonText: 'Ya, Hapus',
                 confirmButtonColor: '#CD202E',
             });
             if (result.isConfirmed) {
-                router.delete(`/superadmin/kelompok-verifikasi/${item.id}`);
+                router.delete(`/superadmin/kelompok-verifikasi/${item.id}`, {}, { preserveScroll: true });
             }
         }
+
     };
 
 
     return (
         <AuthenticatedLayout title="Kelompok Verifikasi">
             <Head title="Kelompok Verifikasi - Super Admin" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="space-y-6 w-full pb-12">
                 
@@ -335,41 +335,22 @@ export default function KelompokVerifikasiIndex({
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                                     {mkCount === 0 ? (
                                                         <span className="text-gray-400 italic">Belum ada MK</span>
-                                                    ) : mkCount === 1 ? (
-                                                        <span className="font-semibold text-gray-800 truncate max-w-[200px] block">
-                                                            {firstMk.mata_kuliah?.kode_mk} - {firstMk.mata_kuliah?.nama_mk}
-                                                        </span>
                                                     ) : (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-800 font-bold rounded-lg text-[11px] whitespace-nowrap">
-                                                                <BookOpen className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                                                                <span>{mkCount} Mata Kuliah</span>
-                                                            </span>
-                                                        </div>
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-800 font-bold rounded-lg text-[11px] whitespace-nowrap">
+                                                            <BookOpen className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                                            <span>{mkCount} Mata Kuliah</span>
+                                                        </span>
                                                     )}
                                                 </td>
 
                                                 {/* Koordinator MK */}
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
-                                                    {mkCount === 0 ? (
+                                                    {koordinatorCount === 0 ? (
                                                         <span className="text-gray-400">—</span>
-                                                    ) : koordinatorCount > 1 ? (
+                                                    ) : (
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#801720] font-bold rounded-lg text-[11px] border border-red-100 whitespace-nowrap">
                                                             <GraduationCap className="w-3.5 h-3.5 text-[#801720] shrink-0" />
                                                             <span>{koordinatorCount} Koordinator</span>
-                                                        </span>
-                                                    ) : firstKoordinator ? (
-                                                        <div>
-                                                            <span className="font-bold text-gray-800 block">
-                                                                {firstKoordinator?.kode_dosen || '-'}
-                                                            </span>
-                                                            <span className="text-[10px] text-gray-400 truncate max-w-[140px] block">
-                                                                {firstKoordinator?.nama_lengkap || '-'}
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-gray-600 bg-gray-100 rounded-lg whitespace-nowrap">
-                                                            {mkCount} Koordinator
                                                         </span>
                                                     )}
                                                 </td>
@@ -378,15 +359,6 @@ export default function KelompokVerifikasiIndex({
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                                     {verifikatorCount === 0 ? (
                                                         <span className="text-gray-400 italic">0 Orang</span>
-                                                    ) : verifikatorCount === 1 ? (
-                                                        <div>
-                                                            <span className="font-bold text-gray-800 block">
-                                                                {item.verifikator[0]?.dosen?.kode_dosen || '-'}
-                                                            </span>
-                                                            <span className="text-[10px] text-gray-400 truncate max-w-[130px] block">
-                                                                {item.verifikator[0]?.dosen?.nama_lengkap || '-'}
-                                                            </span>
-                                                        </div>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg text-[11px] border border-blue-100 whitespace-nowrap">
                                                             <Shield className="w-3.5 h-3.5 text-blue-500 shrink-0" />
@@ -458,6 +430,13 @@ export default function KelompokVerifikasiIndex({
                                                                 >
                                                                     <PowerOff className="w-4 h-4" />
                                                                 </button>
+                                                                <button
+                                                                    onClick={() => handleAction(item, 'delete')}
+                                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                                                                    title="Hapus Kelompok"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
                                                             </>
                                                         )}
 
@@ -476,6 +455,13 @@ export default function KelompokVerifikasiIndex({
                                                                     title="Aktifkan Kembali"
                                                                 >
                                                                     <Play className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleAction(item, 'delete')}
+                                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                                                                    title="Hapus Kelompok"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
                                                                 </button>
                                                             </>
                                                         )}

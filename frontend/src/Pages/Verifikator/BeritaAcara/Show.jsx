@@ -7,9 +7,6 @@ import {
 } from 'lucide-react';
 import FlashAlert from '@/Components/FlashAlert';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 const STATUS_BADGE = {
     APPROVED:    { label: 'Disetujui',   cls: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
@@ -74,7 +71,7 @@ export default function BeritaAcaraShow({
     return (
         <AuthenticatedLayout title={`Berita Acara — ${mataKuliah.nama_mk}`}>
             <Head title={`Berita Acara ${mataKuliah.nama_mk}`} />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 {/* Back + Title */}

@@ -13,7 +13,7 @@ class KategoriSoalSeeder extends Seeder
         $categories = [
             ['nama' => 'UTS', 'deskripsi' => 'Ujian Tengah Semester (UTS)'],
             ['nama' => 'UAS', 'deskripsi' => 'Ujian Akhir Semester (UAS)'],
-            ['nama' => 'Quiz', 'deskripsi' => 'Quiz / Kuis'],
+            ['nama' => 'Quiz', 'deskripsi' => 'Quiz'],
             ['nama' => 'Tugas', 'deskripsi' => 'Tugas Mandiri / Terstruktur'],
             ['nama' => 'Tugas Besar', 'deskripsi' => 'Tugas Besar / Proyek (Tubus)'],
             ['nama' => 'Praktikum', 'deskripsi' => 'Praktikum / Responsi'],

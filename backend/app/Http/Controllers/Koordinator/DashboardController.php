@@ -64,15 +64,22 @@ class DashboardController extends Controller
                 ->get()
             : collect();
 
+        $hasActiveKoor = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+        $hasActiveVerif = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+        $noAssignmentMessage = ($dosen && !$hasActiveKoor && !$hasActiveVerif)
+            ? 'Akun Anda (' . ($dosen->nama_lengkap ?? $user->name) . ') saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin.'
+            : null;
+
         return Inertia::render('Koordinator/Dashboard', [
-            'activePeriod'   => $activePeriod,
-            'deadline'       => $this->buildDeadlineInfo($activePeriod),
-            'stats'          => $this->buildStats($assignments, $soalList),
-            'mataKuliahList' => $this->buildMataKuliahList($assignments, $soalList),
-            'attention'      => $this->buildAttentionList($soalList),
-            'verifikators'   => $this->buildVerifikatorList($verifikatorAssignments, $soalList),
-            'cloPloOverview' => $this->buildCloPloOverview($assignments),
-            'activity'       => $this->buildActivity($user->id),
+            'activePeriod'        => $activePeriod,
+            'deadline'            => $this->buildDeadlineInfo($activePeriod),
+            'stats'               => $this->buildStats($assignments, $soalList),
+            'mataKuliahList'      => $this->buildMataKuliahList($assignments, $soalList),
+            'attention'           => $this->buildAttentionList($soalList),
+            'verifikators'        => $this->buildVerifikatorList($verifikatorAssignments, $soalList),
+            'cloPloOverview'      => $this->buildCloPloOverview($assignments),
+            'activity'            => $this->buildActivity($user->id),
+            'noAssignmentMessage' => $noAssignmentMessage,
         ]);
     }
 

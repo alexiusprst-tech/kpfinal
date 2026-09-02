@@ -132,11 +132,7 @@ class BeritaAcaraController extends Controller
                 ->with('error', 'Tidak ada periode verifikasi yang ditemukan.');
         }
 
-        $isAssigned = ($dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $selectedPeriod->id)
-            ->where('status', 'ACTIVE')
-            ->exists()) || $user->isSuperAdmin();
+        $isAssigned = $this->isAssignedVerifikator($user, $dosen, $mataKuliah->id, $selectedPeriod->id);
 
         if (!$isAssigned) {
             return redirect()->route('verifikator.berita-acara.index')
@@ -169,7 +165,6 @@ class BeritaAcaraController extends Controller
         // Check if a BA document has been generated previously
         $existingBA = BeritaAcara::where('periode_id', $selectedPeriod->id)
             ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('dibuat_oleh', $user->id)
             ->first();
 
         return Inertia::render('Verifikator/BeritaAcara/Show', [
@@ -222,11 +217,7 @@ class BeritaAcaraController extends Controller
             return redirect()->back()->with('error', 'Tidak ada periode verifikasi yang dipilih.');
         }
 
-        $isAssigned = ($dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $selectedPeriod->id)
-            ->where('status', 'ACTIVE')
-            ->exists()) || $user->isSuperAdmin();
+        $isAssigned = $this->isAssignedVerifikator($user, $dosen, $mataKuliah->id, $selectedPeriod->id);
 
         if (!$isAssigned) {
             return redirect()->back()->with('error', 'Anda tidak ditugaskan sebagai verifikator untuk mata kuliah ini.');
@@ -273,20 +264,13 @@ class BeritaAcaraController extends Controller
 
             $existing = BeritaAcara::where('periode_id', $lockedPeriod->id)
                 ->where('mata_kuliah_id', $mataKuliah->id)
-                ->where('dibuat_oleh', $user->id)
                 ->lockForUpdate()
                 ->first();
 
             $nomor = $existing?->nomor ?? $this->generateNomor($lockedPeriod, $mataKuliah);
             $tanggal = now();
 
-            $logoPath = public_path('images/logo-telkom.png');
-            $logoBase64 = '';
-            if (file_exists($logoPath)) {
-                $type = pathinfo($logoPath, PATHINFO_EXTENSION);
-                $logoData = file_get_contents($logoPath);
-                $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($logoData);
-            }
+            $logoBase64 = $this->getLogoBase64();
 
             $baseData = [
                 'nomor'                     => $nomor,
@@ -328,11 +312,11 @@ class BeritaAcaraController extends Controller
                     [
                         'periode_id'     => $lockedPeriod->id,
                         'mata_kuliah_id' => $mataKuliah->id,
-                        'dibuat_oleh'    => $user->id,
                     ],
                     [
                         'nomor'            => $nomor,
                         'koordinator_id'   => $koordinatorDosen->id,
+                        'dibuat_oleh'      => $user->id,
                         'jumlah_soal'      => 1,
                         'jumlah_approved'  => 1,
                         'jumlah_revision'  => $jumlahRevision,
@@ -384,11 +368,11 @@ class BeritaAcaraController extends Controller
                 [
                     'periode_id'     => $lockedPeriod->id,
                     'mata_kuliah_id' => $mataKuliah->id,
-                    'dibuat_oleh'    => $user->id,
                 ],
                 [
                     'nomor'            => $nomor,
                     'koordinator_id'   => $koordinatorDosen->id,
+                    'dibuat_oleh'      => $user->id,
                     'jumlah_soal'      => $soalApproved->count(),
                     'jumlah_approved'  => $jumlahApproved,
                     'jumlah_revision'  => $jumlahRevision,
@@ -430,11 +414,7 @@ class BeritaAcaraController extends Controller
             return redirect()->back()->with('error', 'Data mata kuliah atau periode soal tidak ditemukan.');
         }
 
-        $isAssigned = ($dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
-            ->where('mata_kuliah_id', $mataKuliah->id)
-            ->where('periode_id', $periode->id)
-            ->where('status', 'ACTIVE')
-            ->exists()) || $user->isSuperAdmin();
+        $isAssigned = $this->isAssignedVerifikator($user, $dosen, $mataKuliah->id, $periode->id);
 
         if (!$isAssigned) {
             return redirect()->back()->with('error', 'Anda tidak ditugaskan sebagai verifikator untuk mata kuliah ini.');
@@ -459,7 +439,6 @@ class BeritaAcaraController extends Controller
 
             $existing = BeritaAcara::where('periode_id', $lockedPeriod->id)
                 ->where('mata_kuliah_id', $mataKuliah->id)
-                ->where('dibuat_oleh', $user->id)
                 ->lockForUpdate()
                 ->first();
 
@@ -467,13 +446,7 @@ class BeritaAcaraController extends Controller
 
             $tanggal = now();
 
-            $logoPath = public_path('images/logo-telkom.png');
-            $logoBase64 = '';
-            if (file_exists($logoPath)) {
-                $type = pathinfo($logoPath, PATHINFO_EXTENSION);
-                $logoData = file_get_contents($logoPath);
-                $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($logoData);
-            }
+            $logoBase64 = $this->getLogoBase64();
 
             $data = [
                 'nomor'                     => $nomor,
@@ -510,11 +483,11 @@ class BeritaAcaraController extends Controller
                 [
                     'periode_id'     => $lockedPeriod->id,
                     'mata_kuliah_id' => $mataKuliah->id,
-                    'dibuat_oleh'    => $user->id,
                 ],
                 [
                     'nomor'            => $nomor,
                     'koordinator_id'   => $koordinatorDosen->id,
+                    'dibuat_oleh'      => $user->id,
                     'jumlah_soal'      => 1,
                     'jumlah_approved'  => 1,
                     'jumlah_revision'  => 0,
@@ -637,5 +610,27 @@ class BeritaAcaraController extends Controller
         ];
 
         return sprintf('%d %s %d', $date->day, $bulan[(int) $date->month], $date->year);
+    }
+
+    private function getLogoBase64(): string
+    {
+        $logoPath = public_path('images/logo-telkom.png');
+        if (!file_exists($logoPath)) {
+            return '';
+        }
+
+        $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+        $logoData = file_get_contents($logoPath);
+
+        return 'data:image/' . $type . ';base64,' . base64_encode($logoData);
+    }
+
+    private function isAssignedVerifikator($user, ?object $dosen, string $mataKuliahId, string $periodeId): bool
+    {
+        return ($dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)
+            ->where('mata_kuliah_id', $mataKuliahId)
+            ->where('periode_id', $periodeId)
+            ->where('status', 'ACTIVE')
+            ->exists()) || $user->isSuperAdmin();
     }
 }

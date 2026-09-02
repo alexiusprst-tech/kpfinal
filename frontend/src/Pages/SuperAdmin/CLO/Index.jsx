@@ -52,9 +52,6 @@ function Stepper({ steps, activeStep }) {
 import FlashAlert from '@/Components/FlashAlert';
 
 // ─── Toast ─────────────────────────────────────────────────────────────────────
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 // ─── CLO Form (tambah/edit manual dengan alur berurutan) ────────────────────
 function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
@@ -491,7 +488,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
     return (
         <AuthenticatedLayout title="Master CLO">
             <Head title="Master CLO" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 {/* Header */}

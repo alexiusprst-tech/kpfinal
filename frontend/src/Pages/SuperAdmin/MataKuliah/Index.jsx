@@ -5,9 +5,6 @@ import { BookOpen, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, AlertTrian
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 
 
@@ -149,7 +146,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
     return (
         <AuthenticatedLayout title="Manajemen Mata Kuliah">
             <Head title="Master Data Mata Kuliah" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             {/* Header Title & Action Button */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

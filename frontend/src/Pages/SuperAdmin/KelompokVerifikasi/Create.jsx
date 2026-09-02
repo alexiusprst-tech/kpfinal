@@ -3,14 +3,13 @@ import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 import SearchableSelect from '@/Components/SearchableSelect';
+import { formatDate } from '@/Utils/date';
 
 import {
     Layers, CheckCircle2, ChevronRight, AlertCircle, ArrowLeft, ArrowRight,
     Save, Play, BookOpen, UserCheck, Shield, Users, Search, Check, Copy, X,
     GraduationCap, Calendar, Info, Plus, Trash2
 } from 'lucide-react';
-
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
 export default function Create({ auth, periodeList = [], mataKuliahList = [], dosenList = [] }) {
     // Current Wizard Step: 1 = Periode, 2 = Mata Kuliah, 3 = Koordinator & Verifikator per MK, 4 = Review & Simpan

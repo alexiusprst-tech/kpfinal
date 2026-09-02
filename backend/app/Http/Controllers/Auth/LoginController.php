@@ -53,6 +53,7 @@ class LoginController extends Controller
                     $initialRole = 'VERIFIKATOR';
                 }
 
+                $isLB = in_array(strtoupper(trim($dosen->kategori_dosen ?? '')), ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA']);
                 $user = \App\Models\User::firstOrCreate(
                     ['email' => $emailToAuth],
                     [
@@ -61,7 +62,7 @@ class LoginController extends Controller
                         'password'             => \Illuminate\Support\Facades\Hash::make('password'),
                         'role'                 => $initialRole,
                         'status'               => 'ACTIVE',
-                        'must_change_password' => true,
+                        'must_change_password' => $isLB,
                     ]
                 );
                 $dosen->update([
@@ -154,10 +155,6 @@ class LoginController extends Controller
      */
     protected function redirectByRole($user)
     {
-        if ($user->must_change_password) {
-            return redirect()->route('profile.show')->with('warning', 'Demi keamanan akun Anda, silakan ubah password default terlebih dahulu pada login pertama ini.');
-        }
-
         if ($user->role === 'SUPER_ADMIN') {
             return redirect()->route('superadmin.dashboard');
         }
@@ -172,13 +169,8 @@ class LoginController extends Controller
             } elseif ($hasActiveVerif) {
                 return redirect()->route('verifikator.dashboard');
             } else {
-                // Dosen belum mendapatkan penugasan apapun
-                Auth::logout();
-                request()->session()->invalidate();
-                request()->session()->regenerateToken();
-                return redirect()->route('login')->withErrors([
-                    'email' => 'Akun Anda (' . $dosen->nama_lengkap . ') saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin.',
-                ]);
+                // Dosen belum mendapatkan penugasan aktif: izinkan login dan arahkan ke dashboard
+                return redirect()->route('koordinator.dashboard');
             }
         }
 
@@ -188,11 +180,6 @@ class LoginController extends Controller
             return redirect()->route('koordinator.dashboard');
         }
 
-        Auth::logout();
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
-        return redirect()->route('login')->withErrors([
-            'email' => 'Akun Anda belum memiliki role atau penugasan aktif. Silakan hubungi Super Admin.',
-        ]);
+        return redirect()->route('koordinator.dashboard');
     }
 }

@@ -118,71 +118,18 @@ class KelompokVerifikasiController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'nama'                           => ['required', 'string', 'max:255'],
-            'periode_id'                     => ['required', 'exists:periode_verifikasi,id'],
-            'keterangan'                     => ['nullable', 'string', 'max:1000'],
-            'status'                         => ['required', 'in:DRAFT,ACTIVE'],
-            'mata_kuliah'                    => ['required', 'array', 'min:1'],
-            'mata_kuliah.*.mata_kuliah_id'   => ['required', 'distinct', 'exists:mata_kuliah,id'],
-            'mata_kuliah.*.koordinator_ids'  => ['nullable', 'array', 'min:1', 'max:3'],
-            'mata_kuliah.*.koordinator_ids.*'=> ['exists:dosen,id'],
-            'mata_kuliah.*.koordinator_id'   => ['nullable', 'exists:dosen,id'],
-            'mata_kuliah.*.verifikator_ids'  => ['nullable', 'array', 'min:1', 'max:5'],
-            'mata_kuliah.*.verifikator_ids.*'=> ['exists:dosen,id'],
-            'verifikator'                    => ['nullable', 'array', 'max:5'],
-            'verifikator.*'                  => ['exists:dosen,id'],
-        ], [
-            'nama.required'                         => 'Nama kelompok wajib diisi.',
-            'periode_id.required'                   => 'Periode verifikasi wajib dipilih.',
-            'mata_kuliah.required'                  => 'Pilih minimal satu mata kuliah.',
-            'mata_kuliah.min'                       => 'Pilih minimal satu mata kuliah.',
-            'mata_kuliah.*.koordinator_ids.max'     => 'Jumlah koordinator untuk setiap mata kuliah maksimal 3 dosen.',
-            'mata_kuliah.*.koordinator_ids.min'     => 'Setiap mata kuliah wajib memiliki minimal 1 dosen koordinator.',
-            'mata_kuliah.*.verifikator_ids.max'     => 'Jumlah verifikator untuk setiap mata kuliah maksimal 5 dosen.',
-            'mata_kuliah.*.verifikator_ids.min'     => 'Setiap mata kuliah wajib memiliki minimal 1 dosen verifikator.',
-            'verifikator.max'                       => 'Jumlah verifikator maksimal 5 dosen.',
-        ]);
+        $validated = $request->validate(
+            $this->kelompokVerifikasiRules('DRAFT,ACTIVE'),
+            $this->kelompokVerifikasiMessages()
+        );
 
         $periode = PeriodeVerifikasi::findOrFail($validated['periode_id']);
         if ($periode->status === 'CLOSED') {
             return back()->withErrors(['periode_id' => 'Periode yang sudah CLOSED tidak dapat digunakan untuk penugasan baru.'])->withInput();
         }
 
-        // Validate separation of duties (Dosen cannot be both Koordinator and Verifikator on the SAME mata kuliah)
-        foreach ($validated['mata_kuliah'] as $mk) {
-            $kList = $mk['koordinator_ids'] ?? (isset($mk['koordinator_id']) ? [$mk['koordinator_id']] : []);
-            $vList = $mk['verifikator_ids'] ?? [];
-
-            if (empty($kList)) {
-                return back()->withErrors(['mata_kuliah' => 'Setiap mata kuliah wajib memiliki minimal 1 koordinator.'])->withInput();
-            }
-
-            if (empty($vList)) {
-                $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
-                $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
-                return back()->withErrors(['mata_kuliah' => "Setiap mata kuliah wajib memiliki minimal 1 verifikator. MK {$mkName} belum memiliki verifikator."])->withInput();
-            }
-
-            if (count($kList) > 3) {
-                return back()->withErrors(['mata_kuliah' => 'Jumlah koordinator untuk setiap mata kuliah maksimal 3 dosen.'])->withInput();
-            }
-
-            if (count($vList) > 5) {
-                return back()->withErrors(['mata_kuliah' => 'Jumlah verifikator untuk setiap mata kuliah maksimal 5 dosen.'])->withInput();
-            }
-
-            // Check self-verification overlap on the SAME course
-            $courseOverlap = array_intersect($kList, $vList);
-            if (!empty($courseOverlap)) {
-                $dosenObj = Dosen::find(reset($courseOverlap));
-                $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
-                $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
-                $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
-                return back()->withErrors([
-                    'mata_kuliah' => "Dosen {$dosenName} tidak dapat dipilih sebagai Koordinator sekaligus Verifikator pada mata kuliah {$mkName}."
-                ])->withInput();
-            }
+        if ($violation = $this->validateSeparationOfDuties($validated['mata_kuliah'])) {
+            return $violation;
         }
 
         $kelompok = DB::transaction(function () use ($validated, $request) {
@@ -463,66 +410,13 @@ class KelompokVerifikasiController extends Controller
             return back()->with('error', 'Kelompok yang sudah CLOSED tidak dapat diubah.');
         }
 
-        $validated = $request->validate([
-            'nama'                           => ['required', 'string', 'max:255'],
-            'periode_id'                     => ['required', 'exists:periode_verifikasi,id'],
-            'keterangan'                     => ['nullable', 'string', 'max:1000'],
-            'status'                         => ['required', 'in:DRAFT,ACTIVE,INACTIVE,CLOSED'],
-            'mata_kuliah'                    => ['required', 'array', 'min:1'],
-            'mata_kuliah.*.mata_kuliah_id'   => ['required', 'distinct', 'exists:mata_kuliah,id'],
-            'mata_kuliah.*.koordinator_ids'  => ['nullable', 'array', 'min:1', 'max:3'],
-            'mata_kuliah.*.koordinator_ids.*'=> ['exists:dosen,id'],
-            'mata_kuliah.*.koordinator_id'   => ['nullable', 'exists:dosen,id'],
-            'mata_kuliah.*.verifikator_ids'  => ['nullable', 'array', 'min:1', 'max:5'],
-            'mata_kuliah.*.verifikator_ids.*'=> ['exists:dosen,id'],
-            'verifikator'                    => ['nullable', 'array', 'max:5'],
-            'verifikator.*'                  => ['exists:dosen,id'],
-        ], [
-            'nama.required'                         => 'Nama kelompok wajib diisi.',
-            'periode_id.required'                   => 'Periode verifikasi wajib dipilih.',
-            'mata_kuliah.required'                  => 'Pilih minimal satu mata kuliah.',
-            'mata_kuliah.min'                       => 'Pilih minimal satu mata kuliah.',
-            'mata_kuliah.*.koordinator_ids.max'     => 'Jumlah koordinator untuk setiap mata kuliah maksimal 3 dosen.',
-            'mata_kuliah.*.koordinator_ids.min'     => 'Setiap mata kuliah wajib memiliki minimal 1 dosen koordinator.',
-            'mata_kuliah.*.verifikator_ids.max'     => 'Jumlah verifikator untuk setiap mata kuliah maksimal 5 dosen.',
-            'mata_kuliah.*.verifikator_ids.min'     => 'Setiap mata kuliah wajib memiliki minimal 1 dosen verifikator.',
-            'verifikator.max'                       => 'Jumlah verifikator maksimal 5 dosen.',
-        ]);
+        $validated = $request->validate(
+            $this->kelompokVerifikasiRules('DRAFT,ACTIVE,INACTIVE,CLOSED'),
+            $this->kelompokVerifikasiMessages()
+        );
 
-        // Validate separation of duties (Dosen cannot be both Koordinator and Verifikator on the SAME mata kuliah)
-        foreach ($validated['mata_kuliah'] as $mk) {
-            $kList = $mk['koordinator_ids'] ?? (isset($mk['koordinator_id']) ? [$mk['koordinator_id']] : []);
-            $vList = $mk['verifikator_ids'] ?? [];
-
-            if (empty($kList)) {
-                return back()->withErrors(['mata_kuliah' => 'Setiap mata kuliah wajib memiliki minimal 1 koordinator.'])->withInput();
-            }
-
-            if (empty($vList)) {
-                $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
-                $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
-                return back()->withErrors(['mata_kuliah' => "Setiap mata kuliah wajib memiliki minimal 1 verifikator. MK {$mkName} belum memiliki verifikator."])->withInput();
-            }
-
-            if (count($kList) > 3) {
-                return back()->withErrors(['mata_kuliah' => 'Jumlah koordinator untuk setiap mata kuliah maksimal 3 dosen.'])->withInput();
-            }
-
-            if (count($vList) > 5) {
-                return back()->withErrors(['mata_kuliah' => 'Jumlah verifikator untuk setiap mata kuliah maksimal 5 dosen.'])->withInput();
-            }
-
-            // Check self-verification overlap on the SAME course
-            $courseOverlap = array_intersect($kList, $vList);
-            if (!empty($courseOverlap)) {
-                $dosenObj = Dosen::find(reset($courseOverlap));
-                $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
-                $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
-                $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
-                return back()->withErrors([
-                    'mata_kuliah' => "Dosen {$dosenName} tidak dapat dipilih sebagai Koordinator sekaligus Verifikator pada mata kuliah {$mkName}."
-                ])->withInput();
-            }
+        if ($violation = $this->validateSeparationOfDuties($validated['mata_kuliah'])) {
+            return $violation;
         }
 
         DB::transaction(function () use ($validated, $request, $kelompokVerifikasi) {
@@ -673,10 +567,6 @@ class KelompokVerifikasiController extends Controller
 
     public function destroy(Request $request, KelompokVerifikasi $kelompokVerifikasi)
     {
-        if ($kelompokVerifikasi->status === 'ACTIVE') {
-            return back()->with('error', 'Kelompok yang sedang AKTIF tidak dapat dihapus langsung. Nonaktifkan terlebih dahulu.');
-        }
-
         DB::transaction(function () use ($kelompokVerifikasi, $request) {
             $oldData = $kelompokVerifikasi->toArray();
 
@@ -698,8 +588,110 @@ class KelompokVerifikasiController extends Controller
             );
         });
 
+
         return redirect()->route('superadmin.kelompok-verifikasi.index')
             ->with('success', 'Kelompok Verifikasi berhasil dihapus.');
+    }
+
+    /**
+     * Remove a Koordinator assignment from a course in a Kelompok Verifikasi.
+     */
+    public function removeKoordinator(Request $request, KelompokVerifikasi $kelompokVerifikasi)
+    {
+        $validated = $request->validate([
+            'mata_kuliah_id' => ['required', 'exists:mata_kuliah,id'],
+            'dosen_id'       => ['required', 'exists:dosen,id'],
+        ]);
+
+        if ($kelompokVerifikasi->status === 'CLOSED') {
+            return back()->with('error', 'Kelompok yang sudah CLOSED tidak dapat diubah.');
+        }
+
+        DB::transaction(function () use ($kelompokVerifikasi, $validated, $request) {
+            $mkId = $validated['mata_kuliah_id'];
+            $dosenId = $validated['dosen_id'];
+
+            // Delete pivot entry
+            KelompokKoordinator::where('kelompok_id', $kelompokVerifikasi->id)
+                ->where('mata_kuliah_id', $mkId)
+                ->where('dosen_id', $dosenId)
+                ->delete();
+
+            // Check remaining coordinators for legacy field update
+            $remainingKoor = KelompokKoordinator::where('kelompok_id', $kelompokVerifikasi->id)
+                ->where('mata_kuliah_id', $mkId)
+                ->first();
+
+            KelompokMataKuliah::where('kelompok_id', $kelompokVerifikasi->id)
+                ->where('mata_kuliah_id', $mkId)
+                ->update(['koordinator_id' => $remainingKoor?->dosen_id]);
+
+            // End operational assignment
+            PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)
+                ->where('mata_kuliah_id', $mkId)
+                ->where('dosen_id', $dosenId)
+                ->where('status', 'ACTIVE')
+                ->update(['status' => 'ENDED']);
+
+            $this->syncAffectedDosenRoles();
+
+            AuditLog::record(
+                $request->user()->id,
+                'REMOVE_KOORDINATOR_KELOMPOK',
+                'KelompokVerifikasi',
+                $kelompokVerifikasi->id,
+                ['mata_kuliah_id' => $mkId, 'dosen_id' => $dosenId],
+                null
+            );
+        });
+
+        return redirect()->back()->with('success', 'Penugasan koordinator berhasil dicabut.');
+    }
+
+    /**
+     * Remove a Verifikator assignment from a course in a Kelompok Verifikasi.
+     */
+    public function removeVerifikator(Request $request, KelompokVerifikasi $kelompokVerifikasi)
+    {
+        $validated = $request->validate([
+            'mata_kuliah_id' => ['required', 'exists:mata_kuliah,id'],
+            'dosen_id'       => ['required', 'exists:dosen,id'],
+        ]);
+
+        if ($kelompokVerifikasi->status === 'CLOSED') {
+            return back()->with('error', 'Kelompok yang sudah CLOSED tidak dapat diubah.');
+        }
+
+        DB::transaction(function () use ($kelompokVerifikasi, $validated, $request) {
+            $mkId = $validated['mata_kuliah_id'];
+            $dosenId = $validated['dosen_id'];
+
+            // Delete pivot entry
+            KelompokVerifikator::where('kelompok_id', $kelompokVerifikasi->id)
+                ->where('mata_kuliah_id', $mkId)
+                ->where('dosen_id', $dosenId)
+                ->delete();
+
+            // End operational assignment
+            PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)
+                ->where('mata_kuliah_id', $mkId)
+                ->where('dosen_id', $dosenId)
+                ->where('status', 'ACTIVE')
+                ->update(['status' => 'ENDED']);
+
+            $this->syncAffectedDosenRoles();
+
+            AuditLog::record(
+                $request->user()->id,
+                'REMOVE_VERIFIKATOR_KELOMPOK',
+                'KelompokVerifikasi',
+                $kelompokVerifikasi->id,
+                ['mata_kuliah_id' => $mkId, 'dosen_id' => $dosenId],
+                null
+            );
+        });
+
+        return redirect()->back()->with('success', 'Penugasan verifikator berhasil dicabut.');
     }
 
     /**
@@ -865,5 +857,91 @@ class KelompokVerifikasiController extends Controller
         // Update status mata kuliah: ACTIVE jika ditugaskan di kelompok verifikasi aktif, INACTIVE jika tidak
         MataKuliah::whereIn('id', $allActiveMkIds)->update(['status' => 'ACTIVE']);
         MataKuliah::whereNotIn('id', $allActiveMkIds)->update(['status' => 'INACTIVE']);
+    }
+
+    /**
+     * Validation rules shared by store() and update(), parameterized only by
+     * the allowed status values (create only allows DRAFT/ACTIVE, while
+     * update also allows the later lifecycle states INACTIVE/CLOSED).
+     */
+    private function kelompokVerifikasiRules(string $statusRule): array
+    {
+        return [
+            'nama'                            => ['required', 'string', 'max:255'],
+            'periode_id'                      => ['required', 'exists:periode_verifikasi,id'],
+            'keterangan'                      => ['nullable', 'string', 'max:1000'],
+            'status'                          => ['required', 'in:' . $statusRule],
+            'mata_kuliah'                     => ['required', 'array', 'min:1'],
+            'mata_kuliah.*.mata_kuliah_id'    => ['required', 'distinct', 'exists:mata_kuliah,id'],
+            'mata_kuliah.*.koordinator_ids'   => ['nullable', 'array', 'min:1', 'max:3'],
+            'mata_kuliah.*.koordinator_ids.*' => ['exists:dosen,id'],
+            'mata_kuliah.*.koordinator_id'    => ['nullable', 'exists:dosen,id'],
+            'mata_kuliah.*.verifikator_ids'   => ['nullable', 'array', 'min:1', 'max:5'],
+            'mata_kuliah.*.verifikator_ids.*' => ['exists:dosen,id'],
+            'verifikator'                     => ['nullable', 'array', 'max:5'],
+            'verifikator.*'                   => ['exists:dosen,id'],
+        ];
+    }
+
+    private function kelompokVerifikasiMessages(): array
+    {
+        return [
+            'nama.required'                     => 'Nama kelompok wajib diisi.',
+            'periode_id.required'               => 'Periode verifikasi wajib dipilih.',
+            'mata_kuliah.required'              => 'Pilih minimal satu mata kuliah.',
+            'mata_kuliah.min'                   => 'Pilih minimal satu mata kuliah.',
+            'mata_kuliah.*.koordinator_ids.max' => 'Jumlah koordinator untuk setiap mata kuliah maksimal 3 dosen.',
+            'mata_kuliah.*.koordinator_ids.min' => 'Setiap mata kuliah wajib memiliki minimal 1 dosen koordinator.',
+            'mata_kuliah.*.verifikator_ids.max' => 'Jumlah verifikator untuk setiap mata kuliah maksimal 5 dosen.',
+            'mata_kuliah.*.verifikator_ids.min' => 'Setiap mata kuliah wajib memiliki minimal 1 dosen verifikator.',
+            'verifikator.max'                   => 'Jumlah verifikator maksimal 5 dosen.',
+        ];
+    }
+
+    /**
+     * Validate separation of duties (Dosen cannot be both Koordinator and
+     * Verifikator on the SAME mata kuliah), plus the per-MK coordinator /
+     * verifikator count limits. Shared by store() and update(). Returns the
+     * first validation-failure redirect response, or null if all mata
+     * kuliah entries pass.
+     */
+    private function validateSeparationOfDuties(array $mataKuliahItems)
+    {
+        foreach ($mataKuliahItems as $mk) {
+            $kList = $mk['koordinator_ids'] ?? (isset($mk['koordinator_id']) ? [$mk['koordinator_id']] : []);
+            $vList = $mk['verifikator_ids'] ?? [];
+
+            if (empty($kList)) {
+                return back()->withErrors(['mata_kuliah' => 'Setiap mata kuliah wajib memiliki minimal 1 koordinator.'])->withInput();
+            }
+
+            if (empty($vList)) {
+                $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
+                $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
+                return back()->withErrors(['mata_kuliah' => "Setiap mata kuliah wajib memiliki minimal 1 verifikator. MK {$mkName} belum memiliki verifikator."])->withInput();
+            }
+
+            if (count($kList) > 3) {
+                return back()->withErrors(['mata_kuliah' => 'Jumlah koordinator untuk setiap mata kuliah maksimal 3 dosen.'])->withInput();
+            }
+
+            if (count($vList) > 5) {
+                return back()->withErrors(['mata_kuliah' => 'Jumlah verifikator untuk setiap mata kuliah maksimal 5 dosen.'])->withInput();
+            }
+
+            // Check self-verification overlap on the SAME course
+            $courseOverlap = array_intersect($kList, $vList);
+            if (!empty($courseOverlap)) {
+                $dosenObj = Dosen::find(reset($courseOverlap));
+                $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
+                $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
+                $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
+                return back()->withErrors([
+                    'mata_kuliah' => "Dosen {$dosenName} tidak dapat dipilih sebagai Koordinator sekaligus Verifikator pada mata kuliah {$mkName}."
+                ])->withInput();
+            }
+        }
+
+        return null;
     }
 }

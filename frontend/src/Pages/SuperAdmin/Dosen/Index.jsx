@@ -4,8 +4,8 @@ import FlashAlert from '../../../Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 import { Head, useForm, router, usePage } from '@inertiajs/react';
 
-import { 
-    Users, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, 
+import {
+    Users, Plus, Search, Edit2, Trash2, CheckCircle, XCircle,
     UserCheck, FileCheck, ShieldAlert, AlertTriangle, X, Filter,
     UserMinus, ShieldOff, BookOpen, Calendar, AlertCircle
 } from 'lucide-react';
@@ -148,7 +148,7 @@ export default function Index({ dosenList, filters }) {
                     </p>
                 </div>
 
-                <button 
+                <button
                     onClick={() => setIsCreateOpen(true)}
                     className="flex items-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1724] text-white rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer"
                 >
@@ -166,7 +166,7 @@ export default function Index({ dosenList, filters }) {
                     {/* Real-Time Search Input */}
                     <div className="relative w-full md:w-96">
                         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                        <input 
+                        <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -337,22 +337,22 @@ export default function Index({ dosenList, filters }) {
                                             <td className="p-4 text-center whitespace-nowrap">
                                                 <div className="flex items-center justify-center gap-1.5">
                                                     {hasAssignments && (
-                                                        <button 
+                                                        <button
                                                             onClick={() => setRevokeDosen(dosen)}
                                                             className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors cursor-pointer"
-                                                            title="Cabut Penugasan (Koordinator / Verifikator)"
+                                                            title="Cabut Penugasan"
                                                         >
                                                             <UserMinus className="w-3.5 h-3.5" />
                                                         </button>
                                                     )}
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleEditOpen(dosen)}
                                                         className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                                                         title="Edit"
                                                     >
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleConfirmDelete(dosen)}
                                                         className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
                                                         title="Hapus"
@@ -414,11 +414,11 @@ export default function Index({ dosenList, filters }) {
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        
+
                         <form onSubmit={handleCreateSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Kode Dosen</label>
-                                <input 
+                                <input
                                     type="text"
                                     value={createForm.data.kode_dosen}
                                     onChange={(e) => createForm.setData('kode_dosen', e.target.value)}
@@ -431,7 +431,7 @@ export default function Index({ dosenList, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap</label>
-                                <input 
+                                <input
                                     type="text"
                                     value={createForm.data.nama_lengkap}
                                     onChange={(e) => createForm.setData('nama_lengkap', e.target.value)}
@@ -444,7 +444,7 @@ export default function Index({ dosenList, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Email</label>
-                                <input 
+                                <input
                                     type="email"
                                     value={createForm.data.email}
                                     onChange={(e) => createForm.setData('email', e.target.value)}
@@ -456,7 +456,7 @@ export default function Index({ dosenList, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Kategori Dosen</label>
-                                <select 
+                                <select
                                     value={createForm.data.kategori_dosen}
                                     onChange={(e) => createForm.setData('kategori_dosen', e.target.value)}
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
@@ -468,7 +468,7 @@ export default function Index({ dosenList, filters }) {
 
                             <div className="pt-2 border-t border-slate-100 space-y-3">
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
+                                    <input
                                         type="checkbox"
                                         checked={createForm.data.create_user}
                                         onChange={(e) => createForm.setData('create_user', e.target.checked)}
@@ -490,15 +490,15 @@ export default function Index({ dosenList, filters }) {
                             </div>
 
                             <div className="flex justify-end gap-2 pt-4">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setIsCreateOpen(false)}
                                     className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200"
                                 >
                                     Batal
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={createForm.processing}
                                     className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]"
                                 >
@@ -525,11 +525,11 @@ export default function Index({ dosenList, filters }) {
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        
+
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Kode Dosen</label>
-                                <input 
+                                <input
                                     type="text"
                                     value={editForm.data.kode_dosen}
                                     onChange={(e) => editForm.setData('kode_dosen', e.target.value)}
@@ -541,7 +541,7 @@ export default function Index({ dosenList, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap</label>
-                                <input 
+                                <input
                                     type="text"
                                     value={editForm.data.nama_lengkap}
                                     onChange={(e) => editForm.setData('nama_lengkap', e.target.value)}
@@ -553,7 +553,7 @@ export default function Index({ dosenList, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Email</label>
-                                <input 
+                                <input
                                     type="email"
                                     value={editForm.data.email}
                                     onChange={(e) => editForm.setData('email', e.target.value)}
@@ -564,7 +564,7 @@ export default function Index({ dosenList, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Kategori Dosen</label>
-                                <select 
+                                <select
                                     value={editForm.data.kategori_dosen}
                                     onChange={(e) => editForm.setData('kategori_dosen', e.target.value)}
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
@@ -576,7 +576,7 @@ export default function Index({ dosenList, filters }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
-                                <select 
+                                <select
                                     value={editForm.data.status}
                                     onChange={(e) => editForm.setData('status', e.target.value)}
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
@@ -587,15 +587,15 @@ export default function Index({ dosenList, filters }) {
                             </div>
 
                             <div className="flex justify-end gap-2 pt-4">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setEditDosen(null)}
                                     className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200"
                                 >
                                     Batal
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={editForm.processing}
                                     className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]"
                                 >
@@ -624,15 +624,15 @@ export default function Index({ dosenList, filters }) {
                         </div>
 
                         <div className="flex justify-end gap-2 pt-6">
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={() => setDeleteDosen(null)}
                                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
                             >
                                 Batal
                             </button>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={handleConfirmDelete}
                                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724] transition-colors shadow-md cursor-pointer"
                             >
@@ -647,7 +647,7 @@ export default function Index({ dosenList, filters }) {
             {revokeDosen && (
                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto space-y-5">
-                        
+
                         {/* Header */}
                         <div className="flex items-start justify-between pb-3 border-b border-slate-100">
                             <div className="flex items-center gap-3">
@@ -704,7 +704,7 @@ export default function Index({ dosenList, filters }) {
 
                                 <div className="space-y-1.5">
                                     {revokeDosen.penugasan_koordinator.map((penugasan) => (
-                                        <div 
+                                        <div
                                             key={penugasan.id}
                                             className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl flex items-center justify-between text-xs"
                                         >
@@ -759,7 +759,7 @@ export default function Index({ dosenList, filters }) {
 
                                 <div className="space-y-1.5">
                                     {revokeDosen.penugasan_verifikator.map((penugasan) => (
-                                        <div 
+                                        <div
                                             key={penugasan.id}
                                             className="p-3 bg-indigo-50/60 border border-indigo-200/80 rounded-xl flex items-center justify-between text-xs"
                                         >
@@ -813,8 +813,8 @@ export default function Index({ dosenList, filters }) {
                                 {isRevoking ? 'Memproses...' : 'Cabut SEMUA Penugasan (Koor & Verifikator)'}
                             </button>
 
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={() => setRevokeDosen(null)}
                                 className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer text-center"
                             >

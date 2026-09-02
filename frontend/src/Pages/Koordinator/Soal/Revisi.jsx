@@ -17,9 +17,6 @@ function formatSize(bytes) {
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) {
     const { flash } = usePage().props;
@@ -74,7 +71,7 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
     return (
         <AuthenticatedLayout title="Perbaiki Soal">
             <Head title="Perbaiki Soal" />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="max-w-2xl mx-auto space-y-6">
                 <Link href={`/koordinator/soal/${soal.id}`}

@@ -9,10 +9,8 @@ import {
 
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { formatDate, formatDateTime } from '@/Utils/date';
 
-function Toast({ flash }) {
-    return <FlashAlert type="toast" flash={flash} />;
-}
 
 
 const STATUS_CONFIG = {
@@ -32,8 +30,6 @@ function StatusBadge({ status }) {
     );
 }
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-const formatDateTime = (d) => d ? new Date(d).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
 export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifikatorListStats, progress, recentActivities }) {
     const { flash } = usePage().props;
@@ -77,11 +73,36 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
         }
     };
 
+    const handleRemoveAssignment = async (type, mataKuliahId, dosenId, dosenNama, kodeMk) => {
+        const roleText = type === 'koordinator' ? 'Koordinator' : 'Verifikator';
+        const result = await showConfirm({
+            title: `Cabut Penugasan ${roleText}?`,
+            text: `Apakah Anda yakin ingin mencabut penugasan ${dosenNama} sebagai ${roleText} pada mata kuliah ${kodeMk}?`,
+            icon: 'warning',
+            confirmButtonText: 'Ya, Cabut Penugasan',
+            confirmButtonColor: '#CD202E',
+        });
+
+        if (result.isConfirmed) {
+            const endpoint = type === 'koordinator'
+                ? `/superadmin/kelompok-verifikasi/${kelompok.id}/remove-koordinator`
+                : `/superadmin/kelompok-verifikasi/${kelompok.id}/remove-verifikator`;
+
+            router.post(endpoint, {
+                mata_kuliah_id: mataKuliahId,
+                dosen_id: dosenId,
+            }, {
+                preserveScroll: true,
+                onSuccess: () => showToast('success', `Penugasan ${dosenNama} berhasil dicabut.`),
+            });
+        }
+    };
+
 
     return (
         <AuthenticatedLayout title={kelompok.nama}>
             <Head title={`${kelompok.nama} - Detail Kelompok`} />
-            <Toast flash={flash} />
+            <FlashAlert flash={flash} />
 
             <div className="w-full space-y-6 pb-16">
                 
@@ -284,8 +305,45 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                             <span className="text-[10px] text-gray-400">{mk.sks} SKS • Sem. {mk.semester || '-'}</span>
                                         </td>
                                         <td className="py-3 px-4">
-                                            <span className="font-bold text-gray-800 block">{mk.koordinator?.kode_dosen}</span>
-                                            <span className="text-[11px] text-gray-500">{mk.koordinator?.nama_lengkap}</span>
+                                            {mk.koordinator_list && mk.koordinator_list.length > 0 ? (
+                                                <div className="space-y-1">
+                                                    {mk.koordinator_list.map((k) => (
+                                                        <div key={k.id} className="flex items-center justify-between gap-1 group">
+                                                            <div>
+                                                                <span className="font-bold text-gray-800 block">{k.kode_dosen}</span>
+                                                                <span className="text-[11px] text-gray-500">{k.nama_lengkap}</span>
+                                                            </div>
+                                                            {kelompok.status !== 'CLOSED' && (
+                                                                <button
+                                                                    onClick={() => handleRemoveAssignment('koordinator', mk.mata_kuliah_id, k.id, k.nama_lengkap, mk.kode_mk)}
+                                                                    className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer"
+                                                                    title={`Cabut ${k.nama_lengkap}`}
+                                                                >
+                                                                    <X className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : mk.koordinator ? (
+                                                <div className="flex items-center justify-between gap-1 group">
+                                                    <div>
+                                                        <span className="font-bold text-gray-800 block">{mk.koordinator?.kode_dosen}</span>
+                                                        <span className="text-[11px] text-gray-500">{mk.koordinator?.nama_lengkap}</span>
+                                                    </div>
+                                                    {kelompok.status !== 'CLOSED' && (
+                                                        <button
+                                                            onClick={() => handleRemoveAssignment('koordinator', mk.mata_kuliah_id, mk.koordinator.id, mk.koordinator.nama_lengkap, mk.kode_mk)}
+                                                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer"
+                                                            title={`Cabut ${mk.koordinator.nama_lengkap}`}
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 italic text-[11px]">—</span>
+                                            )}
                                         </td>
                                         <td className="py-3 px-4">
                                             {mk.verifikator_list && mk.verifikator_list.length > 0 ? (
@@ -293,10 +351,19 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                                     {mk.verifikator_list.map((v) => (
                                                         <span
                                                             key={v.id}
-                                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"
+                                                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"
                                                         >
                                                             <Shield className="w-2.5 h-2.5" />
                                                             {v.kode_dosen}
+                                                            {kelompok.status !== 'CLOSED' && (
+                                                                <button
+                                                                    onClick={() => handleRemoveAssignment('verifikator', mk.mata_kuliah_id, v.id, v.nama_lengkap, mk.kode_mk)}
+                                                                    className="ml-0.5 text-blue-400 hover:text-red-600 transition-colors cursor-pointer"
+                                                                    title={`Cabut ${v.nama_lengkap}`}
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            )}
                                                         </span>
                                                     ))}
                                                 </div>

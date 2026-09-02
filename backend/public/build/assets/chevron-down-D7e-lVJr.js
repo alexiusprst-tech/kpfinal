@@ -1,0 +1,1 @@
+import{w as e}from"./AuthenticatedLayout-DW-e6qyi.js";var t=e(`chevron-down`,[[`path`,{d:`m6 9 6 6 6-6`,key:`qrunsl`}]]);export{t};
