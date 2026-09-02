@@ -440,7 +440,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-slate-100">
-                                        <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-20">Kode CLO</th>
+                                        <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-28">Kode CLO</th>
                                         <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Deskripsi CLO</th>
                                         <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-24">Bobot LO</th>
                                         <th className="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-28">Mapping ke PLO</th>
@@ -454,7 +454,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                                             return (
                                                 <tr key={clo.id} className="hover:bg-slate-50/40 transition-colors">
                                                     <td className="py-3 pr-2 align-top">
-                                                        <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-150 font-bold text-[10px]">
+                                                        <span className="inline-block whitespace-nowrap px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-150 font-bold text-[10px]">
                                                             {clo.kode_clo}
                                                         </span>
                                                     </td>
