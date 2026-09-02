@@ -152,6 +152,13 @@ export default function Dashboard({
     const [reportType, setReportType] = useState('rekap');
     const [isExporting, setIsExporting] = useState(false);
 
+    const displayedPeriods = useMemo(() => {
+        if (periodFilter === 'ACTIVE_ONLY') {
+            return allPeriods.filter((p) => p.status === 'ACTIVE');
+        }
+        return allPeriods;
+    }, [allPeriods, periodFilter]);
+
     const handleDownloadReport = () => {
         setIsExporting(true);
         const params = new URLSearchParams({
