@@ -72,7 +72,9 @@ class User extends Authenticatable
 
     public function isMustChangePasswordEnforced(): bool
     {
-        return $this->must_change_password && $this->isDosenLuarBiasa();
+        // Pop-up ganti password aktif untuk SEMUA pengguna yang must_change_password = true,
+        // baik dosen LB (login pertama) maupun dosen lain yang password-nya direset SuperAdmin.
+        return (bool) $this->must_change_password;
     }
 
     // ─── Relationships ─────────────────────────────────────────────────────────

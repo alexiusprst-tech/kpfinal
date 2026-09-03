@@ -606,12 +606,8 @@ export default function ProfileIndex({ user, dosen }) {
     const { flash } = usePage().props;
     const isSuperAdmin = user?.role === "SUPER_ADMIN" || user?.role === "SUPERADMIN";
     const isDosen = !!dosen;
-    const isLB = dosen && (
-        dosen.kategori_dosen === "LB" ||
-        dosen.kategori_dosen === "LUAR_BIASA" ||
-        dosen.kategori_dosen === "Dosen Luar Biasa"
-    );
-    const mustChange = !!user?.must_change_password && isLB;
+    // Gunakan must_change_password_enforced dari server (berlaku untuk semua role yang wajib ganti password)
+    const mustChange = !!user?.must_change_password_enforced;
 
     return (
         <AuthenticatedLayout title="Profil Saya">

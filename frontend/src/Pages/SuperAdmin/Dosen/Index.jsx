@@ -7,7 +7,7 @@ import { Head, useForm, router, usePage } from '@inertiajs/react';
 import {
     Users, Plus, Search, Edit2, Trash2, CheckCircle, XCircle,
     UserCheck, FileCheck, ShieldAlert, AlertTriangle, X, Filter,
-    UserMinus, ShieldOff, BookOpen, Calendar, AlertCircle
+    UserMinus, ShieldOff, BookOpen, Calendar, AlertCircle, Key
 } from 'lucide-react';
 
 export default function Index({ dosenList, filters }) {
@@ -19,6 +19,7 @@ export default function Index({ dosenList, filters }) {
     const [editDosen, setEditDosen] = useState(null);
     const [deleteDosen, setDeleteDosen] = useState(null);
     const [revokeDosen, setRevokeDosen] = useState(null);
+    const [passwordDosen, setPasswordDosen] = useState(null);
     const [isRevoking, setIsRevoking] = useState(false);
 
     // Real-time reactive search & filtering with 250ms debounce
@@ -61,6 +62,13 @@ export default function Index({ dosenList, filters }) {
         email: '',
         kategori_dosen: 'Dosen Tetap',
         status: 'ACTIVE',
+        password: '',
+    });
+
+    const passwordForm = useForm({
+        password: '',
+        password_confirmation: '',
+        must_change_password: false,
     });
 
     const handleCreateSubmit = (e) => {
@@ -81,6 +89,7 @@ export default function Index({ dosenList, filters }) {
             email: dosen.email || '',
             kategori_dosen: dosen.kategori_dosen || 'Dosen Tetap',
             status: dosen.status,
+            password: '',
         });
     };
 
@@ -89,6 +98,26 @@ export default function Index({ dosenList, filters }) {
         editForm.put(`/superadmin/dosen/${editDosen.id}`, {
             onSuccess: () => {
                 setEditDosen(null);
+            },
+        });
+    };
+
+    const handlePasswordOpen = (dosen) => {
+        setPasswordDosen(dosen);
+        passwordForm.setData({
+            password: '',
+            password_confirmation: '',
+            must_change_password: dosen.kategori_dosen === 'LB' || dosen.kategori_dosen === 'LUAR_BIASA',
+        });
+        passwordForm.clearErrors();
+    };
+
+    const handlePasswordSubmit = (e) => {
+        e.preventDefault();
+        passwordForm.post(`/superadmin/dosen/${passwordDosen.id}/reset-password`, {
+            onSuccess: () => {
+                setPasswordDosen(null);
+                passwordForm.reset();
             },
         });
     };
@@ -346,9 +375,16 @@ export default function Index({ dosenList, filters }) {
                                                         </button>
                                                     )}
                                                     <button
+                                                        onClick={() => handlePasswordOpen(dosen)}
+                                                        className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors cursor-pointer"
+                                                        title="Ubah Password Dosen"
+                                                    >
+                                                        <Key className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleEditOpen(dosen)}
                                                         className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
-                                                        title="Edit"
+                                                        title="Edit Data Dosen"
                                                     >
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
@@ -359,7 +395,6 @@ export default function Index({ dosenList, filters }) {
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
-
                                                 </div>
                                             </td>
                                         </tr>
@@ -584,6 +619,21 @@ export default function Index({ dosenList, filters }) {
                                     <option value="ACTIVE">ACTIVE</option>
                                     <option value="INACTIVE">INACTIVE</option>
                                 </select>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100">
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Password Baru (Opsional)</label>
+                                <input
+                                    type="password"
+                                    value={editForm.data.password}
+                                    onChange={(e) => editForm.setData('password', e.target.value)}
+                                    placeholder="Kosongkan jika tidak ingin merubah password"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                />
+                                {editForm.errors.password && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.password}</p>}
+                                <p className="text-[11px] text-slate-500 mt-1">
+                                    Password minimal 8 karakter.
+                                </p>
                             </div>
 
                             <div className="flex justify-end gap-2 pt-4">
@@ -821,6 +871,96 @@ export default function Index({ dosenList, filters }) {
                                 Tutup
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Ubah Password Dosen */}
+            {passwordDosen && (
+                <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/60">
+                                    <Key className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-extrabold text-[#1E293B]">Ubah Password Dosen</h2>
+                                    <p className="text-xs text-slate-500 font-medium">
+                                        {passwordDosen.nama_lengkap} ({passwordDosen.kode_dosen})
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setPasswordDosen(null)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                                aria-label="Tutup"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Password Baru</label>
+                                <input
+                                    type="password"
+                                    value={passwordForm.data.password}
+                                    onChange={(e) => passwordForm.setData('password', e.target.value)}
+                                    placeholder="Masukkan password baru (min 8 karakter)"
+                                    required
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                />
+                                {passwordForm.errors.password && (
+                                    <p className="text-[10px] text-red-600 mt-1 font-semibold">{passwordForm.errors.password}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">Konfirmasi Password Baru</label>
+                                <input
+                                    type="password"
+                                    value={passwordForm.data.password_confirmation}
+                                    onChange={(e) => passwordForm.setData('password_confirmation', e.target.value)}
+                                    placeholder="Ketik ulang password baru"
+                                    required
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                />
+                                {passwordForm.errors.password_confirmation && (
+                                    <p className="text-[10px] text-red-600 mt-1 font-semibold">{passwordForm.errors.password_confirmation}</p>
+                                )}
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={passwordForm.data.must_change_password}
+                                        onChange={(e) => passwordForm.setData('must_change_password', e.target.checked)}
+                                        className="rounded border-slate-300 text-[#801720] focus:ring-[#801720]"
+                                    />
+                                    <span className="text-xs font-bold text-slate-700">Wajibkan ganti password saat login berikutnya</span>
+                                </label>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setPasswordDosen(null)}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={passwordForm.processing}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm cursor-pointer"
+                                >
+                                    {passwordForm.processing ? 'Menyimpan...' : 'Simpan Password Baru'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

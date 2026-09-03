@@ -335,4 +335,28 @@ class AuthSecurityTest extends TestCase
             ->get('/koordinator/dashboard')
             ->assertStatus(200);
     }
+
+    public function test_superadmin_can_reset_dosen_password(): void
+    {
+        $superAdmin = User::create([
+            'id'       => (string) Str::uuid(),
+            'name'     => 'Super Admin',
+            'email'    => 'admin@telkomuniversity.ac.id',
+            'password' => Hash::make('password'),
+            'role'     => 'SUPER_ADMIN',
+            'status'   => 'ACTIVE',
+        ]);
+
+        $response = $this->actingAs($superAdmin)
+            ->post("/superadmin/dosen/{$this->dosen->id}/reset-password", [
+                'password'              => 'newsecret123',
+                'password_confirmation' => 'newsecret123',
+                'must_change_password'  => true,
+            ]);
+
+        $response->assertSessionHas('success');
+        $this->user->refresh();
+        $this->assertTrue(Hash::check('newsecret123', $this->user->password));
+        $this->assertTrue($this->user->must_change_password);
+    }
 }

@@ -90,6 +90,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
 
         // Dosen
         Route::post('dosen/{dosen}/cabut-penugasan', [\App\Http\Controllers\SuperAdmin\DosenController::class, 'cabutPenugasan'])->name('dosen.cabut-penugasan');
+        Route::post('dosen/{dosen}/reset-password', [\App\Http\Controllers\SuperAdmin\DosenController::class, 'resetPassword'])->name('dosen.reset-password');
         Route::resource('dosen', \App\Http\Controllers\SuperAdmin\DosenController::class)->except(['create', 'edit', 'show']);
 
         // Mata Kuliah

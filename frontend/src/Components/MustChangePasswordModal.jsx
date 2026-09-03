@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
-import { Lock, Eye, EyeOff, ArrowRight, LogOut, CheckCircle2, Circle, RotateCcw, ShieldCheck } from 'lucide-react';
 import { showToast, showConfirm } from '@/Utils/sweetalert';
 
 export default function MustChangePasswordModal({ open }) {
@@ -75,8 +74,7 @@ export default function MustChangePasswordModal({ open }) {
                         </div>
 
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-amber-100/80 text-amber-800 border border-amber-300/80">
-                            <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
-                            <span>AKTIVASI AKUN</span>
+                            AKTIVASI AKUN
                         </div>
                     </div>
 
@@ -118,23 +116,20 @@ export default function MustChangePasswordModal({ open }) {
                                 KATA SANDI BARU
                             </label>
                             <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <Lock className="w-4 h-4" />
-                                </div>
                                 <input
                                     type={show.new ? 'text' : 'password'}
                                     value={data.password}
                                     onChange={e => setData('password', e.target.value)}
                                     placeholder="Masukkan kata sandi baru (min. 8 karakter)"
-                                    className="w-full pl-10 pr-10 py-2.5 text-xs font-medium border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]"
+                                    className="w-full px-3.5 pr-20 py-2.5 text-xs font-medium border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShow(s => ({ ...s, new: !s.new }))}
-                                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-semibold text-slate-400 hover:text-slate-600 cursor-pointer"
                                 >
-                                    {show.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    {show.new ? 'Sembunyikan' : 'Tampilkan'}
                                 </button>
                             </div>
                             {errors.password && (
@@ -148,23 +143,20 @@ export default function MustChangePasswordModal({ open }) {
                                 KONFIRMASI KATA SANDI BARU
                             </label>
                             <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <RotateCcw className="w-4 h-4" />
-                                </div>
                                 <input
                                     type={show.confirm ? 'text' : 'password'}
                                     value={data.password_confirmation}
                                     onChange={e => setData('password_confirmation', e.target.value)}
                                     placeholder="Ulangi kata sandi baru"
-                                    className="w-full pl-10 pr-10 py-2.5 text-xs font-medium border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]"
+                                    className="w-full px-3.5 pr-20 py-2.5 text-xs font-medium border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShow(s => ({ ...s, confirm: !s.confirm }))}
-                                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-semibold text-slate-400 hover:text-slate-600 cursor-pointer"
                                 >
-                                    {show.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    {show.confirm ? 'Sembunyikan' : 'Tampilkan'}
                                 </button>
                             </div>
                             {errors.password_confirmation && (
@@ -175,21 +167,13 @@ export default function MustChangePasswordModal({ open }) {
                         {/* Checklist Box */}
                         <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-2 text-xs">
                             <div className="flex items-center gap-2">
-                                {isLengthValid ? (
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                                ) : (
-                                    <Circle className="w-4 h-4 text-slate-300 flex-shrink-0" />
-                                )}
+                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isLengthValid ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                                 <span className={isLengthValid ? 'text-emerald-700 font-bold' : 'text-slate-500 font-medium'}>
                                     Minimal 8 karakter
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
-                                {isMatchValid ? (
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                                ) : (
-                                    <Circle className="w-4 h-4 text-slate-300 flex-shrink-0" />
-                                )}
+                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isMatchValid ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                                 <span className={isMatchValid ? 'text-emerald-700 font-bold' : 'text-slate-500 font-medium'}>
                                     Kedua kata sandi cocok
                                 </span>
@@ -203,17 +187,15 @@ export default function MustChangePasswordModal({ open }) {
                                 disabled={processing || !isLengthValid || !isMatchValid}
                                 className="flex-1 py-3 px-4 bg-[#801720] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-50 transition-all shadow-md shadow-[#801720]/20 flex items-center justify-center gap-2 cursor-pointer"
                             >
-                                <span>{processing ? 'Menyimpan...' : 'Simpan & Masuk ke Dashboard'}</span>
-                                <ArrowRight className="w-4 h-4" />
+                                {processing ? 'Menyimpan...' : 'Simpan & Masuk ke Dashboard'}
                             </button>
 
                             <button
                                 type="button"
                                 onClick={handleLogout}
-                                className="py-3 px-4 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0"
+                                className="py-3 px-4 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center cursor-pointer flex-shrink-0"
                             >
-                                <LogOut className="w-4 h-4" />
-                                <span>Logout</span>
+                                Logout
                             </button>
                         </div>
                     </form>

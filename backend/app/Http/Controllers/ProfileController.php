@@ -22,7 +22,15 @@ class ProfileController extends Controller
         $dosen = $user->dosen;
 
         return Inertia::render('Profile/Index', [
-            'user'  => $user,
+            'user'  => [
+                'id'                            => $user->id,
+                'name'                          => $user->name,
+                'email'                         => $user->email,
+                'role'                          => $user->role,
+                'status'                        => $user->status,
+                'must_change_password'          => (bool) $user->must_change_password,
+                'must_change_password_enforced' => (bool) $user->isMustChangePasswordEnforced(),
+            ],
             'dosen' => $dosen ? [
                 'id'              => $dosen->id,
                 'kode_dosen'      => $dosen->kode_dosen,

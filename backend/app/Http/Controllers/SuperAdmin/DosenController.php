@@ -137,6 +137,7 @@ class DosenController extends Controller
             'email'          => ['nullable', 'email', 'max:150'],
             'kategori_dosen' => ['nullable', 'string', 'max:50'],
             'status'         => ['required', 'in:ACTIVE,INACTIVE'],
+            'password'       => ['nullable', 'string', 'min:8'],
         ]);
 
         if ($dosen->user && !empty($validated['email'])) {
@@ -151,14 +152,36 @@ class DosenController extends Controller
         }
 
         $oldValues = $dosen->toArray();
-        $dosen->update($validated);
+        $dosenData = [
+            'kode_dosen'     => $validated['kode_dosen'],
+            'nama_lengkap'   => $validated['nama_lengkap'],
+            'email'          => $validated['email'] ?? null,
+            'kategori_dosen' => $validated['kategori_dosen'] ?? 'Dosen Tetap',
+            'status'         => $validated['status'],
+        ];
+        $dosen->update($dosenData);
 
         if ($dosen->user) {
-            $dosen->user->update([
+            $userPayload = [
                 'name'   => $validated['nama_lengkap'],
                 'email'  => $validated['email'] ?? $dosen->user->email,
                 'status' => $validated['status'],
+            ];
+            if (!empty($validated['password'])) {
+                $userPayload['password'] = Hash::make($validated['password']);
+            }
+            $dosen->user->update($userPayload);
+        } elseif (!empty($validated['password']) && !empty($validated['email'])) {
+            $isLB = in_array(strtoupper(trim($validated['kategori_dosen'] ?? '')), ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA']);
+            $newUser = User::create([
+                'name'                 => $validated['nama_lengkap'],
+                'email'                => $validated['email'],
+                'password'             => Hash::make($validated['password']),
+                'role'                 => null,
+                'status'               => $validated['status'],
+                'must_change_password' => $isLB,
             ]);
+            $dosen->update(['user_id' => $newUser->id]);
         }
 
         AuditLog::record(
@@ -171,6 +194,63 @@ class DosenController extends Controller
         );
 
         return redirect()->back()->with('success', 'Data Dosen berhasil diperbarui.');
+    }
+
+    /**
+     * Ubah/Reset password akun dosen oleh SuperAdmin
+     */
+    public function resetPassword(Request $request, Dosen $dosen)
+    {
+        $validated = $request->validate([
+            'password'             => ['required', 'string', 'min:8', 'confirmed'],
+            'must_change_password' => ['nullable', 'boolean'],
+        ], [
+            'password.required'  => 'Password baru wajib diisi.',
+            'password.min'       => 'Password minimal harus 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+        ]);
+
+        if (!$dosen->user) {
+            if (empty($dosen->email)) {
+                return redirect()->back()->withErrors([
+                    'password' => 'Dosen belum memiliki email. Harap perbarui data email dosen terlebih dahulu.',
+                ]);
+            }
+
+            $isLB = in_array(strtoupper(trim($dosen->kategori_dosen ?? '')), ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA']);
+            $user = User::create([
+                'name'                 => $dosen->nama_lengkap,
+                'email'                => $dosen->email,
+                'password'             => Hash::make($validated['password']),
+                'role'                 => null,
+                'status'               => $dosen->status ?? 'ACTIVE',
+                'must_change_password' => $request->boolean('must_change_password', $isLB),
+            ]);
+
+            $dosen->update(['user_id' => $user->id]);
+        } else {
+            $userUpdateData = [
+                'password' => Hash::make($validated['password']),
+            ];
+            if ($request->has('must_change_password')) {
+                $userUpdateData['must_change_password'] = $request->boolean('must_change_password');
+            }
+            $dosen->user->update($userUpdateData);
+        }
+
+        AuditLog::record(
+            $request->user()->id,
+            'RESET_DOSEN_PASSWORD',
+            'Dosen',
+            $dosen->id,
+            null,
+            [
+                'kode_dosen' => $dosen->kode_dosen,
+                'user_id'    => $dosen->user_id,
+            ]
+        );
+
+        return redirect()->back()->with('success', "Password untuk dosen {$dosen->nama_lengkap} berhasil diperbarui.");
     }
 
     public function destroy(Request $request, Dosen $dosen)

@@ -144,7 +144,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                         </div>
 
                         <h2 className="text-2xl lg:text-3xl font-black tracking-tight text-white leading-tight">
-                            Selamat Datang, {userName} 👋
+                            Selamat Datang, {userName}
                         </h2>
 
                         <p className="text-white/80 text-xs sm:text-sm leading-relaxed font-normal">

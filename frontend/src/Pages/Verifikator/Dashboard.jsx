@@ -115,7 +115,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                         </div>
 
                         <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-white">
-                            Selamat Datang, {userName} 👋
+                            Selamat Datang, {userName}
                         </h1>
 
                         <p className="text-white/80 text-sm leading-relaxed font-normal">
