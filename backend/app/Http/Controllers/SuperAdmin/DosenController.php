@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Http\Controllers\SuperAdmin\KelompokVerifikasiController;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Dosen;
@@ -297,12 +298,14 @@ class DosenController extends Controller
 
                 \App\Models\KelompokKoordinator::where('dosen_id', $dosen->id)->delete();
                 \App\Models\KelompokVerifikator::where('dosen_id', $dosen->id)->delete();
+                KelompokVerifikasiController::syncKelompokMataKuliahKoordinator(null, null, $dosen->id);
             } elseif ($type === 'KOORDINATOR') {
                 $endedKoor = PenugasanKoordinator::where('dosen_id', $dosen->id)
                     ->where('status', 'ACTIVE')
                     ->update(['status' => 'ENDED']);
 
                 \App\Models\KelompokKoordinator::where('dosen_id', $dosen->id)->delete();
+                KelompokVerifikasiController::syncKelompokMataKuliahKoordinator(null, null, $dosen->id);
             } elseif ($type === 'VERIFIKATOR') {
                 $endedVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)
                     ->where('status', 'ACTIVE')
@@ -312,11 +315,21 @@ class DosenController extends Controller
             } elseif ($type === 'SPECIFIC' && !empty($validated['penugasan_id'])) {
                 if ($validated['penugasan_type'] === 'KOORDINATOR') {
                     $pk = PenugasanKoordinator::find($validated['penugasan_id']);
-                    if ($pk && $pk->kelompok_id) {
-                        \App\Models\KelompokKoordinator::where('kelompok_id', $pk->kelompok_id)
-                            ->where('mata_kuliah_id', $pk->mata_kuliah_id)
-                            ->where('dosen_id', $dosen->id)
-                            ->delete();
+                    if ($pk) {
+                        if ($pk->kelompok_id) {
+                            \App\Models\KelompokKoordinator::where('kelompok_id', $pk->kelompok_id)
+                                ->where('mata_kuliah_id', $pk->mata_kuliah_id)
+                                ->where('dosen_id', $dosen->id)
+                                ->delete();
+
+                            KelompokVerifikasiController::syncKelompokMataKuliahKoordinator($pk->kelompok_id, $pk->mata_kuliah_id, $dosen->id);
+                        } else {
+                            \App\Models\KelompokKoordinator::where('mata_kuliah_id', $pk->mata_kuliah_id)
+                                ->where('dosen_id', $dosen->id)
+                                ->delete();
+
+                            KelompokVerifikasiController::syncKelompokMataKuliahKoordinator(null, $pk->mata_kuliah_id, $dosen->id);
+                        }
                     }
 
                     $endedKoor = PenugasanKoordinator::where('id', $validated['penugasan_id'])
@@ -325,11 +338,20 @@ class DosenController extends Controller
                         ->update(['status' => 'ENDED']);
                 } elseif ($validated['penugasan_type'] === 'VERIFIKATOR') {
                     $pv = PenugasanVerifikator::find($validated['penugasan_id']);
-                    if ($pv && $pv->kelompok_id) {
-                        \App\Models\KelompokVerifikator::where('kelompok_id', $pv->kelompok_id)
-                            ->where('mata_kuliah_id', $pv->mata_kuliah_id)
-                            ->where('dosen_id', $dosen->id)
-                            ->delete();
+                    if ($pv) {
+                        if ($pv->kelompok_id) {
+                            \App\Models\KelompokVerifikator::where('kelompok_id', $pv->kelompok_id)
+                                ->where('dosen_id', $dosen->id)
+                                ->where(function ($q) use ($pv) {
+                                    $q->where('mata_kuliah_id', $pv->mata_kuliah_id)
+                                      ->orWhereNull('mata_kuliah_id');
+                                })
+                                ->delete();
+                        } else {
+                            \App\Models\KelompokVerifikator::where('mata_kuliah_id', $pv->mata_kuliah_id)
+                                ->where('dosen_id', $dosen->id)
+                                ->delete();
+                        }
                     }
 
                     $endedVerif = PenugasanVerifikator::where('id', $validated['penugasan_id'])
@@ -339,7 +361,10 @@ class DosenController extends Controller
                 }
             }
 
-            // Sync user role
+            // Sync user roles & Mata Kuliah statuses
+            KelompokVerifikasiController::syncAffectedDosenRoles();
+            KelompokVerifikasiController::syncAffectedMataKuliahStatus();
+
             $remainingKoor = PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->count();
             $remainingVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->count();
 

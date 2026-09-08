@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Download, FileText, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
-import { renderAsync } from 'docx-preview';
 
 /**
  * Reusable Document Preview Modal
@@ -33,6 +32,7 @@ export default function DocumentPreviewModal({ open, onClose, fileName, previewU
                 .then(async (response) => {
                     if (docxContainerRef.current) {
                         docxContainerRef.current.innerHTML = '';
+                        const { renderAsync } = await import('docx-preview');
                         await renderAsync(response.data, docxContainerRef.current, null, {
                             className: 'docx-preview-content',
                             inWrapper: true,
@@ -49,6 +49,57 @@ export default function DocumentPreviewModal({ open, onClose, fileName, previewU
                 });
         }
     }, [open, previewUrl, isDocx]);
+
+    const handleOpenNewTab = (e) => {
+        if (isDocx && previewUrl) {
+            e.preventDefault();
+            const newWin = window.open('', '_blank');
+            if (newWin) {
+                newWin.document.write(`
+                    <!DOCTYPE html>
+                    <html lang="id">
+                    <head>
+                        <meta charset="utf-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <title>Pratinjau - ${fileName || 'Dokumen'}</title>
+                        <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+                        <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.1.15/dist/docx-preview.min.js"></script>
+                        <style>
+                            body { margin: 0; padding: 0; background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+                            .header { padding: 12px 24px; background: #ffffff; border-bottom: 1px solid #e2e8f0; display: flex; items-center: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+                            .header h1 { margin: 0; font-size: 14px; font-weight: 700; color: #1e293b; }
+                            .content-wrapper { padding: 24px; display: flex; justify-content: center; }
+                            #docx-container { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 20px; min-height: 80vh; width: 100%; max-width: 900px; }
+                            .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #64748b; font-size: 13px; font-weight: 600; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>${fileName || 'Pratinjau Naskah Word'}</h1>
+                            <span style="font-size: 11px; font-weight: 700; color: #801720; background: #fef2f2; padding: 4px 10px; border-radius: 9999px; border: 1px solid #fecaca;">DOCX PREVIEW</span>
+                        </div>
+                        <div class="content-wrapper">
+                            <div id="docx-container"><div class="loading">Memuat dan merender naskah Word...</div></div>
+                        </div>
+                        <script>
+                            fetch('${previewUrl}')
+                                .then(res => res.blob())
+                                .then(blob => {
+                                    const container = document.getElementById('docx-container');
+                                    container.innerHTML = '';
+                                    docx.renderAsync(blob, container, null, { inWrapper: false });
+                                })
+                                .catch(err => {
+                                    document.getElementById('docx-container').innerHTML = '<div class="loading" style="color: #dc2626;">Gagal memuat dokumen.</div>';
+                                });
+                        </script>
+                    </body>
+                    </html>
+                `);
+                newWin.document.close();
+            }
+        }
+    };
 
     if (!open) return null;
 
@@ -89,7 +140,8 @@ export default function DocumentPreviewModal({ open, onClose, fileName, previewU
                                 href={previewUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-100 transition-colors shadow-xs"
+                                onClick={handleOpenNewTab}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-100 transition-colors shadow-xs cursor-pointer"
                                 title="Buka di tab baru"
                             >
                                 <ExternalLink className="w-3.5 h-3.5" />

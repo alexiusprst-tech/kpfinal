@@ -261,7 +261,7 @@ class BeritaAcaraController extends Controller
 
         return DB::transaction(function () use ($user, $dosen, $selectedPeriod, $mataKuliah, $soalList, $soalApproved, $clos, $koordinatorDosen, $jumlahApproved, $jumlahRevision, $jumlahRejected) {
             // Lock period to prevent race condition during serial number generation
-            $lockedPeriod = PeriodeVerifikasi::where('id', $selectedPeriod->id)->lockForUpdate()->first();
+            $lockedPeriod = PeriodeVerifikasi::with('tahunAjaran')->where('id', $selectedPeriod->id)->lockForUpdate()->first();
 
             $existing = BeritaAcara::where('periode_id', $lockedPeriod->id)
                 ->where('mata_kuliah_id', $mataKuliah->id)
@@ -433,7 +433,7 @@ class BeritaAcaraController extends Controller
 
         return DB::transaction(function () use ($user, $dosen, $periode, $mataKuliah, $soal, $soalList, $clos, $koordinatorDosen) {
             // Lock period to prevent race condition during serial number generation
-            $lockedPeriod = PeriodeVerifikasi::where('id', $periode->id)->lockForUpdate()->first();
+            $lockedPeriod = PeriodeVerifikasi::with('tahunAjaran')->where('id', $periode->id)->lockForUpdate()->first();
 
             $existing = BeritaAcara::where('periode_id', $lockedPeriod->id)
                 ->where('mata_kuliah_id', $mataKuliah->id)

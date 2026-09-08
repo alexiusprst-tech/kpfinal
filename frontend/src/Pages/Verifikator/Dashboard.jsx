@@ -14,7 +14,7 @@ const STATUS_CONFIG = {
     BELUM_UPLOAD: { label: 'Belum Upload', color: 'bg-slate-100 text-slate-700 border border-slate-200', dot: 'bg-slate-400' },
     IN_REVIEW: { label: 'In Review', color: 'bg-purple-50 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
     SUBMITTED: { label: 'In Review', color: 'bg-purple-50 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'In Review', color: 'bg-purple-50 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'Revisi Baru', color: 'bg-amber-50 text-amber-700 border border-amber-200', dot: 'bg-amber-500' },
     DRAFT: { label: 'In Review', color: 'bg-purple-50 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
     REVISION: { label: 'Revisi', color: 'bg-amber-50 text-amber-700 border border-amber-200', dot: 'bg-amber-500' },
     APPROVED: { label: 'Disetujui', color: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
@@ -66,7 +66,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                         <div className="space-y-1">
                             <h3 className="font-extrabold text-sm uppercase tracking-wider">Pemberitahuan Penugasan</h3>
                             <p className="text-xs font-semibold text-amber-50 leading-relaxed">
-                                Akun Anda saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin.
+                                {noAssignmentMessage}
                             </p>
                         </div>
                     </div>
@@ -219,53 +219,88 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                 </div>
                             ) : (
                                 <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
-                                    {filteredPending.map(soal => (
+                                    {filteredPending.map(soal => {
+                                        const isResubmitted = soal.status === 'RESUBMITTED';
+                                        const latestRevisi = soal.revisi?.[0];
+                                        return (
                                         <div
                                             key={soal.id}
-                                            className="p-3.5 rounded-2xl border border-gray-100 bg-slate-50/60 hover:bg-white hover:border-[#801720]/30 hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group"
+                                            className={`rounded-2xl border transition-all flex flex-col justify-between gap-3 group ${
+                                                isResubmitted
+                                                    ? 'border-amber-200 bg-amber-50/40 hover:bg-amber-50 hover:border-amber-300 hover:shadow-md'
+                                                    : 'border-gray-100 bg-slate-50/60 hover:bg-white hover:border-[#801720]/30 hover:shadow-md'
+                                            }`}
                                         >
-                                            <div className="flex items-start gap-3 min-w-0">
-                                                <div className="w-9 h-9 rounded-xl bg-red-100 text-red-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                    <FileText className="w-4 h-4" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <h3 className="font-bold text-gray-800 text-xs group-hover:text-[#801720] transition-colors truncate">
-                                                            {soal.judul}
-                                                        </h3>
-                                                        <StatusBadge status={soal.status} />
+                                            <div className="p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                                <div className="flex items-start gap-3 min-w-0">
+                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                                        isResubmitted ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        <FileText className="w-4 h-4" />
                                                     </div>
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <h3 className="font-bold text-gray-800 text-xs group-hover:text-[#801720] transition-colors truncate">
+                                                                {soal.judul}
+                                                            </h3>
+                                                            <StatusBadge status={soal.status} />
+                                                        </div>
 
-                                                    <p className="text-[10px] text-gray-400 font-medium mt-1 flex items-center gap-2 flex-wrap">
-                                                        <span className="font-bold text-gray-600">{soal.mata_kuliah?.nama_mk}</span>
-                                                        <span>•</span>
-                                                        <span className="flex items-center gap-1">
-                                                            <User className="w-3 h-3 text-gray-400" />
-                                                            {soal.uploaded_by?.name || 'Dosen Koordinator'}
-                                                        </span>
-                                                        {soal.kategori?.nama && (
-                                                            <>
-                                                                <span>•</span>
-                                                                <span className="bg-slate-200/70 text-slate-700 px-1.5 py-0.5 rounded text-[9px] font-bold">
-                                                                    {soal.kategori.nama}
-                                                                </span>
-                                                            </>
-                                                        )}
-                                                    </p>
+                                                        <p className="text-[10px] text-gray-400 font-medium mt-1 flex items-center gap-2 flex-wrap">
+                                                            <span className="font-bold text-gray-600">{soal.mata_kuliah?.nama_mk}</span>
+                                                            <span>•</span>
+                                                            <span className="flex items-center gap-1">
+                                                                <User className="w-3 h-3 text-gray-400" />
+                                                                {soal.uploaded_by?.name || 'Dosen Koordinator'}
+                                                            </span>
+                                                            {soal.kategori?.nama && (
+                                                                <>
+                                                                    <span>•</span>
+                                                                    <span className="bg-slate-200/70 text-slate-700 px-1.5 py-0.5 rounded text-[9px] font-bold">
+                                                                        {soal.kategori.nama}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100">
+                                                    <Link
+                                                        href={`/verifikator/soal/${soal.id}`}
+                                                        className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                                                            isResubmitted
+                                                                ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                                                : 'bg-[#801720] hover:bg-[#9B1B26] text-white'
+                                                        }`}
+                                                    >
+                                                        <span>Review</span>
+                                                        <ArrowRight className="w-3.5 h-3.5" />
+                                                    </Link>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100">
-                                                <Link
-                                                    href={`/verifikator/soal/${soal.id}`}
-                                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#9B1B26] transition-all shadow-xs"
-                                                >
-                                                    <span>Review & Verifikasi</span>
-                                                    <ArrowRight className="w-3.5 h-3.5" />
-                                                </Link>
-                                            </div>
+                                            {/* Revision info banner for RESUBMITTED */}
+                                            {isResubmitted && latestRevisi && (
+                                                <div className="mx-3.5 mb-3.5 px-3 py-2 rounded-xl bg-amber-100/70 border border-amber-200 flex items-start gap-2">
+                                                    <RefreshCw className="w-3 h-3 text-amber-600 flex-shrink-0 mt-0.5" />
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold text-amber-800">Berkas Revisi Baru Diunggah</p>
+                                                        <p className="text-[10px] text-amber-600 truncate">
+                                                            {latestRevisi.nama_file}
+                                                            {latestRevisi.uploaded_at && (
+                                                                <span className="text-amber-500 ml-1">· {formatDate(latestRevisi.uploaded_at)}</span>
+                                                            )}
+                                                        </p>
+                                                        {latestRevisi.catatan && (
+                                                            <p className="text-[10px] text-amber-700 italic mt-0.5 line-clamp-1">"{latestRevisi.catatan}"</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>

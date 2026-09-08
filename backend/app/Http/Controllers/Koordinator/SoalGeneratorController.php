@@ -21,12 +21,18 @@ class SoalGeneratorController extends Controller
         $mataKuliahId = $request->query('mata_kuliah_id');
 
         if (!$mataKuliahId) {
-            $assignments = $dosen
+            $assignments = ($dosen && $activePeriod)
                 ? PenugasanKoordinator::with('mataKuliah')
                     ->where('dosen_id', $dosen->id)
+                    ->where('periode_id', $activePeriod->id)
                     ->where('status', 'ACTIVE')
                     ->get()
-                : collect();
+                : ($dosen
+                    ? PenugasanKoordinator::with('mataKuliah')
+                        ->where('dosen_id', $dosen->id)
+                        ->where('status', 'ACTIVE')
+                        ->get()
+                    : collect());
 
             if ($assignments->isEmpty()) {
                 return redirect()->route('koordinator.dashboard')
@@ -50,12 +56,18 @@ class SoalGeneratorController extends Controller
         }
 
         // Verify assignment: coordinator must be assigned to this MK.
-        $assignment = $dosen
+        $assignment = ($dosen && $activePeriod)
             ? PenugasanKoordinator::where('dosen_id', $dosen->id)
                 ->where('mata_kuliah_id', $mataKuliahId)
+                ->where('periode_id', $activePeriod->id)
                 ->where('status', 'ACTIVE')
                 ->first()
-            : null;
+            : ($dosen
+                ? PenugasanKoordinator::where('dosen_id', $dosen->id)
+                    ->where('mata_kuliah_id', $mataKuliahId)
+                    ->where('status', 'ACTIVE')
+                    ->first()
+                : null);
 
         if (!$assignment) {
             abort(403, 'Anda tidak memiliki akses ke mata kuliah ini.');
@@ -213,12 +225,19 @@ class SoalGeneratorController extends Controller
             return response()->json(['error' => 'Mata kuliah ID diperlukan.'], 400);
         }
 
-        $assignment = $dosen
+        $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+        $assignment = ($dosen && $activePeriod)
             ? PenugasanKoordinator::where('dosen_id', $dosen->id)
                 ->where('mata_kuliah_id', $mataKuliahId)
+                ->where('periode_id', $activePeriod->id)
                 ->where('status', 'ACTIVE')
                 ->first()
-            : null;
+            : ($dosen
+                ? PenugasanKoordinator::where('dosen_id', $dosen->id)
+                    ->where('mata_kuliah_id', $mataKuliahId)
+                    ->where('status', 'ACTIVE')
+                    ->first()
+                : null);
 
         if (!$assignment) {
             return response()->json(['error' => 'Anda tidak memiliki akses ke mata kuliah ini.'], 403);

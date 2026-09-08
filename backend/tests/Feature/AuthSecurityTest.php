@@ -267,7 +267,7 @@ class AuthSecurityTest extends TestCase
             'password'             => Hash::make('secret123'),
             'role'                 => 'KOORDINATOR',
             'status'               => 'ACTIVE',
-            'must_change_password' => true,
+            'must_change_password' => false,
         ]);
 
         $dosenObj = Dosen::create([

@@ -1,8 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    ArrowLeft, UploadCloud, FileText, X, AlertTriangle, User, CheckCircle2, Send, MessageSquare
+    ArrowLeft, UploadCloud, FileText, X, AlertTriangle, User, CheckCircle2, Send, MessageSquare, Loader2, Eye
 } from 'lucide-react';
 
 const ALLOWED_EXT = ['pdf', 'doc', 'docx'];
@@ -24,16 +24,58 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
     const [clientError, setClientError] = useState('');
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef(null);
+    const docxRef = useRef(null);
+
+    const [fileUrl, setFileUrl] = useState(null);
+    const [renderingDocx, setRenderingDocx] = useState(false);
+    const [docxError, setDocxError] = useState('');
 
     const { data, setData, post, processing, errors } = useForm({
         file: null,
         catatan: '',
     });
 
+    const ext = data.file ? data.file.name.split('.').pop()?.toLowerCase() : '';
+
+    useEffect(() => {
+        if (step === 'preview' && data.file) {
+            if (ext === 'pdf') {
+                const url = URL.createObjectURL(data.file);
+                setFileUrl(url);
+                return () => URL.revokeObjectURL(url);
+            } else if (ext === 'docx') {
+                setRenderingDocx(true);
+                setDocxError('');
+                const timer = setTimeout(async () => {
+                    if (docxRef.current) {
+                        docxRef.current.innerHTML = '';
+                        try {
+                            const { renderAsync } = await import('docx-preview');
+                            await renderAsync(data.file, docxRef.current, null, {
+                                className: 'docx-preview-content',
+                                inWrapper: true,
+                                ignoreWidth: false,
+                                ignoreHeight: false,
+                            });
+                            setRenderingDocx(false);
+                        } catch (err) {
+                            console.error('DOCX render error:', err);
+                            setDocxError('Gagal memuat pratinjau berkas DOCX.');
+                            setRenderingDocx(false);
+                        }
+                    } else {
+                        setRenderingDocx(false);
+                    }
+                }, 50);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [step, data.file, ext]);
+
     const handleFile = (file) => {
         if (!file) return;
-        const ext = file.name.split('.').pop().toLowerCase();
-        if (!ALLOWED_EXT.includes(ext)) {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        if (!ALLOWED_EXT.includes(fileExt)) {
             setClientError('Format file harus PDF, DOC, atau DOCX.');
             return;
         }
@@ -79,7 +121,7 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
             <Head title="Perbaiki Soal" />
             <FlashAlert flash={flash} />
 
-            <div className="max-w-2xl mx-auto space-y-6">
+            <div className={`mx-auto space-y-6 transition-all duration-300 ${step === 'preview' ? 'max-w-4xl' : 'max-w-2xl'}`}>
                 <Link href={`/koordinator/soal/${soal.id}`}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720]">
                     <ArrowLeft className="w-3.5 h-3.5" /> Kembali
@@ -201,7 +243,7 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
                     )}
 
                     {step === 'preview' && (
-                        <div className="mt-4 space-y-4">
+                        <div className="mt-4 space-y-5">
                             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 text-xs space-y-2">
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">File Revisi:</span>
@@ -219,11 +261,58 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
                                 )}
                             </div>
 
-                            <div className="flex gap-2">
+                            {/* Live Document Preview */}
+                            <div className="space-y-2">
+                                <h3 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                                    <Eye className="w-3.5 h-3.5 text-[#801720]" /> Pratinjau Isi Berkas:
+                                </h3>
+
+                                {ext === 'pdf' && fileUrl && (
+                                    <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-xs bg-gray-50 h-[600px] w-full">
+                                        <iframe
+                                            src={fileUrl}
+                                            className="w-full h-full border-0 bg-white"
+                                            title="Pratinjau Berkas PDF"
+                                        />
+                                    </div>
+                                )}
+
+                                {ext === 'docx' && (
+                                    <div className="border border-gray-200 rounded-2xl p-4 sm:p-6 bg-white min-h-[450px] shadow-xs relative overflow-y-auto max-h-[600px]">
+                                        {renderingDocx && (
+                                            <div className="flex flex-col items-center justify-center py-16 text-gray-500 gap-2">
+                                                <Loader2 className="w-8 h-8 text-[#801720] animate-spin" />
+                                                <p className="text-xs font-semibold">Memuat dan merender naskah Word...</p>
+                                            </div>
+                                        )}
+                                        {docxError && (
+                                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 text-center">
+                                                {docxError}
+                                            </div>
+                                        )}
+                                        <div
+                                            ref={docxRef}
+                                            className={`docx-container transition-opacity ${renderingDocx ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}
+                                        />
+                                    </div>
+                                )}
+
+                                {ext === 'doc' && (
+                                    <div className="p-6 bg-amber-50 border border-amber-200 rounded-2xl text-center space-y-2">
+                                        <FileText className="w-8 h-8 text-amber-600 mx-auto" />
+                                        <h4 className="text-xs font-bold text-gray-800">Format .doc Tidak Mendukung Live Preview</h4>
+                                        <p className="text-[11px] text-gray-600 leading-relaxed">
+                                            Format .doc adalah format biner Microsoft Word terdahulu. Berkas tetap akan terkirim dengan baik saat Anda menekan tombol "Ya, Kirim Revisi".
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
                                 <button
                                     type="button"
                                     onClick={() => setStep('form')}
-                                    className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50"
+                                    className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 cursor-pointer"
                                 >
                                     Ubah Berkas
                                 </button>
@@ -231,7 +320,7 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
                                     type="button"
                                     onClick={submitUlang}
                                     disabled={processing}
-                                    className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 disabled:opacity-50"
+                                    className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
                                 >
                                     {processing ? 'Mengirim...' : 'Ya, Kirim Revisi'}
                                 </button>
@@ -243,3 +332,4 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
         </AuthenticatedLayout>
     );
 }
+

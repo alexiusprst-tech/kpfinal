@@ -257,11 +257,15 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                                                         <Send className="w-3.5 h-3.5" />
                                                     </button>
                                                 )}
-                                                {/* Upload Revisi (if REVISION) */}
+                                                {/* Lihat Detail Revisi (if REVISION) */}
                                                 {soal.status === 'REVISION' && (
-                                                    <button onClick={() => setShowRevisi(soal)} className="p-1.5 hover:bg-amber-50 text-amber-600 rounded-lg cursor-pointer" title="Upload Revisi">
-                                                        <RefreshCw className="w-3.5 h-3.5" />
-                                                    </button>
+                                                    <Link
+                                                        href={`/koordinator/mata-kuliah/${soal.mata_kuliah_id || soal.mata_kuliah?.id}`}
+                                                        className="p-1.5 hover:bg-amber-50 text-amber-600 rounded-lg cursor-pointer inline-flex items-center justify-center"
+                                                        title="Lihat Detail Revisi"
+                                                    >
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                    </Link>
                                                 )}
                                                 {/* Delete (if DRAFT) */}
                                                 {soal.status === 'DRAFT' && (

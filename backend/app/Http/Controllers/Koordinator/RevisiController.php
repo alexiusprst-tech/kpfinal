@@ -130,8 +130,18 @@ class RevisiController extends Controller
             abort(404, 'File revisi tidak ditemukan.');
         }
 
-        return $disk->response($revisi->file_path, $revisi->nama_file, [
-            'Content-Disposition' => 'inline; filename="' . $revisi->nama_file . '"',
+        $fullPath = $disk->path($revisi->file_path);
+        $ext = strtolower(pathinfo($revisi->nama_file, PATHINFO_EXTENSION));
+        $mimeType = match ($ext) {
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            default => $disk->mimeType($revisi->file_path) ?: 'application/octet-stream',
+        };
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . rawurlencode($revisi->nama_file) . '"',
         ]);
     }
 

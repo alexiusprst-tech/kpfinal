@@ -390,7 +390,7 @@
     <tr>
         <td class="title-doc" rowspan="2">
             BERITA ACARA VERIFIKASI SOAL ASESMEN<br>
-            OBE SEMESTER {{ strtoupper($periode->jenis_periode ?? 'GANJIL') }} {{ $periode->tahunAjaran->tahun_mulai ?? '20...' }}/{{ $periode->tahunAjaran->tahun_selesai ?? '202...' }}
+            OBE SEMESTER {{ strtoupper($periode->jenis_periode ?? 'GANJIL') }} {{ $periode->tahun_akademik ?? ($periode->tahunAjaran->tahun_mulai . '/' . $periode->tahunAjaran->tahun_selesai) }}
         </td>
         <td class="meta-label">Berlaku Efektif</td>
         <td class="meta-value"></td>
@@ -407,7 +407,7 @@
     <tr>
         <td class="label">Semester/Tahun Akademik</td>
         <td class="sep">:</td>
-        <td>{{ ucfirst($periode->jenis_periode ?? 'Ganjil') }} {{ $periode->tahunAjaran->tahun_mulai ?? '20...' }}/{{ $periode->tahunAjaran->tahun_selesai ?? '202...' }}</td>
+        <td>{{ ucfirst($periode->jenis_periode ?? 'Ganjil') }} {{ $periode->tahun_akademik ?? ($periode->tahunAjaran->tahun_mulai . '/' . $periode->tahunAjaran->tahun_selesai) }}</td>
     </tr>
     <tr>
         <td class="label">Fakultas</td>

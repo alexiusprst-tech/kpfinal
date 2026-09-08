@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\MataKuliah;
 use App\Models\PenugasanKoordinator;
 use App\Models\PenugasanVerifikator;
+use App\Models\PeriodeVerifikasi;
 use App\Models\Soal;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,14 +34,29 @@ class MataKuliahController extends Controller
         $user  = $request->user();
         $dosen = $user->dosen;
 
-        $assignment = $dosen
-            ? PenugasanKoordinator::with(['periode', 'dosen'])
-                ->where('dosen_id', $dosen->id)
-                ->where('mata_kuliah_id', $mataKuliah->id)
-                ->where('status', 'ACTIVE')
-                ->latest('tanggal_mulai')
-                ->first()
-            : null;
+        $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
+
+        $assignment = null;
+        if ($dosen) {
+            if ($activePeriod) {
+                $assignment = PenugasanKoordinator::with(['periode', 'dosen'])
+                    ->where('dosen_id', $dosen->id)
+                    ->where('mata_kuliah_id', $mataKuliah->id)
+                    ->where('periode_id', $activePeriod->id)
+                    ->where('status', 'ACTIVE')
+                    ->first();
+            }
+
+            if (!$assignment) {
+                $assignment = PenugasanKoordinator::with(['periode', 'dosen'])
+                    ->where('dosen_id', $dosen->id)
+                    ->where('mata_kuliah_id', $mataKuliah->id)
+                    ->where('status', 'ACTIVE')
+                    ->latest('tanggal_mulai')
+                    ->latest('created_at')
+                    ->first();
+            }
+        }
 
         // Koordinator hanya boleh mengakses mata kuliah yang menjadi tanggung jawabnya.
         if (!$assignment) {
@@ -113,13 +129,17 @@ class MataKuliahController extends Controller
 
         $activity = AuditLog::formatLogs($rawActivities);
 
-        // Cek apakah koordinator sudah memiliki soal aktif (belum final) untuk MK & periode ini.
-        // Final statuses: APPROVED, REJECTED — koordinator bisa upload soal baru.
-        // Non-final: DRAFT, SUBMITTED, IN_REVIEW, RESUBMITTED, REVISION — harus tunggu keputusan.
-        $activeSoal = $soalList->first(fn ($s) => !in_array($s->status, [
+        // Cek apakah koordinator sudah memiliki soal aktif (belum final) untuk penugasan saat ini.
+        // Soal yang dibuat sebelum penugasan aktif saat ini ($assignment->created_at) tidak memblokir upload baru.
+        $uploadOpen = $assignment->periode?->isUploadOpen() ?? false;
+        $currentAssignmentSoal = ($assignment->created_at)
+            ? $soalList->filter(fn ($s) => $s->created_at >= $assignment->created_at)
+            : $soalList;
+
+        $activeSoal = $uploadOpen ? $currentAssignmentSoal->first(fn ($s) => !in_array($s->status, [
             Soal::STATUS_APPROVED,
             Soal::STATUS_REJECTED,
-        ]));
+        ])) : null;
 
         return Inertia::render('Koordinator/MataKuliah/Show', [
             'mataKuliah'    => $mataKuliah,
@@ -129,7 +149,7 @@ class MataKuliahController extends Controller
             'soalList'      => $soalList,
             'verifikators'  => $verifikators,
             'activity'      => $activity->values(),
-            'uploadOpen'    => $assignment->periode?->isUploadOpen() ?? false,
+            'uploadOpen'    => $uploadOpen,
             'hasActiveSoal' => $activeSoal !== null,
             'activeSoalStatus' => $activeSoal?->status,
         ]);

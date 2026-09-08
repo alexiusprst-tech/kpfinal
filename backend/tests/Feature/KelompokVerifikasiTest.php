@@ -615,4 +615,86 @@ class KelompokVerifikasiTest extends TestCase
             'status'         => 'ENDED',
         ]);
     }
+
+    public function test_revoking_dosen_in_manajemen_dosen_removes_from_kelompok_verifikasi(): void
+    {
+        // Create an active group with dosen1 as koordinator and dosen2 as verifikator
+        $payload = [
+            'nama'        => 'Kelompok Uji Synced Revoke',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'ACTIVE',
+            'mata_kuliah' => [
+                [
+                    'mata_kuliah_id' => $this->mk1->id,
+                    'koordinator_id' => $this->dosen1->id,
+                    'verifikator_ids'=> [$this->dosen2->id],
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
+
+        $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Uji Synced Revoke')->first();
+        $this->assertNotNull($kelompok);
+
+        // Verify initial state: dosen1 is koordinator in group, dosen2 is verifikator in group
+        $this->assertDatabaseHas('kelompok_koordinator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+        ]);
+        $this->assertDatabaseHas('kelompok_mata_kuliah', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'koordinator_id' => $this->dosen1->id,
+        ]);
+        $this->assertDatabaseHas('kelompok_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+
+        // Revoke penugasan koordinator for dosen1 in Manajemen Dosen
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.dosen.cabut-penugasan', $this->dosen1->id), [
+                'type' => 'KOORDINATOR',
+            ]);
+
+        // Assert dosen1 removed from kelompok_koordinator and kelompok_mata_kuliah.koordinator_id is updated to null
+        $this->assertDatabaseMissing('kelompok_koordinator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+        ]);
+        $this->assertDatabaseHas('kelompok_mata_kuliah', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'koordinator_id' => null,
+        ]);
+
+        // Revoke penugasan verifikator for dosen2 in Manajemen Dosen
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.dosen.cabut-penugasan', $this->dosen2->id), [
+                'type' => 'VERIFIKATOR',
+            ]);
+
+        // Assert dosen2 removed from kelompok_verifikator
+        $this->assertDatabaseMissing('kelompok_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+
+        // Verify show page response has no active koordinator or verifikator for this group
+        $response = $this->actingAs($this->superAdmin)
+            ->get(route('superadmin.kelompok-verifikasi.show', $kelompok->id));
+
+        $response->assertStatus(200);
+        $props = $response->inertiaPage()['props'];
+        $mkStats = $props['mkListStats'][0];
+        $this->assertEmpty($mkStats['koordinator_list']);
+        $this->assertNull($mkStats['koordinator']);
+        $this->assertEmpty($props['verifikatorListStats']);
+    }
 }

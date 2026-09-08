@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
+import { Check, X } from 'lucide-react';
 import { showToast, showConfirm } from '@/Utils/sweetalert';
 
 export default function MustChangePasswordModal({ open }) {
@@ -167,14 +168,42 @@ export default function MustChangePasswordModal({ open }) {
                         {/* Checklist Box */}
                         <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-2 text-xs">
                             <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isLengthValid ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                                <span className={isLengthValid ? 'text-emerald-700 font-bold' : 'text-slate-500 font-medium'}>
+                                {data.password.length === 0 ? (
+                                    <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                                        <span className="w-2 h-2 rounded-full bg-slate-300" />
+                                    </span>
+                                ) : isLengthValid ? (
+                                    <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                ) : (
+                                    <X className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                )}
+                                <span className={
+                                    data.password.length === 0
+                                        ? 'text-slate-500 font-medium'
+                                        : isLengthValid
+                                            ? 'text-emerald-700 font-bold'
+                                            : 'text-red-600 font-bold'
+                                }>
                                     Minimal 8 karakter
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isMatchValid ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                                <span className={isMatchValid ? 'text-emerald-700 font-bold' : 'text-slate-500 font-medium'}>
+                                {data.password_confirmation.length === 0 ? (
+                                    <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                                        <span className="w-2 h-2 rounded-full bg-slate-300" />
+                                    </span>
+                                ) : isMatchValid ? (
+                                    <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                ) : (
+                                    <X className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                )}
+                                <span className={
+                                    data.password_confirmation.length === 0
+                                        ? 'text-slate-500 font-medium'
+                                        : isMatchValid
+                                            ? 'text-emerald-700 font-bold'
+                                            : 'text-red-600 font-bold'
+                                }>
                                     Kedua kata sandi cocok
                                 </span>
                             </div>

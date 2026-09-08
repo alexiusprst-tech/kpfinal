@@ -55,12 +55,9 @@ function SoalActions({ soal, onSubmit }) {
             );
         case 'REVISION':
             return (
-                <div className="flex items-center justify-end gap-1.5">
+                <div className="flex items-center justify-end">
                     <Link href={`/koordinator/soal/${soal.id}`} className={`${base} bg-amber-100 text-amber-700 hover:bg-amber-200`}>
                         <Eye className="w-3 h-3" /> Lihat Revisi
-                    </Link>
-                    <Link href={`/koordinator/soal/${soal.id}/edit`} className={`${base} bg-[#801720] text-white hover:bg-[#6a1219]`}>
-                        <Pencil className="w-3 h-3" /> Edit &amp; Submit Ulang
                     </Link>
                 </div>
             );

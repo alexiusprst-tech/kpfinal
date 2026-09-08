@@ -17,3 +17,17 @@ window.axios.interceptors.request.use(function (config) {
     }
     return config;
 });
+
+// Suppress unhandled errors dari ekstensi browser / injected performance scripts (misal: Web Vitals reportAllChanges 'startTime')
+if (typeof window !== 'undefined') {
+    window.addEventListener('error', (event) => {
+        if (
+            event.message?.includes("reading 'startTime'") ||
+            event.message?.includes('reportAllChanges') ||
+            event.filename?.includes('chrome-extension')
+        ) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+        }
+    });
+}

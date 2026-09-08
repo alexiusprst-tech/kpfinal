@@ -3,8 +3,6 @@
 namespace App\Services\Master;
 
 use App\Models\Clo;
-use App\Models\Course;
-use App\Models\Curriculum;
 use App\Models\MataKuliah;
 use App\Models\Plo;
 use App\Services\ActivityLog\ActivityLogService;

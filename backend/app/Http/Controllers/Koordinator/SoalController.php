@@ -9,6 +9,7 @@ use App\Models\PenugasanKoordinator;
 use App\Models\PeriodeVerifikasi;
 use App\Models\Soal;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -61,6 +62,11 @@ class SoalController extends Controller
 
         $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
 
+        if (!$activePeriod || !$activePeriod->isUploadOpen()) {
+            return redirect()->route('koordinator.dashboard')
+                ->with('error', 'Periode verifikasi saat ini tidak aktif atau sudah melewati tenggat waktu upload.');
+        }
+
         $assignments = ($dosen && $activePeriod)
             ? PenugasanKoordinator::with('mataKuliah')
                 ->where('dosen_id', $dosen->id)
@@ -75,13 +81,14 @@ class SoalController extends Controller
         }
 
         $selectedMkId = $request->query('mata_kuliah_id');
-        if ($selectedMkId && !$assignments->contains('mata_kuliah_id', $selectedMkId)) {
+        $assignment = $selectedMkId ? $assignments->firstWhere('mata_kuliah_id', $selectedMkId) : null;
+        if ($selectedMkId && !$assignment) {
             abort(403, 'Anda tidak memiliki akses ke mata kuliah ini.');
         }
 
-        // Blokir upload baru jika sudah ada soal aktif (belum diputuskan final) untuk MK + Periode ini.
+        // Blokir upload baru jika sudah ada soal aktif (belum diputuskan final) untuk penugasan saat ini.
         if ($selectedMkId && $activePeriod) {
-            if ($this->hasActiveSoal($selectedMkId, $activePeriod->id)) {
+            if ($this->hasActiveSoal($selectedMkId, $activePeriod->id, $assignment)) {
                 return redirect()->route('koordinator.mata-kuliah.show', $selectedMkId)
                     ->with('error', 'Anda sudah memiliki soal yang sedang dalam proses verifikasi untuk mata kuliah ini. Tunggu hingga verifikator memberikan keputusan sebelum mengunggah soal baru.');
             }
@@ -157,11 +164,6 @@ class SoalController extends Controller
             return redirect()->back()->with('error', 'Anda tidak memiliki penugasan untuk MK dan Periode yang dipilih.');
         }
 
-        // Blokir upload soal baru jika sudah ada soal yang sedang aktif (belum final) untuk MK + Periode ini.
-        if ($this->hasActiveSoal($request->mata_kuliah_id, $request->periode_id)) {
-            return redirect()->back()->with('error', 'Anda sudah memiliki soal yang sedang dalam proses verifikasi. Tunggu keputusan verifikator sebelum mengunggah soal baru.');
-        }
-
         $periode = PeriodeVerifikasi::find($request->periode_id);
         if (!$periode || !$periode->isUploadOpen()) {
             return redirect()->back()->with('error', 'Periode verifikasi tidak aktif atau sudah melewati deadline upload.');
@@ -172,30 +174,68 @@ class SoalController extends Controller
         $fileName  = $file->getClientOriginalName();
         $submitNow = $request->boolean('submit_now');
 
-        $soal = Soal::create([
-            'id'             => (string) Str::uuid(),
-            'mata_kuliah_id' => $request->mata_kuliah_id,
-            'periode_id'     => $request->periode_id,
-            'kategori_id'    => $request->kategori_id,
-            'uploaded_by'    => $user->id,
-            'judul'          => $request->judul,
-            'nama_file'      => $fileName,
-            'file_path'      => $path,
-            'mime_type'      => $file->getMimeType(),
-            'file_size'      => $file->getSize(),
-            'status'         => $submitNow ? Soal::STATUS_SUBMITTED : Soal::STATUS_DRAFT,
-            'plo_clo_data'   => $ploCloData,
-        ]);
+        $assignment = ($dosen && $periode)
+            ? PenugasanKoordinator::where('dosen_id', $dosen->id)
+                ->where('mata_kuliah_id', $request->mata_kuliah_id)
+                ->where('periode_id', $request->periode_id)
+                ->where('status', 'ACTIVE')
+                ->latest('created_at')
+                ->first()
+            : null;
 
-        AuditLog::record($user->id, 'UPLOAD_SOAL', 'Soal', $soal->id, null, $soal->toArray());
-        if ($submitNow) {
-            AuditLog::record($user->id, 'SUBMIT_SOAL', 'Soal', $soal->id);
-            $soal->notifyVerifier(
-                'Soal Baru Menunggu Verifikasi',
-                "Dosen Koordinator " . $user->name . " telah mengunggah dan mengirimkan soal \"" . $soal->judul . "\" untuk mata kuliah " . ($soal->mataKuliah?->nama_mk ?? '') . "."
-            );
+        $result = DB::transaction(function () use ($request, $user, $fileName, $path, $file, $submitNow, $ploCloData, $assignment) {
+            if ($this->hasActiveSoal($request->mata_kuliah_id, $request->periode_id, $assignment)) {
+                return ['success' => false, 'message' => 'Anda sudah memiliki soal yang sedang dalam proses verifikasi. Tunggu keputusan verifikator sebelum mengunggah soal baru.'];
+            }
+
+            // Bersihkan / arsipkan soal non-final lama (stale/superseded) untuk MK & periode ini
+            // agar tidak melanggar unique constraint uq_soal_active_per_mk_periode.
+            $staleSoalQuery = Soal::where('mata_kuliah_id', $request->mata_kuliah_id)
+                ->where('periode_id', $request->periode_id)
+                ->whereIn('status', [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED, Soal::STATUS_REVISION]);
+
+            if ($assignment && $assignment->created_at) {
+                $staleSoalQuery->where('created_at', '<', $assignment->created_at);
+            }
+
+            foreach ($staleSoalQuery->get() as $staleSoal) {
+                $staleSoal->update(['status' => Soal::STATUS_REJECTED]);
+                $staleSoal->delete(); // soft-delete
+            }
+
+            $soal = Soal::create([
+                'id'             => (string) Str::uuid(),
+                'mata_kuliah_id' => $request->mata_kuliah_id,
+                'periode_id'     => $request->periode_id,
+                'kategori_id'    => $request->kategori_id,
+                'uploaded_by'    => $user->id,
+                'judul'          => $request->judul,
+                'nama_file'      => $fileName,
+                'file_path'      => $path,
+                'mime_type'      => $file->getMimeType(),
+                'file_size'      => $file->getSize(),
+                'status'         => $submitNow ? Soal::STATUS_SUBMITTED : Soal::STATUS_DRAFT,
+                'plo_clo_data'   => $ploCloData,
+            ]);
+
+            AuditLog::record($user->id, 'UPLOAD_SOAL', 'Soal', $soal->id, null, $soal->toArray());
+            if ($submitNow) {
+                AuditLog::record($user->id, 'SUBMIT_SOAL', 'Soal', $soal->id);
+                $soal->notifyVerifier(
+                    'Soal Baru Menunggu Verifikasi',
+                    "Dosen Koordinator " . $user->name . " telah mengunggah dan mengirimkan soal \"" . $soal->judul . "\" untuk mata kuliah " . ($soal->mataKuliah?->nama_mk ?? '') . "."
+                );
+            }
+
+            return ['success' => true, 'soal' => $soal];
+        });
+
+        if (!$result['success']) {
+            Storage::disk('private')->delete($path);
+            return redirect()->back()->with('error', $result['message']);
         }
 
+        $soal = $result['soal'];
         return redirect()->route('koordinator.mata-kuliah.show', $soal->mata_kuliah_id)
             ->with('success', $submitNow ? 'Soal berhasil diunggah dan disubmit untuk verifikasi.' : 'Soal berhasil diunggah sebagai DRAFT.');
     }
@@ -311,7 +351,15 @@ class SoalController extends Controller
 
     public function submit(Request $request, Soal $soal)
     {
-        if ($soal->uploaded_by !== $request->user()->id) abort(403);
+        $user = $request->user();
+        $dosen = $user->dosen;
+        $isOwner = $soal->uploaded_by === $user->id;
+        $isAssigned = $this->isAssignedKoordinator($dosen, $soal);
+
+        if (!$isOwner && !$isAssigned && !$user->isSuperAdmin()) {
+            abort(403, 'Anda tidak memiliki wewenang penugasan untuk men-submit soal ini.');
+        }
+
         if (!$soal->canBeSubmitted()) {
             return redirect()->back()->with('error', 'Soal ini tidak dapat disubmit pada status saat ini.');
         }
@@ -321,12 +369,26 @@ class SoalController extends Controller
             return redirect()->back()->with('error', 'Periode verifikasi tidak aktif atau sudah melewati deadline upload.');
         }
 
-        $soal->update(['status' => Soal::STATUS_SUBMITTED]);
-        AuditLog::record($request->user()->id, 'SUBMIT_SOAL', 'Soal', $soal->id);
-        $soal->notifyVerifier(
-            'Soal Baru Menunggu Verifikasi',
-            "Dosen Koordinator " . $request->user()->name . " telah mengirimkan soal \"" . $soal->judul . "\" untuk mata kuliah " . ($soal->mataKuliah?->nama_mk ?? '') . "."
-        );
+        $result = DB::transaction(function () use ($soal, $user) {
+            $lockedSoal = Soal::where('id', $soal->id)->lockForUpdate()->first();
+            if (!$lockedSoal || !$lockedSoal->canBeSubmitted()) {
+                return ['success' => false, 'message' => 'Soal ini tidak dapat disubmit pada status saat ini.'];
+            }
+
+            $lockedSoal->update(['status' => Soal::STATUS_SUBMITTED]);
+            AuditLog::record($user->id, 'SUBMIT_SOAL', 'Soal', $lockedSoal->id);
+            $lockedSoal->notifyVerifier(
+                'Soal Baru Menunggu Verifikasi',
+                "Dosen Koordinator " . $user->name . " telah mengirimkan soal \"" . $lockedSoal->judul . "\" untuk mata kuliah " . ($lockedSoal->mataKuliah?->nama_mk ?? '') . "."
+            );
+
+            return ['success' => true];
+        });
+
+        if (!$result['success']) {
+            return redirect()->back()->with('error', $result['message']);
+        }
+
         return redirect()->back()->with('success', 'Soal berhasil disubmit untuk verifikasi.');
     }
 
@@ -369,8 +431,18 @@ class SoalController extends Controller
             abort(404, 'File tidak ditemukan.');
         }
 
-        return $disk->response($soal->file_path, $soal->nama_file, [
-            'Content-Disposition' => 'inline; filename="' . $soal->nama_file . '"',
+        $fullPath = $disk->path($soal->file_path);
+        $ext = strtolower(pathinfo($soal->nama_file, PATHINFO_EXTENSION));
+        $mimeType = match ($ext) {
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            default => $disk->mimeType($soal->file_path) ?: 'application/octet-stream',
+        };
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . rawurlencode($soal->nama_file) . '"',
         ]);
     }
 
@@ -416,14 +488,24 @@ class SoalController extends Controller
      * Whether a non-final (not yet finally decided) Soal already exists for
      * this mata kuliah + periode, blocking a new upload.
      */
-    private function hasActiveSoal(string $mataKuliahId, string $periodeId): bool
+    private function hasActiveSoal(string $mataKuliahId, string $periodeId, ?PenugasanKoordinator $assignment = null): bool
     {
+        $periode = PeriodeVerifikasi::find($periodeId);
+        if (!$periode || !$periode->isUploadOpen()) {
+            return false;
+        }
+
         $nonFinalStatuses = [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED, Soal::STATUS_REVISION];
 
-        return Soal::where('mata_kuliah_id', $mataKuliahId)
+        $query = Soal::where('mata_kuliah_id', $mataKuliahId)
             ->where('periode_id', $periodeId)
-            ->whereIn('status', $nonFinalStatuses)
-            ->exists();
+            ->whereIn('status', $nonFinalStatuses);
+
+        if ($assignment && $assignment->created_at) {
+            $query->where('created_at', '>=', $assignment->created_at);
+        }
+
+        return $query->lockForUpdate()->exists();
     }
 
     private function isAssignedKoordinator(?object $dosen, Soal $soal): bool

@@ -95,8 +95,18 @@ class SoalController extends Controller
             abort(404, 'File tidak ditemukan.');
         }
 
-        return $disk->response($soal->file_path, $soal->nama_file, [
-            'Content-Disposition' => 'inline; filename="' . $soal->nama_file . '"',
+        $fullPath = $disk->path($soal->file_path);
+        $ext = strtolower(pathinfo($soal->nama_file, PATHINFO_EXTENSION));
+        $mimeType = match ($ext) {
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            default => $disk->mimeType($soal->file_path) ?: 'application/octet-stream',
+        };
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . rawurlencode($soal->nama_file) . '"',
         ]);
     }
 

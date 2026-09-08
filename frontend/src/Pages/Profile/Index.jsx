@@ -6,6 +6,7 @@ import {
     Lock,
     PenLine,
     CheckCircle,
+    XCircle,
     AlertCircle,
     Eye,
     EyeOff,
@@ -328,8 +329,8 @@ function SectionPassword({ mustChange }) {
                         {data.password && data.password_confirmation && (
                             <p className={`flex items-center gap-1 text-[11px] font-bold mt-1.5 ${data.password === data.password_confirmation ? "text-emerald-600" : "text-red-600"}`}>
                                 {data.password === data.password_confirmation
-                                    ? <><CheckCircle className="w-3 h-3" /> Password cocok</>
-                                    : <><AlertCircle className="w-3 h-3" /> Password tidak cocok</>
+                                    ? <><CheckCircle className="w-3.5 h-3.5" /> Password cocok</>
+                                    : <><XCircle className="w-3.5 h-3.5" /> Password tidak cocok</>
                                 }
                             </p>
                         )}

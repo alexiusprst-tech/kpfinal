@@ -618,13 +618,7 @@ class KelompokVerifikasiController extends Controller
                 ->delete();
 
             // Check remaining coordinators for legacy field update
-            $remainingKoor = KelompokKoordinator::where('kelompok_id', $kelompokVerifikasi->id)
-                ->where('mata_kuliah_id', $mkId)
-                ->first();
-
-            KelompokMataKuliah::where('kelompok_id', $kelompokVerifikasi->id)
-                ->where('mata_kuliah_id', $mkId)
-                ->update(['koordinator_id' => $remainingKoor?->dosen_id]);
+            self::syncKelompokMataKuliahKoordinator($kelompokVerifikasi->id, $mkId, $dosenId);
 
             // End operational assignment
             PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)
@@ -795,9 +789,37 @@ class KelompokVerifikasiController extends Controller
     }
 
     /**
+     * Synchronize koordinator_id on kelompok_mata_kuliah when pivot entries change
+     */
+    public static function syncKelompokMataKuliahKoordinator(?string $kelompokId = null, ?string $mataKuliahId = null, ?string $revokedDosenId = null): void
+    {
+        $query = KelompokMataKuliah::query();
+
+        if ($kelompokId) {
+            $query->where('kelompok_id', $kelompokId);
+        }
+        if ($mataKuliahId) {
+            $query->where('mata_kuliah_id', $mataKuliahId);
+        }
+        if ($revokedDosenId) {
+            $query->where('koordinator_id', $revokedDosenId);
+        }
+
+        $affectedKmks = $query->get();
+
+        foreach ($affectedKmks as $kmk) {
+            $remainingKoor = KelompokKoordinator::where('kelompok_id', $kmk->kelompok_id)
+                ->where('mata_kuliah_id', $kmk->mata_kuliah_id)
+                ->first();
+
+            $kmk->update(['koordinator_id' => $remainingKoor?->dosen_id]);
+        }
+    }
+
+    /**
      * Recalculate and synchronize roles for all dosen based on active assignments
      */
-    protected function syncAffectedDosenRoles(): void
+    public static function syncAffectedDosenRoles(): void
     {
         $dosens = Dosen::with('user')->get();
         foreach ($dosens as $dosen) {
@@ -828,7 +850,7 @@ class KelompokVerifikasiController extends Controller
     /**
      * Recalculate and synchronize status for all Mata Kuliah based on active Kelompok Verifikasi assignments
      */
-    protected function syncAffectedMataKuliahStatus(): void
+    public static function syncAffectedMataKuliahStatus(): void
     {
         $activePeriod = PeriodeVerifikasi::where('status', 'ACTIVE')->first();
 

@@ -158,40 +158,75 @@ export default function VerifikatorSoalShow({ soal }) {
                     </div>
 
                     {/* File Box */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-5 p-4 bg-gray-50 rounded-2xl border border-gray-200/80">
-                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                            <div className="w-11 h-11 rounded-2xl bg-red-100/80 border border-red-200/60 flex items-center justify-center flex-shrink-0 shadow-xs">
-                                <FileText className="w-5 h-5 text-red-600" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-gray-800 break-all leading-snug">{soal.nama_file}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-red-100 text-red-700">PDF/DOC</span>
-                                    <span className="text-xs font-medium text-gray-400">
-                                        {formatSize(soal.file_size)} · Diunggah {formatDateTime(soal.created_at)}
-                                    </span>
+                    {(() => {
+                        const isResubmitted = soal.status === 'RESUBMITTED';
+                        const latestRevisi = isResubmitted && soal.revisi?.[0];
+                        const fileName = latestRevisi ? latestRevisi.nama_file : soal.nama_file;
+                        const fileSize = latestRevisi ? latestRevisi.file_size : soal.file_size;
+                        const uploadedAt = latestRevisi ? latestRevisi.uploaded_at : soal.created_at;
+                        const previewUrl = latestRevisi
+                            ? `/verifikator/revisi/${latestRevisi.id}/preview`
+                            : `/verifikator/soal/${soal.id}/preview`;
+                        const downloadUrl = latestRevisi
+                            ? `/verifikator/revisi/${latestRevisi.id}/download`
+                            : `/verifikator/soal/${soal.id}/download`;
+
+                        return (
+                            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-5 p-4 rounded-2xl border ${
+                                latestRevisi
+                                    ? 'bg-amber-50/60 border-amber-200'
+                                    : 'bg-gray-50 border-gray-200/80'
+                            }`}>
+                                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                    <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center flex-shrink-0 shadow-xs ${
+                                        latestRevisi
+                                            ? 'bg-amber-100/80 border-amber-300/60'
+                                            : 'bg-red-100/80 border-red-200/60'
+                                    }`}>
+                                        <FileText className={`w-5 h-5 ${latestRevisi ? 'text-amber-600' : 'text-red-600'}`} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        {latestRevisi && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-800 mb-1">
+                                                <RefreshCw className="w-2.5 h-2.5" /> Revisi Terbaru (v{latestRevisi.version})
+                                            </span>
+                                        )}
+                                        <p className="text-sm font-bold text-gray-800 break-all leading-snug">{fileName}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+                                                latestRevisi ? 'bg-amber-200 text-amber-800' : 'bg-red-100 text-red-700'
+                                            }`}>PDF/DOC</span>
+                                            <span className="text-xs font-medium text-gray-400">
+                                                {formatSize(fileSize)} · Diunggah {formatDateTime(uploadedAt)}
+                                            </span>
+                                        </div>
+                                        {latestRevisi?.catatan && (
+                                            <p className="text-[11px] text-amber-700 italic mt-1 line-clamp-1">"{latestRevisi.catatan}"</p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => openPreview(fileName, previewUrl, downloadUrl)}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs cursor-pointer"
+                                        title="Pratinjau naskah soal"
+                                    >
+                                        <Eye className="w-3.5 h-3.5 text-gray-500" /> Lihat
+                                    </button>
+                                    <a
+                                        href={downloadUrl}
+                                        download={fileName}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#801720]/25 transition-all hover:scale-[1.02] active:scale-95"
+                                        title="Unduh berkas naskah soal"
+                                    >
+                                        <Download className="w-3.5 h-3.5" /> Download
+                                    </a>
                                 </div>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => openPreview(soal.nama_file, `/verifikator/soal/${soal.id}/preview`, `/verifikator/soal/${soal.id}/download`)}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs cursor-pointer"
-                                title="Pratinjau naskah soal"
-                            >
-                                <Eye className="w-3.5 h-3.5 text-gray-500" /> Lihat
-                            </button>
-                            <a
-                                href={`/verifikator/soal/${soal.id}/download`}
-                                download={soal.nama_file}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#801720]/25 transition-all hover:scale-[1.02] active:scale-95"
-                                title="Unduh berkas naskah soal"
-                            >
-                                <Download className="w-3.5 h-3.5" /> Download
-                            </a>
-                        </div>
-                    </div>
+                        );
+                    })()}
+
 
                     {/* Metadata Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-5 pt-5 border-t border-gray-100 text-xs">

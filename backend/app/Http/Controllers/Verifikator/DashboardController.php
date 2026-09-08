@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Verifikator;
 
 use App\Http\Controllers\Controller;
+use App\Models\PenugasanKoordinator;
 use App\Models\PenugasanVerifikator;
 use App\Models\PeriodeVerifikasi;
 use App\Models\Soal;
@@ -34,7 +35,7 @@ class DashboardController extends Controller
 
         $assignedMkIds = $assignments->pluck('mata_kuliah_id');
 
-        $soalList = Soal::with(['mataKuliah', 'uploadedBy', 'kategori', 'latestVerifikasi'])
+        $soalList = Soal::with(['mataKuliah', 'uploadedBy', 'kategori', 'latestVerifikasi', 'revisi' => fn ($q) => $q->with('uploadedBy')])
             ->whereIn('mata_kuliah_id', $assignedMkIds)
             ->when($activePeriod, fn ($q) => $q->where('periode_id', $activePeriod->id))
             ->orderBy('updated_at', 'desc')
@@ -90,7 +91,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $hasActiveKoor = $dosen && \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+        $hasActiveKoor = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
         $hasActiveVerif = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
         $noAssignmentMessage = ($dosen && !$hasActiveKoor && !$hasActiveVerif)
             ? 'Akun Anda belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin.'

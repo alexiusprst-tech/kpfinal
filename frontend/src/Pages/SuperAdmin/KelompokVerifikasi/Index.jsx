@@ -484,12 +484,6 @@ export default function KelompokVerifikasiIndex({
                                                         ? 'Tidak ditemukan data yang cocok dengan kriteria pencarian / filter Anda.'
                                                         : 'Belum ada kelompok verifikasi yang dibuat. Buat kelompok baru untuk mulai menugaskan koordinator dan verifikator.'}
                                                 </p>
-                                                <Link
-                                                    href="/superadmin/kelompok-verifikasi/create"
-                                                    className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#681219] transition-colors"
-                                                >
-                                                    <Plus className="w-3.5 h-3.5" /> Buat Kelompok Pertama
-                                                </Link>
                                             </div>
                                         </td>
                                     </tr>

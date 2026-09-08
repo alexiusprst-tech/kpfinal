@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-
 use Illuminate\Database\Eloquent\Model;
 
 class PeriodeVerifikasi extends Model
@@ -12,7 +12,7 @@ class PeriodeVerifikasi extends Model
     protected $table = 'periode_verifikasi';
     protected $keyType = 'string';
     public $incrementing = false;
-    protected $appends = ['jenis_periode'];
+    protected $appends = ['jenis_periode', 'tahun_akademik'];
 
     protected $fillable = [
         'tahun_ajaran_id',
@@ -48,14 +48,44 @@ class PeriodeVerifikasi extends Model
     }
 
     /**
-     * Jenis periode (Ganjil/Genap) is not a stored column — it's inferred
-     * from the periode name, which conventionally includes the term.
+     * Jenis periode (Ganjil/Genap/Antara) inferred from the periode name or start date month.
      */
     public function getJenisPeriodeAttribute(): string
     {
-        if (str_contains(mb_strtolower($this->nama ?? ''), 'ganjil')) return 'Ganjil';
-        if (str_contains(mb_strtolower($this->nama ?? ''), 'genap')) return 'Genap';
-        return '-';
+        $namaLower = mb_strtolower($this->nama ?? '');
+        if (str_contains($namaLower, 'ganjil')) return 'Ganjil';
+        if (str_contains($namaLower, 'genap')) return 'Genap';
+        if (str_contains($namaLower, 'antara')) return 'Antara';
+
+        $month = $this->tanggal_mulai ? (int) Carbon::parse($this->tanggal_mulai)->format('n') : (int) date('n');
+        return ($month >= 8 || $month <= 1) ? 'Ganjil' : 'Genap';
+    }
+
+    /**
+     * Tahun akademik (e.g. 2026/2027) inferred from relation, name regex, or current year.
+     */
+    public function getTahunAkademikAttribute(): string
+    {
+        if ($this->tahunAjaran) {
+            if (!empty($this->tahunAjaran->tahun_mulai) && !empty($this->tahunAjaran->tahun_selesai)) {
+                return $this->tahunAjaran->tahun_mulai . '/' . $this->tahunAjaran->tahun_selesai;
+            }
+            if (!empty($this->tahunAjaran->nama) && $this->tahunAjaran->nama !== '-') {
+                return $this->tahunAjaran->nama;
+            }
+        }
+
+        if (preg_match('/(\d{4}\s*[\/-]\s*\d{4})/', $this->nama ?? '', $matches)) {
+            return str_replace(' ', '', $matches[1]);
+        }
+
+        if (preg_match('/(\d{4})/', $this->nama ?? '', $matches)) {
+            $yr = (int) $matches[1];
+            return $yr . '/' . ($yr + 1);
+        }
+
+        $currentYear = (int) date('Y');
+        return $currentYear . '/' . ($currentYear + 1);
     }
 
     // ─── Relationships ─────────────────────────────────────────────────────────
