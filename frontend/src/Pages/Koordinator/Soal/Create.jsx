@@ -215,6 +215,34 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
         });
     };
 
+    // Petunjuk Pengerjaan helper functions
+    const handlePetunjukChange = (index, value) => {
+        setGeneratorData(prev => {
+            if (!prev) return null;
+            const list = [...(prev.petunjuk_pengerjaan || [])];
+            list[index] = value;
+            return { ...prev, petunjuk_pengerjaan: list };
+        });
+    };
+
+    const addPetunjuk = () => {
+        setGeneratorData(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                petunjuk_pengerjaan: [...(prev.petunjuk_pengerjaan || []), '']
+            };
+        });
+    };
+
+    const removePetunjuk = (index) => {
+        setGeneratorData(prev => {
+            if (!prev) return null;
+            const list = (prev.petunjuk_pengerjaan || []).filter((_, i) => i !== index);
+            return { ...prev, petunjuk_pengerjaan: list };
+        });
+    };
+
     const getPloWeight = (ploItem) => {
         if (!ploItem || !ploItem.clo) return 0;
         return ploItem.clo.reduce((acc, c) => acc + (parseInt(c.bobot_lo) || 0), 0);
@@ -244,31 +272,31 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
         axios.post(`/koordinator/soal-generator/export-${type}`, generatorData, {
             responseType: 'blob'
         })
-        .then(response => {
-            const blob = new Blob([response.data], { type: response.headers['content-type'] });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            const ext = type === 'pdf' ? 'pdf' : 'doc';
-            const cleanMk = (generatorData.kode_nama_mk || 'soal').replace(/[\/\\?%*:|"<>\s]+/g, '_');
-            link.setAttribute('download', `Template_Soal_${cleanMk}.${ext}`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-            showToast('success', `Template ${type.toUpperCase()} berhasil diunduh.`);
-        })
-        .catch(err => {
-            console.error(err);
-            showAlert({
-                title: 'Gagal Ekspor Template',
-                text: 'Pastikan bobot LO pada masing-masing PLO berjumlah tepat 100% sebelum mengunduh template.',
-                icon: 'warning'
+            .then(response => {
+                const blob = new Blob([response.data], { type: response.headers['content-type'] });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                const ext = type === 'pdf' ? 'pdf' : 'doc';
+                const cleanMk = (generatorData.kode_nama_mk || 'soal').replace(/[\/\\?%*:|"<>\s]+/g, '_');
+                link.setAttribute('download', `Template_Soal_${cleanMk}.${ext}`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+                showToast('success', `Template ${type.toUpperCase()} berhasil diunduh.`);
+            })
+            .catch(err => {
+                console.error(err);
+                showAlert({
+                    title: 'Gagal Ekspor Template',
+                    text: 'Pastikan bobot LO pada masing-masing PLO berjumlah tepat 100% sebelum mengunduh template.',
+                    icon: 'warning'
+                });
+            })
+            .finally(() => {
+                setIsExporting(false);
             });
-        })
-        .finally(() => {
-            setIsExporting(false);
-        });
     };
 
     // File validation & handling
@@ -550,9 +578,8 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                                    isThisPloValid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                                }`}>
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${isThisPloValid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                    }`}>
                                                     Total Bobot: {ploWeight}% {isThisPloValid ? '✓' : '(Harus 100%)'}
                                                 </span>
                                                 {generatorData.plo.length > 1 && (
@@ -672,23 +699,52 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
 
                             {/* Optional Petunjuk Pengerjaan Accordion */}
                             {showPetunjuk && (
-                                <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-xs space-y-2">
-                                    <p className="font-bold text-gray-700">Petunjuk Pengerjaan Ujian (akan dicantumkan di template):</p>
-                                    {generatorData.petunjuk_pengerjaan?.map((item, idx) => (
-                                        <div key={idx} className="flex items-center gap-2">
-                                            <span className="text-gray-400 font-bold">{idx + 1}.</span>
-                                            <input
-                                                type="text"
-                                                value={item}
-                                                onChange={(e) => {
-                                                    const list = [...generatorData.petunjuk_pengerjaan];
-                                                    list[idx] = e.target.value;
-                                                    setGeneratorData(prev => ({ ...prev, petunjuk_pengerjaan: list }));
-                                                }}
-                                                className="flex-1 px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none"
-                                            />
+                                <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-xs space-y-3">
+                                    <p className="font-bold text-gray-700">
+                                        Petunjuk Pengerjaan Ujian (akan dicantumkan di template):
+                                    </p>
+
+                                    {(!generatorData.petunjuk_pengerjaan || generatorData.petunjuk_pengerjaan.length === 0) ? (
+                                        <p className="text-gray-400 italic text-[11px] py-2">
+                                            Belum ada petunjuk pengerjaan. Klik tombol di bawah untuk menambahkan.
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {generatorData.petunjuk_pengerjaan.map((item, idx) => (
+                                                <div key={idx} className="flex items-center gap-2">
+                                                    <span className="text-gray-400 font-bold min-w-[20px] text-right">{idx + 1}.</span>
+                                                    <input
+                                                        type="text"
+                                                        value={item}
+                                                        onChange={(e) => handlePetunjukChange(idx, e.target.value)}
+                                                        placeholder="Tuliskan petunjuk pengerjaan..."
+                                                        className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removePetunjuk(idx)}
+                                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                                        title="Hapus petunjuk ini"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    )}
+
+                                    <div className="pt-2 flex items-center justify-between border-t border-gray-200/80">
+                                        <span className="text-[11px] text-gray-400 font-medium">
+                                            Total {generatorData.petunjuk_pengerjaan?.length || 0} poin petunjuk
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={addPetunjuk}
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#801720] hover:underline cursor-pointer"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" /> Tambah Petunjuk Lain
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -709,13 +765,12 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                         onDragLeave={() => setDragOver(false)}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${
-                            dragOver
+                        className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${dragOver
                                 ? 'border-[#801720] bg-red-50/40'
                                 : data.file
-                                ? 'border-emerald-400 bg-emerald-50/30'
-                                : 'border-gray-300 hover:border-[#801720]/50 hover:bg-gray-50/60'
-                        }`}
+                                    ? 'border-emerald-400 bg-emerald-50/30'
+                                    : 'border-gray-300 hover:border-[#801720]/50 hover:bg-gray-50/60'
+                            }`}
                     >
                         <input
                             ref={fileInputRef}

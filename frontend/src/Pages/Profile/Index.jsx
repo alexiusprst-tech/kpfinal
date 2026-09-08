@@ -352,15 +352,26 @@ function SectionPassword({ mustChange }) {
 }
 
 /* ── Section 3: Tanda Tangan Digital ───────────────────────────── */
-function SectionTandaTangan({ dosen, isSuperAdmin }) {
+function SectionTandaTangan({ dosen, isSuperAdmin, kaprodi, user }) {
     const fileInputRef = useRef(null);
-    const [dragOver, setDragOver]   = useState(false);
-    const [preview,  setPreview]    = useState(null);
-    const [file,     setFile]       = useState(null);
-    const [uploading, setUploading] = useState(false);
-    const [deleting,  setDeleting]  = useState(false);
+    const [dragOver, setDragOver]     = useState(false);
+    const [preview,  setPreview]      = useState(null);
+    const [file,     setFile]         = useState(null);
+    const [uploading, setUploading]   = useState(false);
+    const [deleting,  setDeleting]    = useState(false);
+    const [savingName, setSavingName] = useState(false);
+    const [kaprodiNama, setKaprodiNama] = useState(kaprodi?.nama || "Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.");
 
-    const currentSignature = dosen?.tanda_tangan || null;
+    useEffect(() => {
+        if (kaprodi?.nama) {
+            setKaprodiNama(kaprodi.nama);
+        }
+    }, [kaprodi?.nama]);
+
+    const currentSignature = isSuperAdmin
+        ? (kaprodi?.tanda_tangan || null)
+        : (dosen?.tanda_tangan || null);
+
     const isDosen = !!dosen;
 
     const handleFile = (f) => {
@@ -384,22 +395,44 @@ function SectionTandaTangan({ dosen, isSuperAdmin }) {
         setUploading(true);
         const formData = new FormData();
         formData.append("tanda_tangan", file);
+        if (isSuperAdmin) {
+            formData.append("kaprodi_nama", kaprodiNama);
+        }
         router.post("/profile/signature", formData, {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
                 setFile(null);
                 setPreview(null);
-                showToast("success", "Tanda tangan digital berhasil disimpan.");
+                showToast("success", isSuperAdmin ? "Tanda tangan Ka. Prodi berhasil disimpan." : "Tanda tangan digital berhasil disimpan.");
             },
             onError: (errs) => showToast("error", errs.tanda_tangan || "Gagal mengunggah."),
             onFinish: () => setUploading(false),
         });
     };
 
+    const handleSaveKaprodiNama = () => {
+        if (!kaprodiNama.trim()) {
+            showToast("error", "Nama Ka. Prodi tidak boleh kosong.");
+            return;
+        }
+        setSavingName(true);
+        router.put("/profile", {
+            name: user?.name || "Super Admin",
+            kaprodi_nama: kaprodiNama.trim(),
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                showToast("success", "Nama Ka. Prodi berhasil diperbarui.");
+            },
+            onError: () => showToast("error", "Gagal memperbarui nama Ka. Prodi."),
+            onFinish: () => setSavingName(false),
+        });
+    };
+
     const handleDelete = async () => {
         const result = await showConfirm({
-            title: "Hapus Tanda Tangan?",
+            title: isSuperAdmin ? "Hapus Tanda Tangan Ka. Prodi?" : "Hapus Tanda Tangan?",
             text: "Tanda tangan digital yang sudah terhapus tidak dapat dikembalikan.",
             icon: "warning",
             confirmButtonText: "Ya, Hapus",
@@ -410,7 +443,7 @@ function SectionTandaTangan({ dosen, isSuperAdmin }) {
         setDeleting(true);
         router.delete("/profile/signature", {
             preserveScroll: true,
-            onSuccess: () => showToast("success", "Tanda tangan digital berhasil dihapus."),
+            onSuccess: () => showToast("success", isSuperAdmin ? "Tanda tangan Ka. Prodi berhasil dihapus." : "Tanda tangan digital berhasil dihapus."),
             onError: () => showToast("error", "Gagal menghapus tanda tangan."),
             onFinish: () => setDeleting(false),
         });
@@ -424,11 +457,52 @@ function SectionTandaTangan({ dosen, isSuperAdmin }) {
                         <PenLine className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-base font-extrabold text-slate-800">Tanda Tangan Digital</h2>
-                        <p className="text-xs text-slate-400 font-medium">Otomatis disematkan pada Berita Acara & Laporan Verifikasi.</p>
+                        <h2 className="text-base font-extrabold text-slate-800">
+                            {isSuperAdmin ? "Tanda Tangan & Pejabat Ka. Prodi" : "Tanda Tangan Digital"}
+                        </h2>
+                        <p className="text-xs text-slate-400 font-medium">
+                            {isSuperAdmin
+                                ? "Otomatis disematkan pada kolom Ka. Prodi saat cetak Berita Acara (BAP)."
+                                : "Otomatis disematkan pada Berita Acara & Laporan Verifikasi."}
+                        </p>
                     </div>
                 </div>
+                {isSuperAdmin && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+                        PENGATURAN BAP
+                    </span>
+                )}
             </div>
+
+            {/* If Super Admin, allow editing Ka. Prodi Name */}
+            {isSuperAdmin && (
+                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+                    <FieldLabel>Nama Lengkap Ka. Prodi (Beserta Gelar)</FieldLabel>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <div className="flex-1">
+                            <InputField
+                                icon={User}
+                                type="text"
+                                value={kaprodiNama}
+                                onChange={(e) => setKaprodiNama(e.target.value)}
+                                placeholder="Contoh: Qilbaaini Effendi Muftikhali, S.Kom., M.Kom."
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleSaveKaprodiNama}
+                            disabled={savingName || kaprodiNama === kaprodi?.nama}
+                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 disabled:opacity-50 transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                        >
+                            <Save className="w-3.5 h-3.5" />
+                            {savingName ? "Menyimpan..." : "Simpan Nama"}
+                        </button>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                        Nama ini akan tercantum di bawah kolom tanda tangan Ka. Prodi pada Berita Acara.
+                    </p>
+                </div>
+            )}
 
             <div className="flex items-start gap-3 p-3.5 bg-amber-50/70 rounded-xl border border-amber-100 text-xs">
                 <PenLine className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -440,7 +514,7 @@ function SectionTandaTangan({ dosen, isSuperAdmin }) {
             {/* Signature Preview if exists */}
             {currentSignature && !preview && (
                 <div>
-                    <FieldLabel>Tanda Tangan Aktif</FieldLabel>
+                    <FieldLabel>{isSuperAdmin ? "Tanda Tangan Ka. Prodi Aktif" : "Tanda Tangan Aktif"}</FieldLabel>
                     <div className="relative rounded-2xl border border-slate-200 bg-slate-50 p-4 flex flex-col items-center gap-3">
                         <div
                             className="w-full max-w-[240px] h-32 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200/80 bg-white"
@@ -459,17 +533,21 @@ function SectionTandaTangan({ dosen, isSuperAdmin }) {
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 text-xs font-bold rounded-xl transition-all border border-red-200 cursor-pointer disabled:opacity-60"
                         >
                             <Trash2 className="w-3.5 h-3.5" />
-                            {deleting ? "Menghapus..." : "Hapus Tanda Tangan"}
+                            {deleting ? "Menghapus..." : (isSuperAdmin ? "Hapus TTD Ka. Prodi" : "Hapus Tanda Tangan")}
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* Upload Box if Dosen or Admin with Dosen */}
-            {isDosen ? (
+            {/* Upload Box for Dosen or Super Admin */}
+            {(isDosen || isSuperAdmin) && (
                 <>
                     <div>
-                        <FieldLabel>{currentSignature ? "Ganti Tanda Tangan" : "Upload Tanda Tangan Baru"}</FieldLabel>
+                        <FieldLabel>
+                            {currentSignature
+                                ? (isSuperAdmin ? "Ganti Tanda Tangan Ka. Prodi" : "Ganti Tanda Tangan")
+                                : (isSuperAdmin ? "Upload Tanda Tangan Ka. Prodi" : "Upload Tanda Tangan Baru")}
+                        </FieldLabel>
                         <div
                             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                             onDragLeave={() => setDragOver(false)}
@@ -512,7 +590,9 @@ function SectionTandaTangan({ dosen, isSuperAdmin }) {
                                         <Upload className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-slate-700">Pilih atau seret gambar ke sini</p>
+                                        <p className="text-xs font-bold text-slate-700">
+                                            {isSuperAdmin ? "Pilih atau seret gambar TTD Ka. Prodi ke sini" : "Pilih atau seret gambar ke sini"}
+                                        </p>
                                         <p className="text-[11px] text-slate-400 mt-0.5">PNG atau JPG (Maks. 2 MB)</p>
                                     </div>
                                 </>
@@ -536,19 +616,11 @@ function SectionTandaTangan({ dosen, isSuperAdmin }) {
                                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-60 transition-all shadow-sm cursor-pointer"
                             >
                                 <Upload className="w-3.5 h-3.5" />
-                                {uploading ? "Mengunggah..." : "Simpan Tanda Tangan"}
+                                {uploading ? "Mengunggah..." : (isSuperAdmin ? "Simpan TTD Ka. Prodi" : "Simpan Tanda Tangan")}
                             </button>
                         </div>
                     )}
                 </>
-            ) : (
-                <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 text-center space-y-2">
-                    <CheckCheck className="w-8 h-8 text-slate-400 mx-auto" />
-                    <p className="text-xs font-bold text-slate-700">Otoritas Administratif Pusat</p>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                        Akun Super Admin memiliki kewenangan penuh mengelola seluruh data verifikasi dan mengesahkan konfigurasi sistem secara otomatis.
-                    </p>
-                </div>
             )}
         </div>
     );
@@ -586,7 +658,7 @@ function SectionHakAkses({ user, isDosen }) {
                         </li>
                         <li className="flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#801720]" />
-                            <span>Monitoring Bank Soal & Berita Acara</span>
+                            <span>Pengesahan Berita Acara & TTD Ka. Prodi</span>
                         </li>
                     </ul>
                 </div>
@@ -602,7 +674,7 @@ function SectionHakAkses({ user, isDosen }) {
 }
 
 /* ── Main Single Page ──────────────────────────────────────────── */
-export default function ProfileIndex({ user, dosen }) {
+export default function ProfileIndex({ user, dosen, kaprodi }) {
     const { flash } = usePage().props;
     const isSuperAdmin = user?.role === "SUPER_ADMIN" || user?.role === "SUPERADMIN";
     const isDosen = !!dosen;
@@ -678,7 +750,7 @@ export default function ProfileIndex({ user, dosen }) {
 
                     {/* Right Column (5 cols): Tanda Tangan Digital & Info Hak Akses */}
                     <div className="lg:col-span-5 space-y-6">
-                        <SectionTandaTangan dosen={dosen} isSuperAdmin={isSuperAdmin} />
+                        <SectionTandaTangan dosen={dosen} isSuperAdmin={isSuperAdmin} kaprodi={kaprodi} user={user} />
                         <SectionHakAkses user={user} isDosen={isDosen} />
                     </div>
                 </div>
@@ -686,3 +758,4 @@ export default function ProfileIndex({ user, dosen }) {
         </AuthenticatedLayout>
     );
 }
+

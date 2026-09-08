@@ -525,7 +525,7 @@
         <td class="sign-col">
             <div class="sign-role">Evaluator Soal,</div>
             <div class="sign-img-container">
-                @if(!empty($tanda_tangan_evaluator) && file_exists($tanda_tangan_evaluator))
+                @if(!empty($tanda_tangan_evaluator))
                     <img src="{{ $tanda_tangan_evaluator }}" alt="TTD Evaluator" class="ttd-img" />
                 @endif
             </div>
@@ -534,7 +534,7 @@
         <td class="sign-col">
             <div class="sign-role">Dosen Koordinator,</div>
             <div class="sign-img-container">
-                @if(!empty($tanda_tangan_koordinator) && file_exists($tanda_tangan_koordinator))
+                @if(!empty($tanda_tangan_koordinator))
                     <img src="{{ $tanda_tangan_koordinator }}" alt="TTD Koordinator" class="ttd-img" />
                 @endif
             </div>
@@ -543,6 +543,9 @@
         <td class="sign-col">
             <div class="sign-role">Ka. Prodi</div>
             <div class="sign-img-container">
+                @if(!empty($tanda_tangan_kaprodi))
+                    <img src="{{ $tanda_tangan_kaprodi }}" alt="TTD Ka. Prodi" class="ttd-img" />
+                @endif
             </div>
             <div class="sign-name">{{ $kaProdi }}</div>
         </td>
@@ -553,6 +556,7 @@
 <!-- ============================================================== -->
 <!-- HALAMAN 2+: INFORMASI & NASKAH SOAL UNGGAHAN KOORDINATOR MK   -->
 <!-- ============================================================== -->
+@if(empty($bap_only))
 @foreach ($soalList as $soalIndex => $soalItem)
     @php
         $pcd = is_array($soalItem->plo_clo_data) ? $soalItem->plo_clo_data : (json_decode($soalItem->plo_clo_data, true) ?: []);
@@ -720,6 +724,7 @@
         @endif
     </div>
 @endforeach
+@endif
 
 </body>
 </html>

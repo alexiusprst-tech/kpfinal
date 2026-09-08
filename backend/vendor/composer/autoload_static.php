@@ -711,7 +711,6 @@ class ComposerStaticInit36793882908b6cbdd344b5a4840231db
         'App\\Http\\Controllers\\SuperAdmin\\MataKuliahController' => __DIR__ . '/../..' . '/app/Http/Controllers/SuperAdmin/MataKuliahController.php',
         'App\\Http\\Controllers\\SuperAdmin\\PeriodeController' => __DIR__ . '/../..' . '/app/Http/Controllers/SuperAdmin/PeriodeController.php',
         'App\\Http\\Controllers\\SuperAdmin\\PloController' => __DIR__ . '/../..' . '/app/Http/Controllers/SuperAdmin/PloController.php',
-        'App\\Http\\Controllers\\SuperAdmin\\TahunAjaranController' => __DIR__ . '/../..' . '/app/Http/Controllers/SuperAdmin/TahunAjaranController.php',
         'App\\Http\\Controllers\\Verifikator\\BeritaAcaraController' => __DIR__ . '/../..' . '/app/Http/Controllers/Verifikator/BeritaAcaraController.php',
         'App\\Http\\Controllers\\Verifikator\\DashboardController' => __DIR__ . '/../..' . '/app/Http/Controllers/Verifikator/DashboardController.php',
         'App\\Http\\Controllers\\Verifikator\\SoalController' => __DIR__ . '/../..' . '/app/Http/Controllers/Verifikator/SoalController.php',

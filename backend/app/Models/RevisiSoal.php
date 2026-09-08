@@ -15,6 +15,7 @@ class RevisiSoal extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'id',
         'soal_id',
         'version',
         'nama_file',

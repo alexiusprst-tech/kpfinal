@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +21,26 @@ class ProfileController extends Controller
         /** @var User $user */
         $user  = Auth::user();
         $dosen = $user->dosen;
+        $isSuperAdmin = $user->isSuperAdmin();
+
+        $kaprodiData = null;
+        if ($isSuperAdmin) {
+            $kaprodiSignaturePath = Setting::get('kaprodi_tanda_tangan');
+            if (!$kaprodiSignaturePath && Storage::disk('public')->exists('tanda-tangan/kaprodi_signature.png')) {
+                $kaprodiSignaturePath = 'tanda-tangan/kaprodi_signature.png';
+            }
+
+            $kaprodiSignatureUrl = null;
+            if ($kaprodiSignaturePath && Storage::disk('public')->exists($kaprodiSignaturePath)) {
+                $kaprodiSignatureUrl = asset('storage/' . $kaprodiSignaturePath) . '?v=' . Storage::disk('public')->lastModified($kaprodiSignaturePath);
+            }
+
+            $kaprodiData = [
+                'nama'              => Setting::get('kaprodi_nama', config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.'))),
+                'tanda_tangan'      => $kaprodiSignatureUrl,
+                'tanda_tangan_path' => $kaprodiSignaturePath,
+            ];
+        }
 
         return Inertia::render('Profile/Index', [
             'user'  => [
@@ -39,15 +60,16 @@ class ProfileController extends Controller
                 'kategori_dosen'  => $dosen->kategori_dosen,
                 'status'          => $dosen->status,
                 'tanda_tangan'    => $dosen->tanda_tangan
-                    ? asset('storage/' . $dosen->tanda_tangan)
+                    ? asset('storage/' . $dosen->tanda_tangan) . '?v=' . (Storage::disk('public')->exists($dosen->tanda_tangan) ? Storage::disk('public')->lastModified($dosen->tanda_tangan) : time())
                     : null,
                 'tanda_tangan_path' => $dosen->tanda_tangan,
             ] : null,
+            'kaprodi' => $kaprodiData,
         ]);
     }
 
     /**
-     * Update basic profile data (name on User + dosen fields).
+     * Update basic profile data (name on User + dosen fields / kaprodi fields).
      */
     public function updateProfile(Request $request)
     {
@@ -60,6 +82,7 @@ class ProfileController extends Controller
             'kode_dosen'     => 'nullable|string|max:20',
             'email_dosen'    => 'nullable|email|max:255',
             'kategori_dosen' => 'nullable|in:TETAP,LUAR_BIASA',
+            'kaprodi_nama'   => 'nullable|string|max:255',
         ]);
 
         // Update user name
@@ -73,6 +96,11 @@ class ProfileController extends Controller
                 'email'          => $validated['email_dosen'] ?? $dosen->email,
                 'kategori_dosen' => $validated['kategori_dosen'] ?? $dosen->kategori_dosen,
             ]);
+        }
+
+        // Update KaProdi name if Super Admin
+        if ($user->isSuperAdmin() && !empty($validated['kaprodi_nama'])) {
+            Setting::set('kaprodi_nama', trim($validated['kaprodi_nama']));
         }
 
         return back()->with('success', 'Profil berhasil diperbarui.');
@@ -110,12 +138,13 @@ class ProfileController extends Controller
     }
 
     /**
-     * Upload signature image.
+     * Upload signature image (Dosen signature or KaProdi signature if Super Admin).
      */
     public function updateSignature(Request $request)
     {
         $request->validate([
             'tanda_tangan' => 'required|image|mimes:png,jpg,jpeg|max:2048',
+            'kaprodi_nama' => 'nullable|string|max:255',
         ], [
             'tanda_tangan.required' => 'File tanda tangan wajib dipilih.',
             'tanda_tangan.image'    => 'File harus berupa gambar.',
@@ -127,8 +156,34 @@ class ProfileController extends Controller
         $user  = Auth::user();
         $dosen = $user->dosen;
 
+        if ($user->isSuperAdmin()) {
+            // Delete old KaProdi signature file if exists
+            $oldPath = Setting::get('kaprodi_tanda_tangan');
+            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            // Also check default filename fallbacks to clean up
+            $defaultFiles = ['tanda-tangan/kaprodi_signature.png', 'tanda-tangan/kaprodi_signature.jpg', 'tanda-tangan/kaprodi_signature.jpeg'];
+            foreach ($defaultFiles as $df) {
+                if (Storage::disk('public')->exists($df)) {
+                    Storage::disk('public')->delete($df);
+                }
+            }
+
+            $ext = $request->file('tanda_tangan')->getClientOriginalExtension() ?: 'png';
+            $path = $request->file('tanda_tangan')->storeAs('tanda-tangan', 'kaprodi_signature_' . time() . '.' . $ext, 'public');
+            Setting::set('kaprodi_tanda_tangan', $path);
+
+            if ($request->filled('kaprodi_nama')) {
+                Setting::set('kaprodi_nama', trim($request->input('kaprodi_nama')));
+            }
+
+            return back()->with('success', 'Tanda tangan Ka. Prodi berhasil disimpan.');
+        }
+
         if (!$dosen) {
-            return back()->withErrors(['tanda_tangan' => 'Hanya dosen yang dapat mengunggah tanda tangan.']);
+            return back()->withErrors(['tanda_tangan' => 'Hanya dosen atau superadmin yang dapat mengunggah tanda tangan.']);
         }
 
         // Delete old signature
@@ -152,6 +207,24 @@ class ProfileController extends Controller
         $user  = Auth::user();
         $dosen = $user->dosen;
 
+        if ($user->isSuperAdmin()) {
+            $path = Setting::get('kaprodi_tanda_tangan');
+            if ($path && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            $defaultFiles = ['tanda-tangan/kaprodi_signature.png', 'tanda-tangan/kaprodi_signature.jpg', 'tanda-tangan/kaprodi_signature.jpeg'];
+            foreach ($defaultFiles as $df) {
+                if (Storage::disk('public')->exists($df)) {
+                    Storage::disk('public')->delete($df);
+                }
+            }
+
+            Setting::set('kaprodi_tanda_tangan', null);
+
+            return back()->with('success', 'Tanda tangan Ka. Prodi berhasil dihapus.');
+        }
+
         if (!$dosen || !$dosen->tanda_tangan) {
             return back()->withErrors(['tanda_tangan' => 'Tidak ada tanda tangan untuk dihapus.']);
         }
@@ -165,3 +238,4 @@ class ProfileController extends Controller
         return back()->with('success', 'Tanda tangan berhasil dihapus.');
     }
 }
+

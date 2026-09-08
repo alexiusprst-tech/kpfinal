@@ -95,7 +95,7 @@ class PeriodeController extends Controller
             ->get()
             ->map(fn ($p) => [
                 'dosen_id'   => $p->dosen_id,
-                'dosen_nama' => $p->dosen?->nama ?? 'Unknown',
+                'dosen_nama' => $p->dosen?->nama_lengkap ?? 'Tidak Dikenal',
                 'dosen_kode' => $p->dosen?->kode_dosen ?? '-',
                 'mk_kode'    => $p->mataKuliah?->kode_mk ?? '-',
                 'mk_nama'    => $p->mataKuliah?->nama_mk ?? '-',
@@ -107,7 +107,7 @@ class PeriodeController extends Controller
             ->get()
             ->map(fn ($p) => [
                 'dosen_id'   => $p->dosen_id,
-                'dosen_nama' => $p->dosen?->nama ?? 'Unknown',
+                'dosen_nama' => $p->dosen?->nama_lengkap ?? 'Tidak Dikenal',
                 'dosen_kode' => $p->dosen?->kode_dosen ?? '-',
                 'mk_kode'    => $p->mataKuliah?->kode_mk ?? '-',
                 'mk_nama'    => $p->mataKuliah?->nama_mk ?? '-',
@@ -119,7 +119,7 @@ class PeriodeController extends Controller
                 'dosen_id'   => $first['dosen_id'],
                 'dosen_nama' => $first['dosen_nama'],
                 'dosen_kode' => $first['dosen_kode'],
-                'mata_kuliah'=> $items->map(fn ($i) => ['kode' => $i['mk_kode'], 'nama' => $i['mk_nama']])->values(),
+                'mata_kuliah' => $items->map(fn ($i) => ['kode' => $i['mk_kode'], 'nama' => $i['mk_nama']])->values(),
             ];
         })->values();
 
@@ -129,7 +129,7 @@ class PeriodeController extends Controller
                 'dosen_id'   => $first['dosen_id'],
                 'dosen_nama' => $first['dosen_nama'],
                 'dosen_kode' => $first['dosen_kode'],
-                'mata_kuliah'=> $items->map(fn ($i) => ['kode' => $i['mk_kode'], 'nama' => $i['mk_nama']])->values(),
+                'mata_kuliah' => $items->map(fn ($i) => ['kode' => $i['mk_kode'], 'nama' => $i['mk_nama']])->values(),
             ];
         })->values();
 
@@ -161,7 +161,7 @@ class PeriodeController extends Controller
                 'revisi'   => (int) ($soalByStatus['REVISION'] ?? 0),
                 'approved' => $soalApproved,
                 'rejected' => (int) ($soalByStatus['REJECTED'] ?? 0),
-                'in_review'=> $soalInReview,
+                'in_review' => $soalInReview,
                 'active_review_target' => $activeReviewTarget,
                 'progress' => $activeReviewTarget > 0 ? (int) round(($soalApproved / $activeReviewTarget) * 100) : 0,
             ],

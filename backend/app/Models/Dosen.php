@@ -25,6 +25,11 @@ class Dosen extends Model
         'tanda_tangan',
     ];
 
+    public function getNamaAttribute()
+    {
+        return $this->nama_lengkap;
+    }
+
     // ─── Relationships ─────────────────────────────────────────────────────────
 
     public function user()

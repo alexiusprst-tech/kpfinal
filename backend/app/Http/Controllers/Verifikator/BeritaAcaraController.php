@@ -9,6 +9,7 @@ use App\Models\MataKuliah;
 use App\Models\PenugasanKoordinator;
 use App\Models\PenugasanVerifikator;
 use App\Models\PeriodeVerifikasi;
+use App\Models\Setting;
 use App\Models\Soal;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -280,21 +281,18 @@ class BeritaAcaraController extends Controller
                 'mataKuliah'               => $mataKuliah,
                 'evaluatorNama'            => $user->name,
                 'evaluatorKode'            => $dosen->kode_dosen ?? '-',
-                'programStudi'             => config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi')),
+                'programStudi'             => Setting::get('prodi_nama', config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi'))),
                 'koordinatorNama'          => $koordinatorDosen->nama_lengkap,
-                'kaProdi'                  => config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
+                'kaProdi'                  => Setting::get('kaprodi_nama', config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.'))),
                 'clos'                     => $clos,
                 'jumlahSoal'               => 1,
                 'jumlahApproved'           => 1,
                 'jumlahRevision'           => $jumlahRevision,
                 'jumlahRejected'           => $jumlahRejected,
                 'logo_base64'              => $logoBase64,
-                'tanda_tangan_evaluator'   => $dosen?->tanda_tangan
-                    ? storage_path('app/public/' . $dosen->tanda_tangan)
-                    : null,
-                'tanda_tangan_koordinator' => $koordinatorDosen?->tanda_tangan
-                    ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan)
-                    : null,
+                'tanda_tangan_evaluator'   => $this->imageToBase64($dosen?->tanda_tangan ? storage_path('app/public/' . $dosen->tanda_tangan) : null),
+                'tanda_tangan_koordinator' => $this->imageToBase64($koordinatorDosen?->tanda_tangan ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan) : null),
+                'tanda_tangan_kaprodi'     => $this->imageToBase64(Setting::getKaprodiSignaturePath()),
             ];
 
             // If only 1 approved soal exists, download its single BAP PDF
@@ -456,9 +454,9 @@ class BeritaAcaraController extends Controller
                 'mataKuliah'               => $mataKuliah,
                 'evaluatorNama'            => $user->name,
                 'evaluatorKode'            => $dosen->kode_dosen ?? '-',
-                'programStudi'             => config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi')),
+                'programStudi'             => Setting::get('prodi_nama', config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi'))),
                 'koordinatorNama'          => $koordinatorDosen->nama_lengkap,
-                'kaProdi'                  => config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
+                'kaProdi'                  => Setting::get('kaprodi_nama', config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.'))),
                 'soalList'                 => $soalList,
                 'clos'                     => $clos,
                 'jumlahSoal'               => 1,
@@ -466,12 +464,9 @@ class BeritaAcaraController extends Controller
                 'jumlahRevision'           => 0,
                 'jumlahRejected'           => 0,
                 'logo_base64'              => $logoBase64,
-                'tanda_tangan_evaluator'   => $dosen?->tanda_tangan
-                    ? storage_path('app/public/' . $dosen->tanda_tangan)
-                    : null,
-                'tanda_tangan_koordinator' => $koordinatorDosen?->tanda_tangan
-                    ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan)
-                    : null,
+                'tanda_tangan_evaluator'   => $this->imageToBase64($dosen?->tanda_tangan ? storage_path('app/public/' . $dosen->tanda_tangan) : null),
+                'tanda_tangan_koordinator' => $this->imageToBase64($koordinatorDosen?->tanda_tangan ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan) : null),
+                'tanda_tangan_kaprodi'     => $this->imageToBase64(Setting::getKaprodiSignaturePath()),
             ];
 
             $pdfContent = $this->generateBapPdf($data, $soal);
@@ -515,45 +510,44 @@ class BeritaAcaraController extends Controller
     }
 
     /**
-     * Generate merged BAP PDF containing the 1-page BAP Form (Page 1)
+     * Generate merged BAP PDF containing the official 1-page BAP Evaluation Form (Page 1)
      * and the actual uploaded exam question PDF by Koordinator MK (Page 2+).
      */
     private function generateBapPdf(array $viewData, ?Soal $soalItem = null): string
     {
-        $domPdf = Pdf::loadView('pdf.berita-acara', $viewData)->setPaper('a4', 'portrait');
-        $bapPdfContent = $domPdf->output();
-
-        if (!$soalItem) {
-            return $bapPdfContent;
-        }
-
-        // Ambil berkas revisi terbaru jika ada, jika tidak ada gunakan berkas asli soal
-        $latestRevisi = $soalItem->revisi()->first();
-        $targetRelativePath = ($latestRevisi && !empty($latestRevisi->file_path))
-            ? $latestRevisi->file_path
-            : $soalItem->file_path;
-
-        if (empty($targetRelativePath)) {
-            return $bapPdfContent;
+        // 1. Ambil berkas revisi terbaru jika ada, jika tidak ada gunakan berkas asli soal
+        $targetRelativePath = null;
+        if ($soalItem) {
+            $latestRevisi = $soalItem->revisi()->whereNotNull('file_path')->first();
+            $targetRelativePath = ($latestRevisi && !empty($latestRevisi->file_path))
+                ? $latestRevisi->file_path
+                : $soalItem->file_path;
         }
 
         $filePath = null;
-        if (Storage::disk('private')->exists($targetRelativePath)) {
-            $filePath = Storage::disk('private')->path($targetRelativePath);
-        } elseif (file_exists(storage_path('app/' . $targetRelativePath))) {
-            $filePath = storage_path('app/' . $targetRelativePath);
-        } elseif (file_exists(storage_path('app/private/' . $targetRelativePath))) {
-            $filePath = storage_path('app/private/' . $targetRelativePath);
+        if (!empty($targetRelativePath)) {
+            if (Storage::disk('private')->exists($targetRelativePath)) {
+                $filePath = Storage::disk('private')->path($targetRelativePath);
+            } elseif (file_exists(storage_path('app/' . $targetRelativePath))) {
+                $filePath = storage_path('app/' . $targetRelativePath);
+            } elseif (file_exists(storage_path('app/private/' . $targetRelativePath))) {
+                $filePath = storage_path('app/private/' . $targetRelativePath);
+            }
         }
 
-        if (!$filePath || !file_exists($filePath)) {
-            return $bapPdfContent;
+        $hasPdfFile = false;
+        if ($filePath && file_exists($filePath)) {
+            $hasPdfFile = strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'pdf'
+                || (file_get_contents($filePath, false, null, 0, 5) === '%PDF-');
         }
 
-        $isPdf = strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'pdf'
-            || (file_get_contents($filePath, false, null, 0, 5) === '%PDF-');
+        // Jika soal memiliki file PDF yang diunggah, hanya render halaman 1 (Berita Acara Form) dari Blade
+        $viewData['bap_only'] = $hasPdfFile;
+        $domPdf = Pdf::loadView('pdf.berita-acara', $viewData)->setPaper('a4', 'portrait');
+        $bapPdfContent = $domPdf->output();
 
-        if (!$isPdf) {
+        // Jika tidak ada berkas PDF yang diunggah, kembalikan hasil generate template standar
+        if (!$hasPdfFile) {
             return $bapPdfContent;
         }
 
@@ -569,17 +563,17 @@ class BeritaAcaraController extends Controller
 
             $fpdi = new \setasign\Fpdi\Fpdi();
 
-            // Import Page 1 from generated BAP PDF (The official Berita Acara Evaluation Form)
+            // Import halaman formulir Berita Acara hasil generate DomPDF (Halaman 1)
             $bapStream = \setasign\Fpdi\PdfParser\StreamReader::createByString($bapPdfContent);
             $pageCountBap = $fpdi->setSourceFile($bapStream);
-            if ($pageCountBap >= 1) {
-                $tplId = $fpdi->importPage(1);
+            for ($pageNo = 1; $pageNo <= $pageCountBap; $pageNo++) {
+                $tplId = $fpdi->importPage($pageNo);
                 $size = $fpdi->getTemplateSize($tplId);
                 $fpdi->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $fpdi->useTemplate($tplId);
             }
 
-            // Import ALL pages from the actual uploaded exam question PDF by Koordinator MK
+            // Import SELURUH halaman dari naskah soal asli yang diunggah oleh Koordinator MK (Halaman 2 dst)
             $pageCountSoal = $fpdi->setSourceFile($filePath);
             for ($pageNo = 1; $pageNo <= $pageCountSoal; $pageNo++) {
                 $tplId = $fpdi->importPage($pageNo);
@@ -590,8 +584,9 @@ class BeritaAcaraController extends Controller
 
             return $fpdi->Output('S');
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('FPDI merge failed, using standard BAP view: ' . $e->getMessage());
-            return $bapPdfContent;
+            \Illuminate\Support\Facades\Log::warning('FPDI merge failed, falling back to full BAP view: ' . $e->getMessage());
+            $viewData['bap_only'] = false;
+            return Pdf::loadView('pdf.berita-acara', $viewData)->setPaper('a4', 'portrait')->output();
         }
     }
 
@@ -623,6 +618,24 @@ class BeritaAcaraController extends Controller
         $logoData = file_get_contents($logoPath);
 
         return 'data:image/' . $type . ';base64,' . base64_encode($logoData);
+    }
+
+    private function imageToBase64(?string $path): ?string
+    {
+        if (empty($path) || !file_exists($path)) {
+            return null;
+        }
+
+        try {
+            $type = pathinfo($path, PATHINFO_EXTENSION) ?: 'png';
+            $data = file_get_contents($path);
+            if ($data === false) {
+                return null;
+            }
+            return 'data:image/' . $type . ';base64,' . base64_encode($data);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function isAssignedVerifikator($user, ?object $dosen, string $mataKuliahId, string $periodeId): bool

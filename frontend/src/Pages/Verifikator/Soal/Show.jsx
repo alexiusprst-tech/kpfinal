@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import DocumentPreviewModal from '@/Components/DocumentPreviewModal';
 
 const STATUS_CONFIG = {
     IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
@@ -60,6 +61,11 @@ export default function VerifikatorSoalShow({ soal }) {
     const [cloFeedback, setCloFeedback] = useState({});
     const [processing, setProcessing] = useState(false);
     const [cloErrors, setCloErrors] = useState({});
+    const [previewModal, setPreviewModal] = useState({ open: false, fileName: '', previewUrl: '', downloadUrl: '' });
+
+    const openPreview = (fileName, previewUrl, downloadUrl) =>
+        setPreviewModal({ open: true, fileName, previewUrl, downloadUrl });
+    const closePreview = () => setPreviewModal(m => ({ ...m, open: false }));
 
     const canVerify = ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'].includes(soal.status);
     const ploList = soal.plo_clo_data?.plo || [];
@@ -125,6 +131,7 @@ export default function VerifikatorSoalShow({ soal }) {
     };
 
     return (
+        <>
         <AuthenticatedLayout title={`Review: ${soal.judul}`}>
             <Head title={`Review: ${soal.judul}`} />
             <FlashAlert flash={flash} />
@@ -167,15 +174,14 @@ export default function VerifikatorSoalShow({ soal }) {
                             </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            <a
-                                href={`/verifikator/soal/${soal.id}/preview`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs"
-                                title="Buka pratinjau naskah soal di tab baru"
+                            <button
+                                type="button"
+                                onClick={() => openPreview(soal.nama_file, `/verifikator/soal/${soal.id}/preview`, `/verifikator/soal/${soal.id}/download`)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs cursor-pointer"
+                                title="Pratinjau naskah soal"
                             >
                                 <Eye className="w-3.5 h-3.5 text-gray-500" /> Lihat
-                            </a>
+                            </button>
                             <a
                                 href={`/verifikator/soal/${soal.id}/download`}
                                 download={soal.nama_file}
@@ -504,20 +510,19 @@ export default function VerifikatorSoalShow({ soal }) {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
-                                        <a
-                                            href={`/verifikator/revisi/${rev.id}/preview`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-amber-200 hover:bg-amber-100/50 text-amber-800 rounded-xl text-xs font-bold transition-all shadow-xs"
-                                            title="Lihat naskah revisi"
+                                        <button
+                                            type="button"
+                                            onClick={() => openPreview(rev.nama_file, `/verifikator/revisi/${rev.id}/preview`, `/verifikator/revisi/${rev.id}/download`)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-amber-200 hover:bg-amber-100/50 text-amber-800 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                                            title="Pratinjau naskah revisi"
                                         >
                                             <Eye className="w-3.5 h-3.5 text-amber-700" /> Lihat
-                                        </a>
+                                        </button>
                                         <a
                                             href={`/verifikator/revisi/${rev.id}/download`}
                                             download={rev.nama_file}
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
-                                            title="Unduh naskah revisi"
+                                            title="Unduh naskah revisi ke perangkat"
                                         >
                                             <Download className="w-3.5 h-3.5" /> Unduh
                                         </a>
@@ -592,5 +597,14 @@ export default function VerifikatorSoalShow({ soal }) {
                 </div>
             </div>
         </AuthenticatedLayout>
+
+        <DocumentPreviewModal
+            open={previewModal.open}
+            onClose={closePreview}
+            fileName={previewModal.fileName}
+            previewUrl={previewModal.previewUrl}
+            downloadUrl={previewModal.downloadUrl}
+        />
+        </>
     );
 }

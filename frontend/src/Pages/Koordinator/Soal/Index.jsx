@@ -11,13 +11,13 @@ import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 
 
 const STATUS_CONFIG = {
-    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
-    APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
+    IN_REVIEW:   { label: 'In Review',       color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'Submitted',       color: 'bg-blue-100 text-blue-700',      dot: 'bg-blue-500' },
+    RESUBMITTED: { label: 'Revisi Terkirim', color: 'bg-indigo-100 text-indigo-700', dot: 'bg-indigo-500' },
+    DRAFT:       { label: 'Draft',           color: 'bg-gray-100 text-gray-700',      dot: 'bg-gray-400' },
+    REVISION:    { label: 'Revisi',          color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
+    APPROVED:    { label: 'Disetujui',       color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    REJECTED:    { label: 'Ditolak',         color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }) {
@@ -129,7 +129,11 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
         fd.append('file', revisiFile);
         if (revisiCatatan) fd.append('catatan', revisiCatatan);
         router.post(`/koordinator/revisi/${showRevisi.id}`, fd, {
-            onFinish: () => { setProcessing(false); setShowRevisi(null); setRevisiFile(null); setRevisiCatatan(''); }
+            onFinish: () => { setProcessing(false); setShowRevisi(null); setRevisiFile(null); setRevisiCatatan(''); },
+            onError: (errs) => {
+                const msg = Object.values(errs)[0] || 'Gagal mengunggah revisi.';
+                showAlert('error', 'Gagal', msg);
+            }
         });
     };
 

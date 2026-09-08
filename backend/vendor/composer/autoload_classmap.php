@@ -26,7 +26,6 @@ return array(
     'App\\Http\\Controllers\\SuperAdmin\\MataKuliahController' => $baseDir . '/app/Http/Controllers/SuperAdmin/MataKuliahController.php',
     'App\\Http\\Controllers\\SuperAdmin\\PeriodeController' => $baseDir . '/app/Http/Controllers/SuperAdmin/PeriodeController.php',
     'App\\Http\\Controllers\\SuperAdmin\\PloController' => $baseDir . '/app/Http/Controllers/SuperAdmin/PloController.php',
-    'App\\Http\\Controllers\\SuperAdmin\\TahunAjaranController' => $baseDir . '/app/Http/Controllers/SuperAdmin/TahunAjaranController.php',
     'App\\Http\\Controllers\\Verifikator\\BeritaAcaraController' => $baseDir . '/app/Http/Controllers/Verifikator/BeritaAcaraController.php',
     'App\\Http\\Controllers\\Verifikator\\DashboardController' => $baseDir . '/app/Http/Controllers/Verifikator/DashboardController.php',
     'App\\Http\\Controllers\\Verifikator\\SoalController' => $baseDir . '/app/Http/Controllers/Verifikator/SoalController.php',

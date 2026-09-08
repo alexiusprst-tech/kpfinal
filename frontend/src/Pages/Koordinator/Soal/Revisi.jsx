@@ -60,7 +60,13 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
             confirmButtonColor: '#059669',
         });
         if (result.isConfirmed) {
-            post(`/koordinator/revisi/${soal.id}`, { forceFormData: true });
+            post(`/koordinator/revisi/${soal.id}`, {
+                forceFormData: true,
+                onError: (errs) => {
+                    const msg = Object.values(errs)[0] || 'Gagal mengunggah berkas revisi.';
+                    showAlert('error', 'Gagal', msg);
+                }
+            });
         }
     };
 

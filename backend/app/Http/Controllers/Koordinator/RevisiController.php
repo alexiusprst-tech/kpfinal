@@ -17,9 +17,12 @@ class RevisiController extends Controller
     public function store(Request $request, Soal $soal)
     {
         $user = $request->user();
+        $dosen = $user->dosen;
+        $isOwner = $soal->uploaded_by === $user->id;
+        $isAssignedKoor = $this->isAssignedKoordinator($dosen, $soal);
 
-        if ($soal->uploaded_by !== $user->id) {
-            abort(403, 'Anda tidak memiliki akses.');
+        if (!$isOwner && !$isAssignedKoor && !$user->isSuperAdmin()) {
+            abort(403, 'Anda tidak memiliki wewenang untuk mengunggah revisi soal ini.');
         }
 
         if (!$soal->canBeRevised()) {
@@ -65,7 +68,13 @@ class RevisiController extends Controller
             );
         });
 
-        return redirect()->back()->with('success', 'Revisi soal berhasil diunggah.');
+        $referer = $request->headers->get('referer', '');
+        if (str_contains($referer, '/edit')) {
+            return redirect()->route('koordinator.soal.show', $soal->id)
+                ->with('success', 'Revisi soal berhasil diunggah dan dikirim kembali ke verifikator.');
+        }
+
+        return redirect()->back()->with('success', 'Revisi soal berhasil diunggah dan dikirim kembali ke verifikator.');
     }
 
     public function download(Request $request, RevisiSoal $revisi)
