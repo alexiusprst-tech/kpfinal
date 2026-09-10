@@ -32,6 +32,7 @@ class VerifikasiController extends Controller
             'action'        => ['required', 'in:APPROVED,REVISION,REJECTED'],
             'catatan'       => ['nullable', 'string', 'max:2000'],
             'clo_feedback'  => ['nullable', 'array'],
+            'plo_feedback'  => ['nullable', 'array'],
         ]);
 
         $actionText = match ($validated['action']) {
@@ -55,6 +56,7 @@ class VerifikasiController extends Controller
                 'action'          => $validated['action'],
                 'catatan'         => $validated['catatan'] ?? null,
                 'clo_feedback'    => $validated['clo_feedback'] ?? null,
+                'plo_feedback'    => $validated['plo_feedback'] ?? null,
                 'created_at'      => now(),
             ]);
 

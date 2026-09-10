@@ -113,8 +113,22 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
         });
     };
 
+    // Helper: Check whether lecturer is Dosen Tetap
+    const isDosenTetap = (dosen) => {
+        if (!dosen) return false;
+        if (typeof dosen.is_dosen_tetap === 'boolean') return dosen.is_dosen_tetap;
+        const kat = String(dosen.kategori_dosen || '').trim().toUpperCase();
+        return !['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA'].includes(kat);
+    };
+
     const handleToggleVerifikator = (mkId, dosenId) => {
         if (!dosenId) return;
+
+        const dosenObj = dosenAll.find((d) => d.id === dosenId);
+        if (dosenObj && !isDosenTetap(dosenObj)) {
+            showToast('error', 'Verifikator Soal hanya dapat ditentukan dari Dosen Tetap.');
+            return;
+        }
 
         setMkVerifikatorMap((prev) => {
             const currentList = prev[mkId] || [];
@@ -133,12 +147,16 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                     [mkId]: [...currentList, dosenId],
                 };
             }
-
         });
     };
 
     const handleCopyVerifikatorsToAll = (sourceMkId) => {
-        const sourceList = (mkVerifikatorMap[sourceMkId] || []).slice(0, 5);
+        const sourceList = (mkVerifikatorMap[sourceMkId] || [])
+            .filter((id) => {
+                const d = dosenAll.find((item) => item.id === id);
+                return isDosenTetap(d);
+            })
+            .slice(0, 5);
         if (sourceList.length === 0) return;
 
         setMkVerifikatorMap((prev) => {
@@ -197,12 +215,15 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
         });
     };
 
-    // Dynamic options for Verifikator dropdown
+    // Dynamic options for Verifikator dropdown (Khusus Dosen Tetap)
     const getVerifikatorOptionsForMk = (currentMkId) => {
         const thisMkCoors = mkCoordinatorMap[currentMkId] || [];
         const thisMkVerifs = mkVerifikatorMap[currentMkId] || [];
 
-        return dosenAll.map((d) => {
+        // Hanya Dosen Tetap yang berhak menjadi Verifikator Soal
+        const dosenTetapList = dosenAll.filter(isDosenTetap);
+
+        return dosenTetapList.map((d) => {
             const isThisMkKoor = thisMkCoors.includes(d.id);
             const isThisMkVerif = thisMkVerifs.includes(d.id);
 
@@ -271,6 +292,19 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                     icon: 'warning',
                 });
                 return;
+            }
+
+            // Validasi Verifikator wajib Dosen Tetap
+            for (const vId of verifs) {
+                const vObj = dosenAll.find((d) => d.id === vId);
+                if (vObj && !isDosenTetap(vObj)) {
+                    showAlert({
+                        title: 'Verifikator Tidak Valid',
+                        text: `Dosen ${vObj?.nama_lengkap || vId} (${vObj?.kode_dosen || '-'}) bukan Dosen Tetap pada mata kuliah ${mk?.nama_mk || mkId}. Verifikator Soal hanya boleh Dosen Tetap.`,
+                        icon: 'error',
+                    });
+                    return;
+                }
             }
         }
 
@@ -601,6 +635,9 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                                         <label className="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
                                                             Tim Verifikator MK <span className="text-red-500">*</span>
                                                         </label>
+                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                            Khusus Dosen Tetap
+                                                        </span>
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                                             currentVerifikatorList.length >= 5
                                                                 ? 'bg-amber-100 text-amber-800 font-extrabold'
@@ -629,8 +666,8 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                                         onChange={(val) => {
                                                             if (val) handleToggleVerifikator(mkId, val);
                                                         }}
-                                                        placeholder="+ Tambah Dosen Verifikator..."
-                                                        searchPlaceholder="Cari dosen untuk ditambahkan..."
+                                                        placeholder="+ Tambah Dosen Verifikator (Khusus Dosen Tetap)..."
+                                                        searchPlaceholder="Cari dosen tetap untuk ditambahkan..."
                                                     />
                                                 ) : (
                                                     <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs font-bold text-emerald-800 flex items-center justify-center gap-1.5">
@@ -643,15 +680,25 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                                     {currentVerifikatorList.length > 0 ? (
                                                         currentVerifikatorList.map((vId) => {
                                                             const vObj = dosenAll.find((d) => d.id === vId);
+                                                            const isTetap = isDosenTetap(vObj);
                                                             return (
                                                                 <span
                                                                     key={vId}
-                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg text-xs font-bold"
+                                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                                                                        isTetap
+                                                                            ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                                                            : 'bg-red-50 text-red-800 border-red-300'
+                                                                    }`}
                                                                 >
-                                                                    <Shield className="w-3 h-3 text-blue-600 shrink-0" />
+                                                                    <Shield className={`w-3 h-3 shrink-0 ${isTetap ? 'text-blue-600' : 'text-red-500'}`} />
                                                                     <span className="truncate max-w-[200px]">
                                                                         {vObj?.kode_dosen} - {vObj?.nama_lengkap}
                                                                     </span>
+                                                                    {!isTetap && (
+                                                                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
+                                                                            Bukan Dosen Tetap
+                                                                        </span>
+                                                                    )}
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => handleToggleVerifikator(mkId, vId)}

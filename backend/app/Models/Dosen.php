@@ -25,9 +25,38 @@ class Dosen extends Model
         'tanda_tangan',
     ];
 
+    protected $appends = [
+        'is_dosen_tetap',
+    ];
+
     public function getNamaAttribute()
     {
         return $this->nama_lengkap;
+    }
+
+    public function getIsDosenTetapAttribute(): bool
+    {
+        return $this->isDosenTetap();
+    }
+
+    /**
+     * Cek apakah dosen merupakan Dosen Tetap.
+     */
+    public function isDosenTetap(): bool
+    {
+        $kategori = strtoupper(trim($this->kategori_dosen ?? ''));
+        return !in_array($kategori, ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA']);
+    }
+
+    /**
+     * Scope query hanya untuk dosen tetap.
+     */
+    public function scopeTetap($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNotIn(\Illuminate\Support\Facades\DB::raw('UPPER(TRIM(kategori_dosen))'), ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA'])
+              ->orWhereNull('kategori_dosen');
+        });
     }
 
     // ─── Relationships ─────────────────────────────────────────────────────────

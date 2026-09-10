@@ -432,6 +432,40 @@ class KelompokVerifikasiTest extends TestCase
         $response->assertSessionHasErrors(['mata_kuliah']);
     }
 
+    public function test_validation_rejects_non_dosen_tetap_as_verifikator(): void
+    {
+        // Create an LB (Luar Biasa) lecturer
+        $dosenLB = Dosen::create([
+            'id'             => (string) Str::uuid(),
+            'kode_dosen'     => 'DLB',
+            'nama_lengkap'   => 'Dosen Luar Biasa M.Kom',
+            'email'          => 'lb@test.com',
+            'kategori_dosen' => 'LB',
+            'status'         => 'ACTIVE',
+        ]);
+
+        $payload = [
+            'nama'        => 'Kelompok Verifikator Non Tetap',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'DRAFT',
+            'mata_kuliah' => [
+                [
+                    'mata_kuliah_id'  => $this->mk1->id,
+                    'koordinator_ids' => [$this->dosen1->id],
+                    'verifikator_ids' => [$dosenLB->id], // LB lecturer assigned as verifikator
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
+
+        $response->assertSessionHasErrors(['mata_kuliah']);
+        $this->assertDatabaseMissing('kelompok_verifikasi', [
+            'nama' => 'Kelompok Verifikator Non Tetap',
+        ]);
+    }
+
     public function test_validation_rejects_more_than_3_coordinators_per_mk(): void
     {
         $d4 = Dosen::create([

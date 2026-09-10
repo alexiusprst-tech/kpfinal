@@ -4,7 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     ArrowLeft, FileText, Download, CheckCircle2, RefreshCw,
     XCircle, Clock, History, User, Calendar, BookOpen, Eye,
-    Send, FileCheck, AlertTriangle, Layers, MessageSquare
+    Send, FileCheck, AlertTriangle, Layers, MessageSquare, ClipboardList
 } from 'lucide-react';
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
@@ -53,12 +53,29 @@ function formatSize(bytes) {
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
 
+/**
+ * Resolve nilai clo_feedback untuk satu kode CLO dari riwayat verifikasi.
+ * Mendukung format lama (string) dan baru (object {no_soal, catatan, rekomendasi}).
+ */
+function resolveCloNote(feedback, kode) {
+    if (!feedback || !feedback[kode]) return null;
+    const val = feedback[kode];
+    if (typeof val === 'string') return { catatan: val, no_soal: '', rekomendasi: '' };
+    if (typeof val === 'object') return val;
+    return null;
+}
 
 export default function VerifikatorSoalShow({ soal }) {
     const { flash } = usePage().props;
     const [action, setAction] = useState('');
     const [catatan, setCatatan] = useState('');
+
+    // cloFeedback: { [kode_clo]: { no_soal: '', catatan: '', rekomendasi: '' } }
     const [cloFeedback, setCloFeedback] = useState({});
+
+    // ploFeedback: { [kode_plo]: string }
+    const [ploFeedback, setPloFeedback] = useState({});
+
     const [processing, setProcessing] = useState(false);
     const [cloErrors, setCloErrors] = useState({});
     const [previewModal, setPreviewModal] = useState({ open: false, fileName: '', previewUrl: '', downloadUrl: '' });
@@ -71,23 +88,33 @@ export default function VerifikatorSoalShow({ soal }) {
     const ploList = soal.plo_clo_data?.plo || [];
     const allCloList = ploList.flatMap(p => p.clo || []);
 
-    const handleCloNoteChange = (cloKode, value) => {
-        setCloFeedback(prev => ({ ...prev, [cloKode]: value }));
-        if (value.trim().length > 0) {
+    // Helper: update satu field dalam clo feedback
+    const handleCloFieldChange = (cloKode, field, value) => {
+        setCloFeedback(prev => ({
+            ...prev,
+            [cloKode]: { ...(prev[cloKode] || { no_soal: '', catatan: '', rekomendasi: '' }), [field]: value }
+        }));
+        // Clear error ketika catatan (field wajib) diisi
+        if (field === 'catatan' && value.trim().length > 0) {
             setCloErrors(prev => ({ ...prev, [cloKode]: false }));
         }
+    };
+
+    const handlePloNoteChange = (ploKode, value) => {
+        setPloFeedback(prev => ({ ...prev, [ploKode]: value }));
     };
 
     const handleVerifikasi = async (e) => {
         e.preventDefault();
         if (!action) return;
 
-        // Validate: all CLO notes are required when there are CLOs
+        // Validasi: field catatan per-CLO wajib diisi
         if (allCloList.length > 0) {
             const newCloErrors = {};
             let hasEmpty = false;
             allCloList.forEach(clo => {
-                if (!cloFeedback[clo.kode] || !cloFeedback[clo.kode].trim()) {
+                const catan = cloFeedback[clo.kode]?.catatan;
+                if (!catan || !catan.trim()) {
                     newCloErrors[clo.kode] = true;
                     hasEmpty = true;
                 }
@@ -95,8 +122,8 @@ export default function VerifikatorSoalShow({ soal }) {
             if (hasEmpty) {
                 setCloErrors(newCloErrors);
                 showAlert({
-                    title: 'Catatan Per-CLO Wajib Diisi',
-                    text: 'Harap isi catatan evaluasi untuk setiap butir CLO yang tercantum pada soal ini.',
+                    title: 'Catatan Evaluasi Per-CLO Wajib Diisi',
+                    text: 'Harap isi kolom "Catatan Evaluasi" untuk setiap CLO yang tercantum pada soal ini.',
                     icon: 'warning',
                 });
                 return;
@@ -124,7 +151,8 @@ export default function VerifikatorSoalShow({ soal }) {
         router.post(`/verifikator/soal/${soal.id}/verifikasi`, {
             action,
             catatan,
-            clo_feedback: cloFeedback
+            clo_feedback: cloFeedback,
+            plo_feedback: ploFeedback,
         }, {
             onFinish: () => setProcessing(false)
         });
@@ -320,7 +348,7 @@ export default function VerifikatorSoalShow({ soal }) {
                             Pilih keputusan verifikasi dan berikan catatan evaluasi (baik catatan umum maupun per-CLO).
                         </p>
 
-                        <form onSubmit={handleVerifikasi} className="space-y-5">
+                        <form onSubmit={handleVerifikasi} className="space-y-6">
                             {/* Decision Radio Cards */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {[
@@ -386,77 +414,167 @@ export default function VerifikatorSoalShow({ soal }) {
                                 })}
                             </div>
 
-                            {/* Section Catatan Per-CLO — WAJIB */}
+                            {/* ─── Tabel Catatan Evaluasi Per-CLO ─── */}
                             {ploList.length > 0 && (
-                                <div className="p-4 rounded-2xl border border-gray-200 bg-gray-50/60 space-y-3">
+                                <div className="space-y-2">
                                     <div className="flex items-start justify-between gap-2">
                                         <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                                            <MessageSquare className="w-4 h-4 text-[#801720]" />
+                                            <ClipboardList className="w-4 h-4 text-[#801720]" />
                                             Catatan Evaluasi Per-CLO
                                             <span className="text-red-500">*</span>
                                         </label>
                                         <span className="text-[10px] text-gray-500 text-right leading-snug">
-                                            Semua CLO wajib diberi catatan evaluasi
+                                            Kolom "Catatan Evaluasi" wajib diisi untuk setiap CLO
                                         </span>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        {ploList.map((plo, pIdx) => (
-                                            <div key={pIdx} className="space-y-2">
-                                                {/* PLO Header */}
-                                                <div className="flex items-center gap-2 px-1">
-                                                    <span className="px-2 py-0.5 rounded-md bg-[#801720] text-white text-[10px] font-extrabold">
-                                                        {plo.kode}
-                                                    </span>
-                                                    <span className="text-[11px] font-semibold text-gray-600">{plo.deskripsi}</span>
-                                                </div>
+                                    {/* Tabel */}
+                                    <div className="rounded-xl border border-gray-200 overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-xs">
+                                                <thead>
+                                                    <tr className="bg-[#801720] text-white">
+                                                        <th className="px-3 py-2.5 text-left font-bold whitespace-nowrap w-[15%]">Bentuk Asesmen</th>
+                                                        <th className="px-3 py-2.5 text-left font-bold whitespace-nowrap w-[13%]">CLO</th>
+                                                        <th className="px-3 py-2.5 text-left font-bold whitespace-nowrap w-[12%]">No. Soal</th>
+                                                        <th className="px-3 py-2.5 text-left font-bold w-[35%]">
+                                                            Catatan Evaluasi <span className="text-red-300">*</span>
+                                                        </th>
+                                                        <th className="px-3 py-2.5 text-left font-bold w-[25%]">Rekomendasi Soal Terhadap PLO (jika ada)</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {ploList.map((plo, pIdx) =>
+                                                        (plo.clo || []).map((clo, cIdx) => {
+                                                            const hasError = cloErrors[clo.kode];
+                                                            const hasFilled = Boolean(cloFeedback[clo.kode]?.catatan?.trim());
+                                                            const isFirstInPlo = cIdx === 0;
+                                                            const ploRowSpan = (plo.clo || []).length;
 
-                                                {/* CLO Inputs */}
-                                                <div className="space-y-2 pl-1">
-                                                    {(plo.clo || []).map((clo, cIdx) => {
-                                                        const hasError = cloErrors[clo.kode];
-                                                        const hasFilled = Boolean(cloFeedback[clo.kode]?.trim());
-                                                        return (
-                                                            <div
-                                                                key={cIdx}
-                                                                className={`bg-white rounded-xl border p-3 text-xs space-y-2 transition-colors ${
-                                                                    hasError ? 'border-red-400 ring-1 ring-red-300' :
-                                                                    hasFilled ? 'border-emerald-300' : 'border-gray-200'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-start justify-between gap-2">
-                                                                    <div className="flex items-start gap-2 min-w-0">
-                                                                        <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px] flex-shrink-0 mt-0.5">
-                                                                            {clo.kode}
-                                                                        </span>
-                                                                        <span className="text-gray-700 leading-snug">{clo.deskripsi}</span>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                                        {hasFilled && (
-                                                                            <span className="text-[10px] font-bold text-emerald-600">✓ Terisi</span>
-                                                                        )}
+                                                            return (
+                                                                <tr
+                                                                    key={`${pIdx}-${cIdx}`}
+                                                                    className={`transition-colors ${
+                                                                        hasError ? 'bg-red-50/60' : hasFilled ? 'bg-emerald-50/30' : 'bg-white'
+                                                                    } hover:bg-gray-50/50`}
+                                                                >
+                                                                    {/* Bentuk Asesmen — hanya di baris pertama per PLO, merge ke bawah */}
+                                                                    {isFirstInPlo && (
+                                                                        <td
+                                                                            className="px-3 py-2 align-top border-r border-gray-100"
+                                                                            rowSpan={ploRowSpan}
+                                                                        >
+                                                                            <span className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold text-[11px]">
+                                                                                {soal.kategori?.nama || '—'}
+                                                                            </span>
+                                                                        </td>
+                                                                    )}
+
+                                                                    {/* CLO */}
+                                                                    <td className="px-3 py-2 align-top border-r border-gray-100">
+                                                                        <div className="space-y-1">
+                                                                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px]">
+                                                                                {clo.kode}
+                                                                            </span>
+                                                                            <p className="text-[10px] text-gray-500 leading-tight line-clamp-2">{clo.deskripsi}</p>
+                                                                        </div>
+                                                                    </td>
+
+                                                                    {/* No. Soal */}
+                                                                    <td className="px-3 py-2 align-top border-r border-gray-100">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={cloFeedback[clo.kode]?.no_soal || ''}
+                                                                            onChange={(e) => handleCloFieldChange(clo.kode, 'no_soal', e.target.value)}
+                                                                            placeholder="cth: 1, 3, 5"
+                                                                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-[11px] outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all resize-none"
+                                                                        />
+                                                                    </td>
+
+                                                                    {/* Catatan Evaluasi */}
+                                                                    <td className="px-3 py-2 align-top border-r border-gray-100">
+                                                                        <textarea
+                                                                            rows={3}
+                                                                            value={cloFeedback[clo.kode]?.catatan || ''}
+                                                                            onChange={(e) => handleCloFieldChange(clo.kode, 'catatan', e.target.value)}
+                                                                            placeholder={`Catatan evaluasi untuk ${clo.kode} — apakah sudah sesuai, perlu perbaikan pada bagian mana, dll.`}
+                                                                            className={`w-full px-2 py-1.5 border rounded-lg text-[11px] outline-none resize-none transition-all ${
+                                                                                hasError
+                                                                                    ? 'border-red-400 ring-1 ring-red-300/50 focus:ring-2 focus:ring-red-300/40 focus:border-red-400'
+                                                                                    : 'border-gray-200 focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]'
+                                                                            }`}
+                                                                        />
                                                                         {hasError && (
-                                                                            <span className="text-[10px] font-bold text-red-500">Wajib diisi!</span>
+                                                                            <p className="text-[10px] text-red-500 font-semibold mt-0.5">Wajib diisi!</p>
                                                                         )}
-                                                                    </div>
+                                                                        {hasFilled && !hasError && (
+                                                                            <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">✓ Terisi</p>
+                                                                        )}
+                                                                    </td>
+
+                                                                    {/* Rekomendasi */}
+                                                                    <td className="px-3 py-2 align-top">
+                                                                        <textarea
+                                                                            rows={3}
+                                                                            value={cloFeedback[clo.kode]?.rekomendasi || ''}
+                                                                            onChange={(e) => handleCloFieldChange(clo.kode, 'rekomendasi', e.target.value)}
+                                                                            placeholder="Rekomendasi soal terhadap PLO ini (opsional)..."
+                                                                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-[11px] outline-none resize-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all"
+                                                                        />
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ─── Catatan Evaluasi Per-PLO ─── */}
+                            {ploList.length > 0 && (
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                        <MessageSquare className="w-4 h-4 text-[#801720]" />
+                                        Catatan Evaluasi Per-PLO
+                                        <span className="text-gray-400 font-normal">(opsional)</span>
+                                    </label>
+                                    <div className="rounded-xl border border-gray-200 overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-xs">
+                                                <thead>
+                                                    <tr className="bg-gray-100 text-gray-700">
+                                                        <th className="px-3 py-2.5 text-left font-bold w-[30%]">PLO</th>
+                                                        <th className="px-3 py-2.5 text-left font-bold">Catatan Evaluasi PLO</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {ploList.map((plo, pIdx) => (
+                                                        <tr key={pIdx} className="bg-white hover:bg-gray-50/50 transition-colors">
+                                                            <td className="px-3 py-2 align-top border-r border-gray-100">
+                                                                <div className="space-y-1">
+                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#801720] text-white font-extrabold text-[10px]">
+                                                                        {plo.kode}
+                                                                    </span>
+                                                                    <p className="text-[10px] text-gray-500 leading-tight">{plo.deskripsi}</p>
                                                                 </div>
+                                                            </td>
+                                                            <td className="px-3 py-2 align-top">
                                                                 <textarea
                                                                     rows={2}
-                                                                    value={cloFeedback[clo.kode] || ''}
-                                                                    onChange={(e) => handleCloNoteChange(clo.kode, e.target.value)}
-                                                                    placeholder={`Tuliskan catatan evaluasi untuk ${clo.kode} — apakah sudah sesuai, perlu perbaikan pada bagian mana, dll.`}
-                                                                    className={`w-full px-3 py-2 border rounded-lg text-xs outline-none resize-none transition-all ${
-                                                                        hasError
-                                                                            ? 'border-red-300 focus:ring-2 focus:ring-red-300/30 focus:border-red-400'
-                                                                            : 'border-gray-300 focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]'
-                                                                    }`}
+                                                                    value={ploFeedback[plo.kode] || ''}
+                                                                    onChange={(e) => handlePloNoteChange(plo.kode, e.target.value)}
+                                                                    placeholder={`Catatan evaluasi ringkasan untuk ${plo.kode} (opsional)...`}
+                                                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-[11px] outline-none resize-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all"
                                                                 />
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ))}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -576,7 +694,7 @@ export default function VerifikatorSoalShow({ soal }) {
                     {(!soal.verifikasi || soal.verifikasi.length === 0) ? (
                         <p className="text-xs text-gray-400 text-center py-6">Belum ada riwayat verifikasi sebelumnya.</p>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {soal.verifikasi.map((v) => {
                                 const cfg = ACTION_CONFIG[v.action] || {
                                     label: v.action,
@@ -586,12 +704,24 @@ export default function VerifikatorSoalShow({ soal }) {
                                     badge: 'bg-gray-100 text-gray-600',
                                 };
                                 const Icon = cfg.icon;
-                                const cloNotes = v.clo_feedback && typeof v.clo_feedback === 'object'
-                                    ? Object.entries(v.clo_feedback).filter(([_, note]) => note && String(note).trim().length > 0)
+
+                                // clo_feedback: support format lama (string) dan baru (object)
+                                const cloEntries = v.clo_feedback && typeof v.clo_feedback === 'object'
+                                    ? Object.entries(v.clo_feedback).filter(([_, val]) => {
+                                        if (!val) return false;
+                                        if (typeof val === 'string') return val.trim().length > 0;
+                                        if (typeof val === 'object') return val.catatan?.trim().length > 0 || val.no_soal?.trim().length > 0;
+                                        return false;
+                                    })
+                                    : [];
+
+                                // plo_feedback
+                                const ploEntries = v.plo_feedback && typeof v.plo_feedback === 'object'
+                                    ? Object.entries(v.plo_feedback).filter(([_, note]) => note && String(note).trim().length > 0)
                                     : [];
 
                                 return (
-                                    <div key={v.id} className={`p-4 rounded-2xl border ${cfg.bg} space-y-2.5`}>
+                                    <div key={v.id} className={`p-4 rounded-2xl border ${cfg.bg} space-y-3`}>
                                         <div className="flex items-center justify-between gap-2">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.badge}`}>
                                                 <Icon className="w-3.5 h-3.5" /> {cfg.label}
@@ -605,18 +735,79 @@ export default function VerifikatorSoalShow({ soal }) {
                                             </p>
                                         )}
 
-                                        {cloNotes.length > 0 && (
-                                            <div className="p-3 bg-white/90 rounded-xl border border-black/5 text-xs space-y-1.5">
-                                                <p className="font-bold text-gray-800 text-[11px]">Catatan Per-CLO:</p>
-                                                <div className="space-y-1">
-                                                    {cloNotes.map(([kode, note], nIdx) => (
-                                                        <div key={nIdx} className="flex items-start gap-2 text-gray-700">
-                                                            <span className="px-1.5 py-0.5 rounded bg-red-100 text-[#801720] font-bold text-[10px] flex-shrink-0">
-                                                                {kode}
-                                                            </span>
-                                                            <span className="text-xs">{note}</span>
-                                                        </div>
-                                                    ))}
+                                        {/* Tabel Catatan Per-CLO di riwayat */}
+                                        {cloEntries.length > 0 && (
+                                            <div className="space-y-1.5">
+                                                <p className="font-bold text-gray-800 text-[11px]">Catatan Evaluasi Per-CLO:</p>
+                                                <div className="rounded-xl border border-black/8 overflow-hidden">
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-[11px]">
+                                                            <thead>
+                                                                <tr className="bg-white/80 text-gray-600 border-b border-black/8">
+                                                                    <th className="px-3 py-2 text-left font-bold w-[15%]">CLO</th>
+                                                                    <th className="px-3 py-2 text-left font-bold w-[15%]">No. Soal</th>
+                                                                    <th className="px-3 py-2 text-left font-bold">Catatan Evaluasi</th>
+                                                                    <th className="px-3 py-2 text-left font-bold w-[28%]">Rekomendasi Terhadap PLO</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-black/5">
+                                                                {cloEntries.map(([kode, val], nIdx) => {
+                                                                    const resolved = resolveCloNote(v.clo_feedback, kode);
+                                                                    return (
+                                                                        <tr key={nIdx} className="bg-white/60">
+                                                                            <td className="px-3 py-2 align-top border-r border-black/5">
+                                                                                <span className="px-1.5 py-0.5 rounded bg-red-100 text-[#801720] font-bold text-[10px]">
+                                                                                    {kode}
+                                                                                </span>
+                                                                            </td>
+                                                                            <td className="px-3 py-2 align-top border-r border-black/5 text-gray-600">
+                                                                                {resolved?.no_soal || <span className="text-gray-300">—</span>}
+                                                                            </td>
+                                                                            <td className="px-3 py-2 align-top border-r border-black/5 text-gray-700 leading-relaxed">
+                                                                                {resolved?.catatan || <span className="text-gray-300">—</span>}
+                                                                            </td>
+                                                                            <td className="px-3 py-2 align-top text-gray-600 leading-relaxed">
+                                                                                {resolved?.rekomendasi || <span className="text-gray-300">—</span>}
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Catatan Per-PLO di riwayat */}
+                                        {ploEntries.length > 0 && (
+                                            <div className="space-y-1.5">
+                                                <p className="font-bold text-gray-800 text-[11px]">Catatan Evaluasi Per-PLO:</p>
+                                                <div className="rounded-xl border border-black/8 overflow-hidden">
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-[11px]">
+                                                            <thead>
+                                                                <tr className="bg-white/80 text-gray-600 border-b border-black/8">
+                                                                    <th className="px-3 py-2 text-left font-bold w-[20%]">PLO</th>
+                                                                    <th className="px-3 py-2 text-left font-bold">Catatan Evaluasi</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-black/5">
+                                                                {ploEntries.map(([kode, note], nIdx) => (
+                                                                    <tr key={nIdx} className="bg-white/60">
+                                                                        <td className="px-3 py-2 align-top border-r border-black/5">
+                                                                            <span className="px-1.5 py-0.5 rounded-md bg-[#801720] text-white font-bold text-[10px]">
+                                                                                {kode}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="px-3 py-2 align-top text-gray-700 leading-relaxed">
+                                                                            {note}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}

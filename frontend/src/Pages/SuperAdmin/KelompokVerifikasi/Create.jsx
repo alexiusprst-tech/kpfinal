@@ -112,9 +112,23 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
         });
     };
 
-    // Toggle a verifikator for a specific MK (Max 5, cannot be assigned in coordinators or other verifikators)
+    // Helper: Check whether lecturer is Dosen Tetap
+    const isDosenTetap = (dosen) => {
+        if (!dosen) return false;
+        if (typeof dosen.is_dosen_tetap === 'boolean') return dosen.is_dosen_tetap;
+        const kat = String(dosen.kategori_dosen || '').trim().toUpperCase();
+        return !['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA'].includes(kat);
+    };
+
+    // Toggle a verifikator for a specific MK (Max 5, strictly Dosen Tetap)
     const handleToggleVerifikator = (mkId, dosenId) => {
         if (!dosenId) return;
+
+        const dosenObj = dosenAll.find((d) => d.id === dosenId);
+        if (dosenObj && !isDosenTetap(dosenObj)) {
+            showToast('error', 'Verifikator Soal hanya dapat ditentukan dari Dosen Tetap.');
+            return;
+        }
 
         setMkVerifikatorMap((prev) => {
             const currentList = prev[mkId] || [];
@@ -133,13 +147,17 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                     [mkId]: [...currentList, dosenId],
                 };
             }
-
         });
     };
 
-    // Copy Verifikators from one MK to all other selected MKs
+    // Copy Verifikators from one MK to all other selected MKs (strictly Dosen Tetap)
     const handleCopyVerifikatorsToAll = (sourceMkId) => {
-        const sourceList = (mkVerifikatorMap[sourceMkId] || []).slice(0, 5);
+        const sourceList = (mkVerifikatorMap[sourceMkId] || [])
+            .filter((id) => {
+                const d = dosenAll.find((item) => item.id === id);
+                return isDosenTetap(d);
+            })
+            .slice(0, 5);
         if (sourceList.length === 0) return;
 
         setMkVerifikatorMap((prev) => {
@@ -201,12 +219,15 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
         });
     };
 
-    // Get dynamic options for Verifikator dropdown on a specific MK
+    // Get dynamic options for Verifikator dropdown on a specific MK (Khusus Dosen Tetap)
     const getVerifikatorOptionsForMk = (currentMkId) => {
         const thisMkCoors = mkCoordinatorMap[currentMkId] || [];
         const thisMkVerifs = mkVerifikatorMap[currentMkId] || [];
 
-        return dosenAll.map((d) => {
+        // Hanya Dosen Tetap yang berhak menjadi Verifikator Soal
+        const dosenTetapList = dosenAll.filter(isDosenTetap);
+
+        return dosenTetapList.map((d) => {
             const isThisMkKoor = thisMkCoors.includes(d.id);
             const isThisMkVerif = thisMkVerifs.includes(d.id);
 
@@ -303,6 +324,19 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                     icon: 'warning',
                 });
                 return;
+            }
+
+            // Validasi Verifikator wajib Dosen Tetap
+            for (const vId of verifs) {
+                const vObj = dosenAll.find((d) => d.id === vId);
+                if (vObj && !isDosenTetap(vObj)) {
+                    showAlert({
+                        title: 'Verifikator Tidak Valid',
+                        text: `Dosen ${vObj?.nama_lengkap || vId} (${vObj?.kode_dosen || '-'}) bukan Dosen Tetap pada mata kuliah ${mk?.nama_mk || mkId}. Verifikator Soal hanya boleh Dosen Tetap.`,
+                        icon: 'error',
+                    });
+                    return;
+                }
             }
         }
 
@@ -749,6 +783,9 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                             <label className="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
                                                                 Tim Verifikator MK <span className="text-red-500">*</span>
                                                             </label>
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                Khusus Dosen Tetap
+                                                            </span>
                                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                                                 currentVerifikatorList.length >= 5
                                                                     ? 'bg-amber-100 text-amber-800 font-extrabold'
@@ -779,8 +816,8 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                             onChange={(val) => {
                                                                 if (val) handleToggleVerifikator(mkId, val);
                                                             }}
-                                                            placeholder="+ Tambah Dosen Verifikator..."
-                                                            searchPlaceholder="Cari dosen untuk ditambahkan..."
+                                                            placeholder="+ Tambah Dosen Verifikator (Khusus Dosen Tetap)..."
+                                                            searchPlaceholder="Cari dosen tetap untuk ditambahkan..."
                                                         />
                                                     ) : (
                                                         <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs font-bold text-emerald-800 flex items-center justify-center gap-1.5">

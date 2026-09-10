@@ -472,6 +472,24 @@
             default => '-',
         };
     };
+
+    /**
+     * Resolve nilai clo_feedback: support format lama (string) dan baru (object/array).
+     * Mengembalikan ['no_soal' => '', 'catatan' => '', 'rekomendasi' => '']
+     */
+    $resolveCloFeedback = function ($val) {
+        if (is_string($val)) {
+            return ['no_soal' => '-', 'catatan' => $val ?: '-', 'rekomendasi' => '-'];
+        }
+        if (is_array($val)) {
+            return [
+                'no_soal'     => $val['no_soal']     ?? '-',
+                'catatan'     => $val['catatan']     ?? '-',
+                'rekomendasi' => $val['rekomendasi'] ?? '-',
+            ];
+        }
+        return ['no_soal' => '-', 'catatan' => '-', 'rekomendasi' => '-'];
+    };
 @endphp
 
 <table class="eval-table">
@@ -481,7 +499,7 @@
             <th style="width: 10%;">CLO</th>
             <th style="width: 10%;">No. Soal</th>
             <th style="width: 33%;">Catatan Evaluasi</th>
-            <th style="width: 33%;">Rekomendasi Soal Terhadap CLO (jika ada)</th>
+            <th style="width: 33%;">Rekomendasi Soal Terhadap PLO (jika ada)</th>
         </tr>
     </thead>
     <tbody>
@@ -490,27 +508,98 @@
                 $cloFeedback = $soal->latestVerifikasi?->clo_feedback;
             @endphp
             @if(is_array($cloFeedback) && count($cloFeedback) > 0)
-                @foreach($cloFeedback as $cKode => $cNote)
+                @foreach($cloFeedback as $cKode => $cVal)
+                @php $resolved = $resolveCloFeedback($cVal); @endphp
                 <tr>
                     <td style="text-align: center;">{{ $soal->kategori->nama ?? '-' }}</td>
                     <td style="text-align: center;">{{ $cKode }}</td>
-                    <td style="text-align: center;">{{ $soal->judul }}</td>
-                    <td>{{ $cNote ?: '-' }}</td>
-                    <td>{{ $rekomendasi($soal) }}</td>
+                    <td style="text-align: center;">{{ $resolved['no_soal'] ?: '-' }}</td>
+                    <td>{{ $resolved['catatan'] ?: '-' }}</td>
+                    <td>{{ $resolved['rekomendasi'] ?: '-' }}</td>
                 </tr>
                 @endforeach
             @else
                 <tr>
                     <td style="text-align: center;">{{ $soal->kategori->nama ?? '-' }}</td>
                     <td style="text-align: center;">{{ $cloKode }}</td>
-                    <td style="text-align: center;">{{ $soal->judul }}</td>
+                    <td style="text-align: center;">-</td>
                     <td>{{ $soal->latestVerifikasi->catatan ?? '-' }}</td>
-                    <td>{{ $rekomendasi($soal) }}</td>
+                    <td>-</td>
                 </tr>
             @endif
         @endforeach
     </tbody>
 </table>
+
+{{-- Catatan Evaluasi Per-PLO (jika ada) --}}
+@php
+    $hasPloFeedback = false;
+    foreach($soalList as $s) {
+        if (!empty($s->latestVerifikasi?->plo_feedback) && is_array($s->latestVerifikasi->plo_feedback)) {
+            foreach($s->latestVerifikasi->plo_feedback as $pNote) {
+                if (!empty(trim((string)$pNote))) {
+                    $hasPloFeedback = true;
+                    break 2;
+                }
+            }
+        }
+    }
+@endphp
+@if($hasPloFeedback)
+<table class="eval-table" style="margin-top:4px; margin-bottom:4px;">
+    <thead>
+        <tr>
+            <th style="width: 25%; background:#f0f0f0; text-align:center;">PLO</th>
+            <th style="width: 75%; background:#f0f0f0; text-align:left; padding-left:8px;">Catatan Evaluasi PLO</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($soalList as $s)
+            @if(!empty($s->latestVerifikasi?->plo_feedback))
+                @foreach($s->latestVerifikasi->plo_feedback as $ploKode => $ploNote)
+                    @if(!empty(trim((string)$ploNote)))
+                    <tr>
+                        <td style="text-align: center; font-weight: bold;">{{ $ploKode }}</td>
+                        <td>{{ $ploNote }}</td>
+                    </tr>
+                    @endif
+                @endforeach
+            @endif
+        @endforeach
+    </tbody>
+</table>
+@endif
+
+{{-- Catatan Umum Verifikator (jika ada) --}}
+@php
+    $catatanUmumList = $soalList->map(function($s) {
+        return [
+            'judul' => $s->judul,
+            'catatan' => $s->latestVerifikasi?->catatan,
+        ];
+    })->filter(fn($item) => !empty(trim((string)($item['catatan'] ?? ''))))->values();
+@endphp
+@if($catatanUmumList->isNotEmpty())
+<table class="eval-table" style="margin-top:4px; margin-bottom:4px;">
+    <thead>
+        <tr>
+            <th style="text-align: left; padding-left: 8px; background:#f0f0f0;" colspan="{{ $catatanUmumList->count() > 1 ? 2 : 1 }}">
+                Catatan Umum Verifikator
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($catatanUmumList as $item)
+        <tr>
+            @if($catatanUmumList->count() > 1)
+            <td style="width: 30%; font-weight: bold;">{{ $item['judul'] }}</td>
+            @endif
+            <td>{{ $item['catatan'] }}</td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>
+@endif
 
 <p class="kesimpulan">
     Berdasarkan hasil evaluasi tersebut, maka soal asesmen

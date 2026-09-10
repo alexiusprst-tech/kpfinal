@@ -128,7 +128,7 @@ class KelompokVerifikasiController extends Controller
             return back()->withErrors(['periode_id' => 'Periode yang sudah CLOSED tidak dapat digunakan untuk penugasan baru.'])->withInput();
         }
 
-        if ($violation = $this->validateSeparationOfDuties($validated['mata_kuliah'])) {
+        if ($violation = $this->validateSeparationOfDuties($validated['mata_kuliah'], $validated['verifikator'] ?? [])) {
             return $violation;
         }
 
@@ -415,7 +415,7 @@ class KelompokVerifikasiController extends Controller
             $this->kelompokVerifikasiMessages()
         );
 
-        if ($violation = $this->validateSeparationOfDuties($validated['mata_kuliah'])) {
+        if ($violation = $this->validateSeparationOfDuties($validated['mata_kuliah'], $validated['verifikator'] ?? [])) {
             return $violation;
         }
 
@@ -927,8 +927,18 @@ class KelompokVerifikasiController extends Controller
      * first validation-failure redirect response, or null if all mata
      * kuliah entries pass.
      */
-    private function validateSeparationOfDuties(array $mataKuliahItems)
+    private function validateSeparationOfDuties(array $mataKuliahItems, array $groupVerifikators = [])
     {
+        // Validasi Verifikator grup (legacy) harus Dosen Tetap
+        foreach ($groupVerifikators as $vDosenId) {
+            $vDosen = Dosen::find($vDosenId);
+            if ($vDosen && !$vDosen->isDosenTetap()) {
+                return back()->withErrors([
+                    'verifikator' => "Dosen {$vDosen->nama_lengkap} ({$vDosen->kode_dosen}) berstatus Luar Biasa (LB). Verifikator Soal hanya dapat ditentukan dari Dosen Tetap."
+                ])->withInput();
+            }
+        }
+
         foreach ($mataKuliahItems as $mk) {
             $kList = $mk['koordinator_ids'] ?? (isset($mk['koordinator_id']) ? [$mk['koordinator_id']] : []);
             $vList = $mk['verifikator_ids'] ?? [];
@@ -961,6 +971,18 @@ class KelompokVerifikasiController extends Controller
                 return back()->withErrors([
                     'mata_kuliah' => "Dosen {$dosenName} tidak dapat dipilih sebagai Koordinator sekaligus Verifikator pada mata kuliah {$mkName}."
                 ])->withInput();
+            }
+
+            // Validasi Verifikator Soal hanya boleh Dosen Tetap
+            foreach ($vList as $vDosenId) {
+                $vDosen = Dosen::find($vDosenId);
+                if ($vDosen && !$vDosen->isDosenTetap()) {
+                    $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
+                    $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
+                    return back()->withErrors([
+                        'mata_kuliah' => "Dosen {$vDosen->nama_lengkap} ({$vDosen->kode_dosen}) berstatus Luar Biasa (LB). Verifikator Soal hanya dapat ditentukan dari Dosen Tetap pada mata kuliah {$mkName}."
+                    ])->withInput();
+                }
             }
         }
 
