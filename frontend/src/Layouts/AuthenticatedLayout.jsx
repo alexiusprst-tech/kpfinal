@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, usePage, router } from "@inertiajs/react";
 import {
@@ -213,13 +214,19 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
             <div className="lg:hidden bg-white text-slate-900 border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
                 <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center p-1.5 flex-shrink-0 border border-slate-200">
-                        <img src="/images/logo-telkom.png" alt="Telkom Logo" className="h-full w-auto object-contain" />
+                        <img src="/images/logo-telkom.png" alt="Telkom Logo" width="36" height="36" className="h-full w-auto object-contain" />
                     </div>
                     <span className="font-extrabold text-sm text-[#801720] tracking-tight">Verifikasi Soal</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <NotificationDropdown align="right" />
-                    <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 transition-all text-slate-700 cursor-pointer">
+                    <button
+                        type="button"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 transition-all text-slate-700 cursor-pointer"
+                        aria-label={mobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+                        aria-expanded={mobileMenuOpen}
+                    >
                         {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
                 </div>
@@ -244,7 +251,7 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
                             {!sidebarCollapsed && (
                                 <div className="flex items-center gap-3 min-w-0">
                                     <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm flex-shrink-0 p-1.5 border border-slate-200/80">
-                                        <img src="/images/logo-telkom.png" alt="Telkom Logo" className="h-full w-auto object-contain" />
+                                        <img src="/images/logo-telkom.png" alt="Telkom Logo" width="40" height="40" className="h-full w-auto object-contain" />
                                     </div>
                                     <div className="min-w-0">
                                         <h1 className="font-black text-sm leading-tight tracking-tight text-[#801720] truncate">Sistem Verifikasi</h1>
@@ -257,6 +264,7 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
                                 onClick={() => setSidebarCollapsed(c => !c)}
                                 className="hidden lg:flex p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all flex-shrink-0"
                                 title={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
+                                aria-label={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
                             >
                                 {sidebarCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
                             </button>
@@ -270,7 +278,7 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
                                         ? <div key={idx} className="my-3 mx-2 border-t border-slate-100" />
                                         : (
                                             <div key={idx} className="pt-5 pb-1.5 px-2">
-                                                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">{section.label}</span>
+                                                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">{section.label}</span>
                                             </div>
                                         );
                                 }
@@ -283,7 +291,7 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
                     <div className="pt-5 border-t border-slate-100 space-y-2 mt-6">
                         {!sidebarCollapsed && (
                             <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/80 text-xs">
-                                <div className="text-[10px] uppercase font-extrabold text-slate-400 mb-1 tracking-wider">Periode Aktif</div>
+                                <div className="text-[10px] uppercase font-extrabold text-slate-500 mb-1 tracking-wider">Periode Aktif</div>
                                 <div className="flex items-center gap-2 font-extrabold text-slate-800 text-sm">
                                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
                                     <span className="truncate">{activePeriod?.nama || "Tidak ada periode"}</span>
@@ -303,7 +311,13 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
                                         Profil Saya
                                     </span>
                                 </Link>
-                                <button type="button" onClick={handleLogout} className="p-2 rounded-xl bg-slate-50 hover:bg-red-50 hover:text-red-600 text-slate-500 transition-all border border-slate-200/80 cursor-pointer" title="Keluar">
+                                <button
+                                    type="button"
+                                    onClick={handleLogout}
+                                    className="p-2 rounded-xl bg-slate-50 hover:bg-red-50 hover:text-red-600 text-slate-500 transition-all border border-slate-200/80 cursor-pointer"
+                                    title="Keluar"
+                                    aria-label="Keluar dari sistem"
+                                >
                                     <LogOut className="w-4 h-4" />
                                 </button>
                             </div>
@@ -328,7 +342,13 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
                                         </p>
                                     </div>
                                 </Link>
-                                <button type="button" onClick={handleLogout} className="p-1.5 rounded-xl bg-slate-100 hover:bg-red-600 hover:text-white text-slate-500 transition-all flex-shrink-0 cursor-pointer" title="Keluar">
+                                <button
+                                    type="button"
+                                    onClick={handleLogout}
+                                    className="p-1.5 rounded-xl bg-slate-100 hover:bg-red-600 hover:text-white text-slate-500 transition-all flex-shrink-0 cursor-pointer"
+                                    title="Keluar"
+                                    aria-label="Keluar dari sistem"
+                                >
                                     <LogOut className="w-4 h-4" />
                                 </button>
                             </div>

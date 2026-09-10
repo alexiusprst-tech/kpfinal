@@ -47,6 +47,19 @@ function formatSize(bytes) {
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
 
+function resolveCloNote(val) {
+    if (!val) return null;
+    if (typeof val === 'string') return { catatan: val, no_soal: '', rekomendasi: '' };
+    if (typeof val === 'object') {
+        return {
+            no_soal: val.no_soal || '',
+            catatan: val.catatan || '',
+            rekomendasi: val.rekomendasi || '',
+        };
+    }
+    return null;
+}
+
 export default function SoalShow({ soal }) {
     const { flash } = usePage().props;
     const [submitting, setSubmitting] = useState(false);
@@ -72,8 +85,9 @@ export default function SoalShow({ soal }) {
         }
     };
 
+    const latestVerifikasi = soal.latest_verifikasi || (soal.verifikasi && soal.verifikasi.length > 0 ? soal.verifikasi[0] : null);
     const latestRevision = soal.verifikasi?.find(v => v.action === 'REVISION');
-    const latestCloFeedback = latestRevision?.clo_feedback || {};
+    const latestCloFeedback = (latestRevision || latestVerifikasi)?.clo_feedback || {};
     const ploList = Array.isArray(soal.plo_clo_data) ? soal.plo_clo_data : [];
 
     return (
@@ -210,7 +224,7 @@ export default function SoalShow({ soal }) {
                             {ploList.map((plo, pIdx) => (
                                 <div key={pIdx} className="p-3.5 rounded-xl border border-gray-200 bg-gray-50/50 space-y-2.5">
                                     <div className="flex items-center gap-2">
-                                        <span className="px-2 py-0.5 rounded-md bg-[#801720] text-white text-[10px] font-extrabold">
+                                        <span className="px-2 py-0.5 rounded-md bg-[#801720] text-white text-[10px] font-extrabold whitespace-nowrap flex-shrink-0">
                                             {plo.kode}
                                         </span>
                                         <span className="text-xs font-bold text-gray-800">{plo.deskripsi}</span>
@@ -218,12 +232,13 @@ export default function SoalShow({ soal }) {
 
                                     <div className="grid grid-cols-1 gap-2 pt-1">
                                         {plo.clo?.map((clo, cIdx) => {
-                                            const cloNote = latestCloFeedback[clo.kode];
+                                            const resolvedNote = resolveCloNote(latestCloFeedback[clo.kode]);
+                                            const hasNote = resolvedNote && (resolvedNote.catatan || resolvedNote.no_soal || resolvedNote.rekomendasi);
                                             return (
                                                 <div key={cIdx} className="p-2.5 rounded-lg bg-white border border-gray-200/80 text-xs space-y-1.5">
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="flex items-center gap-2 min-w-0">
-                                                            <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px]">
+                                                            <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px] whitespace-nowrap flex-shrink-0">
                                                                 {clo.kode}
                                                             </span>
                                                             <span className="text-gray-700 truncate">{clo.deskripsi}</span>
@@ -242,12 +257,25 @@ export default function SoalShow({ soal }) {
                                                         </div>
                                                     )}
 
-                                                    {cloNote && (
-                                                        <div className="flex items-start gap-1.5 p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[11px]">
-                                                            <MessageSquare className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
-                                                            <div>
-                                                                <span className="font-bold">Catatan Koreksi Verifikator:</span> {cloNote}
+                                                    {hasNote && (
+                                                        <div className="flex flex-col gap-1 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px]">
+                                                            <div className="flex items-center gap-1.5 font-bold">
+                                                                <MessageSquare className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                                                                <span>Catatan Koreksi Verifikator:</span>
+                                                                {resolvedNote.no_soal && (
+                                                                    <span className="font-normal text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded text-[10px]">
+                                                                        No. Soal: {resolvedNote.no_soal}
+                                                                    </span>
+                                                                )}
                                                             </div>
+                                                            {resolvedNote.catatan && (
+                                                                <p className="text-amber-900 leading-relaxed font-medium">{resolvedNote.catatan}</p>
+                                                            )}
+                                                            {resolvedNote.rekomendasi && (
+                                                                <p className="text-amber-700 italic text-[10px]">
+                                                                    <strong>Rekomendasi PLO:</strong> {resolvedNote.rekomendasi}
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -273,7 +301,10 @@ export default function SoalShow({ soal }) {
                                 const cfg = ACTION_CONFIG[v.action] || ACTION_CONFIG.REVISION;
                                 const Icon = cfg.icon;
                                 const cloNotes = v.clo_feedback && typeof v.clo_feedback === 'object'
-                                    ? Object.entries(v.clo_feedback).filter(([_, note]) => note && String(note).trim().length > 0)
+                                    ? Object.entries(v.clo_feedback).filter(([_, noteVal]) => {
+                                        const r = resolveCloNote(noteVal);
+                                        return r && (r.catatan?.trim() || r.no_soal?.trim() || r.rekomendasi?.trim());
+                                    })
                                     : [];
 
                                 return (
@@ -292,17 +323,26 @@ export default function SoalShow({ soal }) {
                                         )}
 
                                         {cloNotes.length > 0 && (
-                                            <div className="p-2.5 bg-white/90 rounded-xl border border-black/5 text-xs space-y-1">
+                                            <div className="p-2.5 bg-white/90 rounded-xl border border-black/5 text-xs space-y-1.5">
                                                 <p className="font-bold text-gray-800 text-[11px]">Catatan Per-CLO:</p>
-                                                <div className="space-y-1">
-                                                    {cloNotes.map(([kode, note], idx) => (
-                                                        <div key={idx} className="flex items-start gap-1.5 text-gray-700">
-                                                            <span className="px-1.5 py-0.5 rounded bg-red-100 text-[#801720] font-bold text-[10px] flex-shrink-0">
-                                                                {kode}
-                                                            </span>
-                                                            <span className="text-xs">{note}</span>
-                                                        </div>
-                                                    ))}
+                                                <div className="space-y-1.5">
+                                                    {cloNotes.map(([kode, noteVal], idx) => {
+                                                        const resolved = resolveCloNote(noteVal);
+                                                        return (
+                                                            <div key={idx} className="flex flex-col gap-0.5 text-gray-700 bg-gray-50/70 p-2 rounded-lg border border-gray-100">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="px-1.5 py-0.5 rounded bg-red-100 text-[#801720] font-bold text-[10px] whitespace-nowrap flex-shrink-0">
+                                                                        {kode}
+                                                                    </span>
+                                                                    {resolved.no_soal && (
+                                                                        <span className="text-[10px] font-semibold text-gray-500">(No. Soal: {resolved.no_soal})</span>
+                                                                    )}
+                                                                </div>
+                                                                {resolved.catatan && <p className="text-xs text-gray-800 mt-0.5">{resolved.catatan}</p>}
+                                                                {resolved.rekomendasi && <p className="text-[11px] text-gray-500 italic">Rekomendasi: {resolved.rekomendasi}</p>}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         )}

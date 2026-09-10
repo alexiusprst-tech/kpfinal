@@ -105,7 +105,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                 {/* Banner Hero */}
                 <div className="relative overflow-hidden bg-gradient-to-r from-[#801720] via-[#9B1B26] to-[#B82332] text-white rounded-3xl p-6 lg:p-8 shadow-xl shadow-[#801720]/15">
                     <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 pointer-events-none flex items-center justify-end pr-8">
-                        <img src="/images/logo-telkom.png" alt="Telkom University" className="w-48 h-48 object-contain filter brightness-0 invert" />
+                        <img src="/images/logo-telkom.png" alt="Telkom University" width="192" height="192" className="w-48 h-48 object-contain filter brightness-0 invert" />
                     </div>
 
                     <div className="relative z-10 max-w-3xl space-y-3">
@@ -126,7 +126,12 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                             {activePeriod ? (
                                 <div className="flex items-center gap-2 bg-black/20 px-3.5 py-1.5 rounded-xl border border-white/10">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                    <span>Periode Aktif: <strong className="text-white font-bold">{activePeriod.nama}</strong></span>
+                                    <span>
+                                        Periode Aktif: <strong className="text-white font-bold">{activePeriod.nama}</strong>
+                                        {activePeriod.tanggal_mulai && activePeriod.tanggal_selesai && (
+                                            <span className="ml-1.5 text-white/80 font-normal">({formatDate(activePeriod.tanggal_mulai)} s.d. {formatDate(activePeriod.tanggal_selesai)})</span>
+                                        )}
+                                    </span>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-2 bg-amber-500/30 text-amber-200 px-3.5 py-1.5 rounded-xl border border-amber-300/30">
@@ -185,6 +190,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                     <input
                                         type="text"
                                         placeholder="Cari judul soal atau nama dosen..."
+                                        aria-label="Cari judul soal atau nama dosen"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
@@ -194,13 +200,14 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                     <select
                                         value={selectedMk}
                                         onChange={(e) => setSelectedMk(e.target.value)}
+                                        aria-label="Filter berdasarkan mata kuliah"
                                         className="text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
                                     >
                                         <option value="ALL">Semua MK Ditugaskan</option>
                                         {assignments.map(a => (
-                                            <option key={a.id} value={a.mata_kuliah_id}>
-                                                {a.mata_kuliah?.nama_mk} ({a.mata_kuliah?.kode_mk})
-                                            </option>
+                                             <option key={a.id} value={a.mata_kuliah_id}>
+                                                 {a.mata_kuliah?.nama_mk} ({a.mata_kuliah?.kode_mk})
+                                             </option>
                                         ))}
                                     </select>
                                 )}
@@ -211,7 +218,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                 <div className="flex-1 flex flex-col items-center justify-center text-center py-10 bg-slate-50/50 rounded-2xl border border-dashed border-gray-200">
                                     <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
                                     <h3 className="font-bold text-gray-800 text-sm">Tidak Ada Antrean Soal</h3>
-                                    <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                                    <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
                                         {searchTerm || selectedMk !== 'ALL'
                                             ? 'Tidak ditemukan soal yang sesuai dengan kata kunci atau filter pencarian Anda.'
                                             : 'Semua soal yang dikirimkan oleh Koordinator MK sudah diverifikasi.'}
@@ -246,11 +253,11 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                                             <StatusBadge status={soal.status} />
                                                         </div>
 
-                                                        <p className="text-[10px] text-gray-400 font-medium mt-1 flex items-center gap-2 flex-wrap">
-                                                            <span className="font-bold text-gray-600">{soal.mata_kuliah?.nama_mk}</span>
+                                                        <p className="text-[10px] text-gray-500 font-medium mt-1 flex items-center gap-2 flex-wrap">
+                                                            <span className="font-bold text-gray-700">{soal.mata_kuliah?.nama_mk}</span>
                                                             <span>•</span>
                                                             <span className="flex items-center gap-1">
-                                                                <User className="w-3 h-3 text-gray-400" />
+                                                                <User className="w-3 h-3 text-gray-500" />
                                                                 {soal.uploaded_by?.name || 'Dosen Koordinator'}
                                                             </span>
                                                             {soal.kategori?.nama && (
@@ -286,14 +293,14 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                                     <RefreshCw className="w-3 h-3 text-amber-600 flex-shrink-0 mt-0.5" />
                                                     <div className="min-w-0">
                                                         <p className="text-[10px] font-bold text-amber-800">Berkas Revisi Baru Diunggah</p>
-                                                        <p className="text-[10px] text-amber-600 truncate">
+                                                        <p className="text-[10px] text-amber-700 truncate">
                                                             {latestRevisi.nama_file}
                                                             {latestRevisi.uploaded_at && (
-                                                                <span className="text-amber-500 ml-1">· {formatDate(latestRevisi.uploaded_at)}</span>
+                                                                <span className="text-amber-600 ml-1">· {formatDate(latestRevisi.uploaded_at)}</span>
                                                             )}
                                                         </p>
                                                         {latestRevisi.catatan && (
-                                                            <p className="text-[10px] text-amber-700 italic mt-0.5 line-clamp-1">"{latestRevisi.catatan}"</p>
+                                                            <p className="text-[10px] text-amber-800 italic mt-0.5 line-clamp-1">"{latestRevisi.catatan}"</p>
                                                         )}
                                                     </div>
                                                 </div>
@@ -319,7 +326,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                             </div>
 
                             {assignments.length === 0 ? (
-                                <p className="text-sm text-gray-400 text-center py-10">Belum ada mata kuliah yang ditugaskan.</p>
+                                <p className="text-sm text-gray-500 text-center py-10">Belum ada mata kuliah yang ditugaskan.</p>
                             ) : (
                                 <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
                                     {assignments.map(a => {
@@ -328,7 +335,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                             <div key={a.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100/60 transition-colors flex items-center justify-between gap-3">
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-xs font-bold text-gray-800 truncate">{a.mata_kuliah?.nama_mk}</p>
-                                                    <p className="text-[10px] text-gray-400 mt-0.5">{a.mata_kuliah?.kode_mk} · {a.mata_kuliah?.sks || 3} SKS · <span className="font-semibold text-slate-600">{a.total} Soal</span></p>
+                                                    <p className="text-[10px] text-gray-500 mt-0.5">{a.mata_kuliah?.kode_mk} · {a.mata_kuliah?.sks || 3} SKS · <span className="font-semibold text-slate-600">{a.total} Soal</span></p>
                                                 </div>
                                                 <div className="flex items-center gap-2 flex-shrink-0">
                                                     {a.total === 0 ? (
@@ -355,7 +362,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                         </div>
 
                         <div className="pt-3 border-t border-gray-100 mt-4 text-center">
-                            <p className="text-[11px] font-semibold text-slate-400">
+                            <p className="text-[11px] font-semibold text-slate-500">
                                 Total {assignments.length} mata kuliah dalam pengawasan verifikator
                             </p>
                         </div>
@@ -379,10 +386,10 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                     </div>
 
                     {recentVerifikasis.length === 0 ? (
-                        <div className="text-center py-10 text-gray-400">
-                            <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <div className="text-center py-10 text-gray-500">
+                            <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                             <p className="text-xs font-semibold">Belum Ada Keputusan</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Riwayat verifikasi Anda akan muncul di sini.</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Riwayat verifikasi Anda akan muncul di sini.</p>
                         </div>
                     ) : (
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -402,19 +409,19 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${actionConfig.color} inline-flex items-center gap-1`}>
                                                     <Icon className="w-3 h-3" /> {actionConfig.label}
                                                 </span>
-                                                <span className="text-[10px] text-gray-400 font-semibold">{formatDate(v.created_at)}</span>
+                                                <span className="text-[10px] text-gray-500 font-semibold">{formatDate(v.created_at)}</span>
                                             </div>
 
                                             <p className="font-bold text-gray-800 truncate mt-2">
                                                 {v.soal?.judul || 'Soal Ujian'}
                                             </p>
-                                            <p className="text-[10px] text-gray-400 font-medium">
+                                            <p className="text-[10px] text-gray-500 font-medium">
                                                 {v.soal?.mata_kuliah?.nama_mk}
                                             </p>
                                         </div>
 
                                         {v.catatan && (
-                                            <p className="text-[10px] text-gray-600 italic bg-white p-2 rounded-xl border border-gray-200/80 line-clamp-2 mt-1">
+                                            <p className="text-[10px] text-gray-700 italic bg-white p-2 rounded-xl border border-gray-200/80 line-clamp-2 mt-1">
                                                 "{v.catatan}"
                                             </p>
                                         )}

@@ -1,22 +1,7 @@
-import Swal from 'sweetalert2';
-
 /**
- * Toast Mixin configured with modern aesthetics matching Telkom University theme
+ * SweetAlert2 utility with dynamic imports to reduce initial bundle size.
+ * SweetAlert2 is loaded on-demand (only when a toast/alert is triggered).
  */
-export const Toast = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3500,
-    timerProgressBar: true,
-    didOpen: (toast) => {
-        toast.onmouseenter = Swal.stopTimer;
-        toast.onmouseleave = Swal.resumeTimer;
-    },
-    customClass: {
-        popup: 'swal2-custom-toast',
-    }
-});
 
 const TOAST_ICONS = {
     success: `
@@ -47,18 +32,40 @@ const TOAST_ICONS = {
 
 let lastToast = { message: '', time: 0 };
 
+/** Lazily loads Swal and returns the module default export */
+const getSwal = async () => {
+    const { default: Swal } = await import('sweetalert2');
+    return Swal;
+};
+
 /**
  * Helper to show toast notification
- * @param {'success' | 'error' | 'warning' | 'info'} icon 
- * @param {string} title 
+ * @param {'success' | 'error' | 'warning' | 'info'} icon
+ * @param {string} title
  */
-export const showToast = (icon = 'success', title = '') => {
+export const showToast = async (icon = 'success', title = '') => {
     if (!title) return;
     const now = Date.now();
     if (lastToast.message === title && (now - lastToast.time) < 500) {
         return;
     }
     lastToast = { message: title, time: now };
+
+    const Swal = await getSwal();
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3500,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+        },
+        customClass: {
+            popup: 'swal2-custom-toast',
+        }
+    });
 
     const iconHtml = TOAST_ICONS[icon] || TOAST_ICONS.success;
     const toastClass = `swal2-toast-${icon}`;
@@ -76,19 +83,17 @@ export const showToast = (icon = 'success', title = '') => {
     });
 };
 
-
-
-
 /**
  * Helper to show standard alert modal
  */
-export const showAlert = ({
+export const showAlert = async ({
     title = '',
     text = '',
     html = '',
     icon = 'info',
     confirmButtonText = 'Mengerti',
 } = {}) => {
+    const Swal = await getSwal();
     return Swal.fire({
         title,
         text,
@@ -111,7 +116,7 @@ export const showAlert = ({
 /**
  * Helper for confirmation dialog (returns Promise with result.isConfirmed)
  */
-export const showConfirm = ({
+export const showConfirm = async ({
     title = 'Apakah Anda yakin?',
     text = 'Tindakan ini tidak dapat dibatalkan.',
     icon = 'warning',
@@ -120,6 +125,7 @@ export const showConfirm = ({
     confirmButtonColor = '#801720',
     cancelButtonColor = '#64748B',
 } = {}) => {
+    const Swal = await getSwal();
     return Swal.fire({
         title,
         text,
@@ -143,5 +149,4 @@ export const showConfirm = ({
     });
 };
 
-
-export default Swal;
+export default getSwal;

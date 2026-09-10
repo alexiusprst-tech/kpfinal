@@ -155,7 +155,12 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                             {activePeriod ? (
                                 <div className="flex items-center gap-2 bg-black/20 px-3.5 py-1.5 rounded-xl border border-white/10">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                    <span>Periode Aktif: <strong className="text-white font-bold">{activePeriod.nama}</strong></span>
+                                    <span>
+                                        Periode Aktif: <strong className="text-white font-bold">{activePeriod.nama}</strong>
+                                        {activePeriod.tanggal_mulai && activePeriod.tanggal_selesai && (
+                                            <span className="ml-1.5 text-white/80 font-normal">({formatDate(activePeriod.tanggal_mulai)} s.d. {formatDate(activePeriod.tanggal_selesai)})</span>
+                                        )}
+                                    </span>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-2 bg-amber-500/30 text-amber-200 px-3.5 py-1.5 rounded-xl border border-amber-300/30">

@@ -98,6 +98,7 @@ export default function NotificationDropdown({ align = 'right', className = '' }
                         : 'bg-white border-slate-200 shadow-xs hover:bg-slate-50 hover:border-slate-300 text-slate-700'
                 }`}
                 title="Notifikasi"
+                aria-label="Notifikasi sistem"
                 aria-expanded={open}
             >
                 <Bell className="w-5 h-5 text-slate-700" />

@@ -15,7 +15,11 @@ class MataKuliahSeeder extends Seeder
     {
         $courses = [
             // Semester 1
-            [1, 'UAKXCCB2', 'Agama', 'Religion', 2],
+            [1, 'UAKXACB2', 'Agama Islam', 'Islamic Religion', 2],
+            [1, 'UAKXCCB2', 'Agama Katolik', 'Catholic Religion', 2],
+            [1, 'UAKXBCB2', 'Agama Kristen', 'Christian Religion', 2],
+            [1, 'UAKXDCB2', 'Agama Hindu', 'Hindu Religion', 2],
+            [1, 'UAKXECB2', 'Agama Buddha', 'Buddhist Religion', 2],
             [1, 'UCK1EDB1', 'Internalisasi Budaya dan Pembentukan Karakter', 'Cultural Internalization and Character Formation', 1],
             [1, 'BBK1AAB4', 'Algoritma dan Pemrograman', 'Algorithms and Programming', 4],
             [1, 'BBK1BAB3', 'Matematika Diskrit', 'Discrete Mathematics', 3],
@@ -101,6 +105,6 @@ class MataKuliahSeeder extends Seeder
         // Safely deactivate any old MataKuliah records not in the current curriculum list
         MataKuliah::whereNotIn('kode_mk', $seededCodes)->update(['status' => 'INACTIVE']);
 
-        $this->command->info('✅ Berhasil menyemai 52 Data Mata Kuliah Kurikulum.');
+        $this->command->info('✅ Berhasil menyemai ' . count($courses) . ' Data Mata Kuliah Kurikulum.');
     }
 }

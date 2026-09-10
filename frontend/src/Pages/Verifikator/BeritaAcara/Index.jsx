@@ -71,7 +71,7 @@ export default function BeritaAcaraIndex({
                                 <option value="ALL">Semua Periode (Keseluruhan Riwayat)</option>
                                 {allPeriods.map((p) => (
                                     <option key={p.id} value={p.id}>
-                                        {p.nama} {p.tahun_ajaran?.nama ? `(${p.tahun_ajaran.nama})` : ''} {p.status === 'ACTIVE' ? '— [AKTIF]' : ''}
+                                        {p.nama} {p.tahun_ajaran?.nama ? `(${p.tahun_ajaran.nama})` : ''} {p.tanggal_mulai && p.tanggal_selesai ? `[${formatDate(p.tanggal_mulai)} - ${formatDate(p.tanggal_selesai)}]` : ''} {p.status === 'ACTIVE' ? '— [AKTIF]' : ''}
                                     </option>
                                 ))}
                             </select>

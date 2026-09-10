@@ -112,8 +112,24 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
         }
     };
 
+function resolveCloNote(val) {
+    if (!val) return null;
+    if (typeof val === 'string') return { catatan: val, no_soal: '', rekomendasi: '' };
+    if (typeof val === 'object') {
+        return {
+            no_soal: val.no_soal || '',
+            catatan: val.catatan || '',
+            rekomendasi: val.rekomendasi || '',
+        };
+    }
+    return null;
+}
+
     const cloNotes = cloFeedback && typeof cloFeedback === 'object'
-        ? Object.entries(cloFeedback).filter(([_, note]) => note && String(note).trim().length > 0)
+        ? Object.entries(cloFeedback).filter(([_, noteVal]) => {
+            const r = resolveCloNote(noteVal);
+            return r && (r.catatan?.trim() || r.no_soal?.trim() || r.rekomendasi?.trim());
+        })
         : [];
 
     return (
@@ -153,15 +169,30 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
                             <span className="text-xs font-bold text-amber-900 flex items-center gap-1">
                                 <MessageSquare className="w-3.5 h-3.5" /> Catatan Koreksi Per-CLO:
                             </span>
-                            <div className="space-y-1">
-                                {cloNotes.map(([kode, note], idx) => (
-                                    <div key={idx} className="flex items-start gap-2 text-xs bg-white rounded-xl p-2.5 border border-amber-200/70">
-                                        <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px] flex-shrink-0">
-                                            {kode}
-                                        </span>
-                                        <span className="text-gray-700">{note}</span>
-                                    </div>
-                                ))}
+                            <div className="space-y-2">
+                                {cloNotes.map(([kode, noteVal], idx) => {
+                                    const resolved = resolveCloNote(noteVal);
+                                    return (
+                                        <div key={idx} className="flex flex-col gap-1 text-xs bg-white rounded-xl p-3 border border-amber-200/70">
+                                            <div className="flex items-center gap-2">
+                                                <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px] whitespace-nowrap flex-shrink-0">
+                                                    {kode}
+                                                </span>
+                                                {resolved?.no_soal && (
+                                                    <span className="text-[11px] text-gray-500 font-semibold">
+                                                        (No. Soal: {resolved.no_soal})
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {resolved?.catatan && (
+                                                <p className="text-gray-800 font-medium">{resolved.catatan}</p>
+                                            )}
+                                            {resolved?.rekomendasi && (
+                                                <p className="text-[11px] text-gray-500 italic">Rekomendasi PLO: {resolved.rekomendasi}</p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}

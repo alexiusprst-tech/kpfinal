@@ -155,7 +155,7 @@ class BeritaAcaraController extends Controller
         $soalApproved = (clone $soalBaseQuery)
             ->with(['kategori', 'latestVerifikasi.verifikator', 'uploadedBy'])
             ->where('status', Soal::STATUS_APPROVED)
-            ->orderBy('created_at')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         $koordinatorDosen = PenugasanKoordinator::with('dosen')
@@ -355,7 +355,8 @@ class BeritaAcaraController extends Controller
                     $pdfContent = $this->generateBapPdf($itemData, $soalItem);
 
                     $cleanTitle = Str::slug($mataKuliah->kode_mk . '-' . $soalItem->judul);
-                    $pdfName = 'BAP-' . ($cleanTitle ?: ('soal-' . ($index + 1))) . '.pdf';
+                    $suffix = $soalApproved->count() > 1 ? ('-' . ($index + 1)) : '';
+                    $pdfName = 'BAP-' . ($cleanTitle ?: 'soal') . $suffix . '.pdf';
 
                     $zip->addFromString($pdfName, $pdfContent);
                 }
@@ -511,7 +512,11 @@ class BeritaAcaraController extends Controller
 
     /**
      * Generate merged BAP PDF containing the official 1-page BAP Evaluation Form (Page 1)
-     * and the actual uploaded exam question PDF by Koordinator MK (Page 2+).
+     * and the actual uploaded exam question file by Koordinator MK (Page 2+).
+     *
+     * Supports both PDF and DOCX uploads:
+     * - PDF  → merged directly with FPDI
+     * - DOCX → converted to high-fidelity PDF (via Word COM on Windows / LibreOffice on Linux / PhpWord), then merged
      */
     private function generateBapPdf(array $viewData, ?Soal $soalItem = null): string
     {
@@ -535,59 +540,179 @@ class BeritaAcaraController extends Controller
             }
         }
 
-        $hasPdfFile = false;
-        if ($filePath && file_exists($filePath)) {
-            $hasPdfFile = strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'pdf'
-                || (file_get_contents($filePath, false, null, 0, 5) === '%PDF-');
+        // 2. Tentukan apakah file soal ada dan ekstensinya
+        $hasAttachmentFile = $filePath && file_exists($filePath);
+        $fileExtension = $hasAttachmentFile
+            ? strtolower(pathinfo($filePath, PATHINFO_EXTENSION))
+            : null;
+
+        $isPdf = $hasAttachmentFile && (
+            $fileExtension === 'pdf' ||
+            file_get_contents($filePath, false, null, 0, 5) === '%PDF-'
+        );
+        $isDocx = $hasAttachmentFile && in_array($fileExtension, ['docx', 'doc']);
+
+        // 3. Jika DOCX/DOC, konversi ke PDF sementara terlebih dahulu
+        $tempPdfPath = null;
+        if ($isDocx) {
+            $tempPdfPath = $this->convertDocxToPdf($filePath);
+            if ($tempPdfPath && file_exists($tempPdfPath)) {
+                $isPdf = true;
+                $filePath = $tempPdfPath;
+            }
         }
 
-        // Jika soal memiliki file PDF yang diunggah, hanya render halaman 1 (Berita Acara Form) dari Blade
-        $viewData['bap_only'] = $hasPdfFile;
+        // 4. Render formulir 1 halaman Berita Acara (Blade → DomPDF)
         $domPdf = Pdf::loadView('pdf.berita-acara', $viewData)->setPaper('a4', 'portrait');
         $bapPdfContent = $domPdf->output();
 
-        // Jika tidak ada berkas PDF yang diunggah, kembalikan hasil generate template standar
-        if (!$hasPdfFile) {
+        // Jika tidak ada berkas soal yang bisa di-merge, kembalikan hanya form BAP (1 halaman)
+        if (!$isPdf || empty($filePath) || !file_exists($filePath)) {
             return $bapPdfContent;
         }
 
         try {
-            if (!class_exists(\setasign\Fpdi\Fpdi::class)) {
-                if (file_exists(base_path('vendor/setasign/fpdf/fpdf.php'))) {
-                    require_once base_path('vendor/setasign/fpdf/fpdf.php');
-                }
-                if (file_exists(base_path('vendor/setasign/fpdi/src/autoload.php'))) {
-                    require_once base_path('vendor/setasign/fpdi/src/autoload.php');
-                }
-            }
-
             $fpdi = new \setasign\Fpdi\Fpdi();
 
-            // Import halaman formulir Berita Acara hasil generate DomPDF (Halaman 1)
+            // Import halaman formulir Berita Acara (Halaman 1)
             $bapStream = \setasign\Fpdi\PdfParser\StreamReader::createByString($bapPdfContent);
             $pageCountBap = $fpdi->setSourceFile($bapStream);
             for ($pageNo = 1; $pageNo <= $pageCountBap; $pageNo++) {
                 $tplId = $fpdi->importPage($pageNo);
-                $size = $fpdi->getTemplateSize($tplId);
+                $size  = $fpdi->getTemplateSize($tplId);
                 $fpdi->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $fpdi->useTemplate($tplId);
             }
 
-            // Import SELURUH halaman dari naskah soal asli yang diunggah oleh Koordinator MK (Halaman 2 dst)
+            // Import SELURUH halaman naskah soal yang diunggah Koordinator MK (Halaman 2 dst)
             $pageCountSoal = $fpdi->setSourceFile($filePath);
             for ($pageNo = 1; $pageNo <= $pageCountSoal; $pageNo++) {
                 $tplId = $fpdi->importPage($pageNo);
-                $size = $fpdi->getTemplateSize($tplId);
+                $size  = $fpdi->getTemplateSize($tplId);
                 $fpdi->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $fpdi->useTemplate($tplId);
             }
 
-            return $fpdi->Output('S');
+            $output = $fpdi->Output('S');
+            return $output;
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('FPDI merge failed, falling back to full BAP view: ' . $e->getMessage());
-            $viewData['bap_only'] = false;
-            return Pdf::loadView('pdf.berita-acara', $viewData)->setPaper('a4', 'portrait')->output();
+            \Illuminate\Support\Facades\Log::warning('FPDI merge failed: ' . $e->getMessage());
+            return $bapPdfContent;
+        } finally {
+            // Hapus file PDF sementara hasil konversi DOCX (jika ada)
+            if ($tempPdfPath && file_exists($tempPdfPath)) {
+                @unlink($tempPdfPath);
+            }
         }
+    }
+
+    /**
+     * Konversi file DOCX/DOC ke PDF.
+     * Menggunakan Microsoft Word COM (di Windows), LibreOffice (jika ada),
+     * atau PhpWord sebagai fallback.
+     * Mengembalikan path absolut ke file PDF sementara, atau null jika gagal.
+     */
+    private function convertDocxToPdf(string $docxPath): ?string
+    {
+        if (!file_exists($docxPath)) {
+            return null;
+        }
+
+        $realDocxPath = realpath($docxPath) ?: $docxPath;
+        $tempPdfPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'bap_docx_' . uniqid() . '.pdf';
+
+        // 1. Metode Utama (Windows): Microsoft Word COM via PowerShell
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            try {
+                $tempPs1 = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'wconv_' . uniqid() . '.ps1';
+                $escapedDocx = addslashes($realDocxPath);
+                $escapedPdf = addslashes($tempPdfPath);
+
+                $psScript = <<<PS
+\$docx = "$escapedDocx"
+\$pdf = "$escapedPdf"
+\$word = \$null
+try {
+    \$word = New-Object -ComObject Word.Application
+    \$word.Visible = \$false
+    \$doc = \$word.Documents.Open(\$docx, \$false, \$true)
+    \$doc.SaveAs([ref]\$pdf, [ref]17) # 17 = wdFormatPDF
+    \$doc.Close([ref]0)
+    \$word.Quit()
+    Write-Output "SUCCESS"
+} catch {
+    Write-Output "ERROR: \$_"
+    if (\$null -ne \$word) {
+        try { \$word.Quit() } catch {}
+    }
+}
+PS;
+
+                file_put_contents($tempPs1, $psScript);
+                $cmd = 'powershell -NoProfile -ExecutionPolicy Bypass -File "' . $tempPs1 . '" 2>&1';
+                $output = shell_exec($cmd);
+                @unlink($tempPs1);
+
+                if (file_exists($tempPdfPath) && filesize($tempPdfPath) > 0) {
+                    return $tempPdfPath;
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Word COM conversion failed: ' . $e->getMessage());
+            }
+        }
+
+        // 2. Metode Cadangan: LibreOffice / soffice CLI (Linux / Server)
+        try {
+            $sofficeBin = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'soffice.exe' : 'soffice';
+            $outDir = sys_get_temp_dir();
+            $cmd = sprintf('%s --headless --convert-to pdf --outdir %s %s 2>&1', escapeshellcmd($sofficeBin), escapeshellarg($outDir), escapeshellarg($realDocxPath));
+            @exec($cmd, $output, $returnCode);
+
+            $expectedPdf = $outDir . DIRECTORY_SEPARATOR . pathinfo($realDocxPath, PATHINFO_FILENAME) . '.pdf';
+            if (file_exists($expectedPdf) && filesize($expectedPdf) > 0) {
+                if ($expectedPdf !== $tempPdfPath) {
+                    @rename($expectedPdf, $tempPdfPath);
+                }
+                return $tempPdfPath;
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('LibreOffice conversion failed: ' . $e->getMessage());
+        }
+
+        // 3. Metode Fallback: PhpWord + DomPDF
+        try {
+            libxml_use_internal_errors(true);
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($docxPath);
+
+            $htmlWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'HTML');
+            $tempHtmlPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'bap_soal_' . uniqid() . '.html';
+            $htmlWriter->save($tempHtmlPath);
+
+            $htmlContent = file_get_contents($tempHtmlPath);
+            @unlink($tempHtmlPath);
+
+            if (!empty($htmlContent)) {
+                $styledHtml = '<style>
+                    body { font-family: Arial, sans-serif; font-size: 11pt; margin: 20px; }
+                    table { border-collapse: collapse; width: 100%; }
+                    td, th { border: 1px solid #ccc; padding: 4px 6px; }
+                    p { margin: 4px 0; line-height: 1.4; }
+                    img { max-width: 100%; }
+                </style>' . $htmlContent;
+
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($styledHtml)->setPaper('a4', 'portrait');
+                $pdfContent = $pdf->output();
+
+                file_put_contents($tempPdfPath, $pdfContent);
+                if (file_exists($tempPdfPath) && filesize($tempPdfPath) > 0) {
+                    return $tempPdfPath;
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('PhpWord conversion failed: ' . $e->getMessage());
+        }
+
+        return null;
     }
 
     private function generateNomor(PeriodeVerifikasi $periode, MataKuliah $mataKuliah): string

@@ -1,1 +1,0 @@
-import{_ as e}from"./AuthenticatedLayout-Dp2yG6WV.js";var t=e(`chevron-right`,[[`path`,{d:`m9 18 6-6-6-6`,key:`mthhwq`}]]);export{t};

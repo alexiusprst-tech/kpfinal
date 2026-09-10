@@ -29,11 +29,15 @@ function StatusBadge({ status }) {
     );
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr, showTime = false) {
     if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('id-ID', {
+    const date = new Date(dateStr);
+    const datePart = date.toLocaleDateString('id-ID', {
         day: '2-digit', month: 'long', year: 'numeric'
     });
+    if (!showTime) return datePart;
+    const timePart = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart}, ${timePart} WIB`;
 }
 
 function formatSize(bytes) {
@@ -112,7 +116,7 @@ export default function BeritaAcaraShow({
                             >
                                 {allPeriods.map((p) => (
                                     <option key={p.id} value={p.id}>
-                                        {p.nama} {p.tahun_ajaran?.nama ? `(${p.tahun_ajaran.nama})` : ''} {p.status === 'ACTIVE' ? '— [AKTIF]' : ''}
+                                        {p.nama} {p.tahun_ajaran?.nama ? `(${p.tahun_ajaran.nama})` : ''} {p.tanggal_mulai && p.tanggal_selesai ? `[${formatDate(p.tanggal_mulai)} - ${formatDate(p.tanggal_selesai)}]` : ''} {p.status === 'ACTIVE' ? '— [AKTIF]' : ''}
                                     </option>
                                 ))}
                             </select>
@@ -190,6 +194,9 @@ export default function BeritaAcaraShow({
                                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                                     Periode: <strong className="text-slate-700">{activePeriod.nama}</strong>
                                     {activePeriod.tahun_ajaran && <span className="text-slate-400">· {activePeriod.tahun_ajaran.nama}</span>}
+                                    {activePeriod.tanggal_mulai && activePeriod.tanggal_selesai && (
+                                        <span className="text-slate-500">({formatDate(activePeriod.tanggal_mulai)} s.d. {formatDate(activePeriod.tanggal_selesai)})</span>
+                                    )}
                                 </p>
                             )}
                         </div>
@@ -274,7 +281,7 @@ export default function BeritaAcaraShow({
                                                 )}
                                                 <span className="flex items-center gap-1">
                                                     <Calendar className="w-3 h-3 text-slate-400" />
-                                                    {formatDate(soal.latest_verifikasi?.created_at || soal.updated_at)}
+                                                    {formatDate(soal.latest_verifikasi?.created_at || soal.updated_at, true)}
                                                 </span>
                                                 {soal.file_size && (
                                                     <span className="text-slate-400">{formatSize(soal.file_size)}</span>
