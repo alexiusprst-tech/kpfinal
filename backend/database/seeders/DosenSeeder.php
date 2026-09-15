@@ -36,6 +36,8 @@ class DosenSeeder extends Seeder
             ['kode_dosen' => 'TRM', 'nama_lengkap' => 'Tiara Rahmania Hadiningrum, S.Kom., M.Kom.',     'kategori_dosen' => 'Dosen Tetap', 'nip' => '26010017'],
             ['kode_dosen' => 'PTH', 'nama_lengkap' => 'Puspita Parahita Anindita, S.Kom., BInfTech, MSc.','kategori_dosen' => 'Dosen Tetap', 'nip' => '26970033'],
             ['kode_dosen' => 'URD', 'nama_lengkap' => 'Dr. Nur Hadian, S.Kom., M.Kom.',                 'kategori_dosen' => 'Dosen Tetap', 'nip' => '26970035'],
+            ['kode_dosen' => 'MFK', 'nama_lengkap' => 'Muhammad Ferdi Kurniawan, S.Kom., M.T.I.',       'kategori_dosen' => 'Dosen Tetap', 'nip' => '26970044'],
+            ['kode_dosen' => 'HZS', 'nama_lengkap' => 'Hafidza Safara Zahratunnisa, S.T., M.Kom.',      'kategori_dosen' => 'Dosen Tetap', 'nip' => '26990059'],
             ['kode_dosen' => 'PIE', 'nama_lengkap' => 'Pietra Dorand, M.Pd.',                           'kategori_dosen' => 'Dosen Tetap'],
             ['kode_dosen' => 'VVI', 'nama_lengkap' => 'Alva Nurvina Sularso, S.Sos., M.Hum.',           'kategori_dosen' => 'Dosen Tetap'],
             ['kode_dosen' => 'MTM', 'nama_lengkap' => 'Muhammad Fakhrul Safitra, S.Kom., M.Kom.',       'kategori_dosen' => 'LB'],
@@ -69,11 +71,12 @@ class DosenSeeder extends Seeder
             $user = \App\Models\User::firstOrCreate(
                 ['email' => $email],
                 [
-                    'id'       => (string) Str::uuid(),
-                    'name'     => $item['nama_lengkap'],
-                    'password' => \Illuminate\Support\Facades\Hash::make($passwordStr),
-                    'role'     => 'KOORDINATOR',
-                    'status'   => 'ACTIVE',
+                    'id'                   => (string) Str::uuid(),
+                    'name'                 => $item['nama_lengkap'],
+                    'password'             => \Illuminate\Support\Facades\Hash::make($passwordStr),
+                    'role'                 => 'KOORDINATOR',
+                    'status'               => 'ACTIVE',
+                    'must_change_password' => true,
                 ]
             );
 

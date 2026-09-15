@@ -347,7 +347,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                         {/* Action Buttons */}
                                         <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
                                             <Link
-                                                href={`/koordinator/mata-kuliah/${mk.id}`}
+                                                href={`/koordinator/soal/create?mata_kuliah_id=${mk.id}`}
                                                 className="py-2 px-3 rounded-xl bg-[#801720] text-white text-xs font-bold hover:bg-[#9B1B26] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                                             >
                                                 <Upload className="w-3.5 h-3.5" />

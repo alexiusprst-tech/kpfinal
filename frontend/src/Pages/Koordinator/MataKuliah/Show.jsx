@@ -65,7 +65,7 @@ function SoalActions({ soal, onSubmit }) {
             return (
                 <div className="flex items-center justify-end">
                     <Link href={`/koordinator/soal/${soal.id}`} className={`${base} bg-gray-100 text-gray-700 hover:bg-gray-200`}>
-                        <Eye className="w-3 h-3" /> Lihat
+                        <Eye className="w-3 h-3" /> Detail
                     </Link>
                 </div>
             );
