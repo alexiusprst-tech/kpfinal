@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { FileCheck, Download, Eye, ArrowRight, X } from 'lucide-react';
+import { FileCheck, Eye, ArrowRight, X } from 'lucide-react';
 
 const STATUS_CONFIG = {
     IN_REVIEW:   { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
@@ -105,11 +105,7 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
                                         <td className="px-5 py-4 text-xs text-gray-600">{soal.uploaded_by?.name}</td>
                                         <td className="px-5 py-4"><StatusBadge status={soal.status} /></td>
                                         <td className="px-5 py-4">
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                <a href={`/verifikator/soal/${soal.id}/download`}
-                                                    className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg" title="Unduh">
-                                                    <Download className="w-3.5 h-3.5" />
-                                                </a>
+                                            <div className="flex items-center justify-end">
                                                 <a href={`/verifikator/soal/${soal.id}`}
                                                     className="flex items-center gap-1 px-2.5 py-1.5 bg-[#801720] text-white rounded-lg text-xs font-semibold hover:bg-[#6a1219] transition-colors">
                                                     <Eye className="w-3 h-3" /> Tinjau

@@ -242,7 +242,12 @@ class SoalController extends Controller
 
     public function show(Request $request, Soal $soal)
     {
-        if ($soal->uploaded_by !== $request->user()->id) {
+        $user = $request->user();
+        $dosen = $user->dosen;
+        $isOwner = $soal->uploaded_by === $user->id;
+        $isAssigned = $this->isAssignedKoordinator($dosen, $soal);
+
+        if (!$isOwner && !$isAssigned && !$user->isSuperAdmin()) {
             abort(403, 'Anda tidak memiliki akses ke soal ini.');
         }
 

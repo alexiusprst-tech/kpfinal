@@ -383,7 +383,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                         Periode verifikasi tidak sedang aktif atau batas waktu unggah sudah lewat. Hubungi Super Admin jika Anda memerlukan perpanjangan.
                     </p>
                     <Link href="/koordinator/dashboard" className="inline-flex items-center gap-1.5 mt-5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219]">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Beranda
+                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali
                     </Link>
                 </div>
             </AuthenticatedLayout>
@@ -401,7 +401,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                     href={selectedMk ? `/koordinator/mata-kuliah/${selectedMk.id}` : '/koordinator/soal'}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors"
                 >
-                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Daftar Soal
+                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali
                 </Link>
 
                 {/* Page Title Header */}

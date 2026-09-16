@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     FileText, CheckCircle2, AlertTriangle, Eye, FilePlus2,
@@ -83,19 +83,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
     return (
         <AuthenticatedLayout title="Beranda Koordinator">
             <Head title="Beranda Koordinator - Sistem Verifikasi Soal" />
-
             <div className="space-y-6">
-                {noAssignmentMessage && (
-                    <div className="bg-amber-500 text-white rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/20 flex items-start gap-4 border border-amber-400">
-                        <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-0.5 text-amber-100" />
-                        <div className="space-y-1">
-                            <h3 className="font-extrabold text-sm uppercase tracking-wider">Pemberitahuan Penugasan</h3>
-                            <p className="text-xs font-semibold text-amber-50 leading-relaxed">
-                                Akun Anda saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin.
-                            </p>
-                        </div>
-                    </div>
-                )}
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
@@ -269,7 +257,8 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                 {pagedMk.map(mk => (
                                     <div
                                         key={mk.id}
-                                        className="bg-white border border-slate-150 rounded-2xl p-5 shadow-xs hover:border-[#801720]/40 hover:shadow-md transition-all flex flex-col justify-between gap-4 group"
+                                        onClick={() => router.visit(`/koordinator/mata-kuliah/${mk.id}`)}
+                                        className="bg-white border border-slate-150 rounded-2xl p-5 shadow-xs hover:border-[#801720]/40 hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between gap-4 group cursor-pointer"
                                     >
                                         <div className="space-y-3">
                                             {/* Card Top Meta */}
@@ -345,7 +334,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
+                                        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                                             <Link
                                                 href={`/koordinator/soal/create?mata_kuliah_id=${mk.id}`}
                                                 className="py-2 px-3 rounded-xl bg-[#801720] text-white text-xs font-bold hover:bg-[#9B1B26] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"

@@ -36,7 +36,7 @@ class ProfileController extends Controller
             }
 
             $kaprodiData = [
-                'nama'              => Setting::get('kaprodi_nama', config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.'))),
+                'nama'              => Setting::get('kaprodi_nama', config('app.kaprodi', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
                 'tanda_tangan'      => $kaprodiSignatureUrl,
                 'tanda_tangan_path' => $kaprodiSignaturePath,
             ];

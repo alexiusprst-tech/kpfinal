@@ -61,9 +61,7 @@ export default function MustChangePasswordModal({ open }) {
                     {/* Header Bar */}
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-1 flex-shrink-0">
-                                <img src="/images/logo-telkom.png" alt="Logo" className="h-full w-auto object-contain" />
-                            </div>
+                            <img src="/images/logo-telkom.png" alt="Logo" className="h-8 w-auto object-contain flex-shrink-0" />
                             <div>
                                 <h3 className="text-[10px] font-black text-[#801720] tracking-wider uppercase leading-none">
                                     VERIFIKASI SOAL

@@ -520,9 +520,9 @@ export default function Dashboard({
                         <button
                             type="button"
                             onClick={() => setShowReportModal(true)}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1B26] text-white rounded-xl text-xs font-bold shadow-md shadow-red-900/10 hover:shadow-lg transition-all cursor-pointer group"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1B26] text-white rounded-xl text-xs font-bold shadow-md shadow-red-900/10 cursor-pointer"
                         >
-                            <FileDown className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
+                            <FileDown className="w-4 h-4" />
                             <span>Buat Laporan</span>
                         </button>
                     </div>

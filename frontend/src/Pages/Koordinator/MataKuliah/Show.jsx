@@ -53,19 +53,11 @@ function SoalActions({ soal, onSubmit }) {
                     </button>
                 </div>
             );
-        case 'REVISION':
-            return (
-                <div className="flex items-center justify-end">
-                    <Link href={`/koordinator/soal/${soal.id}`} className={`${base} bg-amber-100 text-amber-700 hover:bg-amber-200`}>
-                        <Eye className="w-3 h-3" /> Lihat Revisi
-                    </Link>
-                </div>
-            );
         default:
             return (
                 <div className="flex items-center justify-end">
-                    <Link href={`/koordinator/soal/${soal.id}`} className={`${base} bg-gray-100 text-gray-700 hover:bg-gray-200`}>
-                        <Eye className="w-3 h-3" /> Detail
+                    <Link href={`/koordinator/soal/${soal.id}`} className={`${base} bg-[#801720] text-white hover:bg-[#6a1219] shadow-xs`}>
+                        <Eye className="w-3 h-3 text-white" /> Tinjau
                     </Link>
                 </div>
             );
@@ -114,7 +106,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
             });
         }
 
-        const sorted = Array.from(plosMap.values()).sort((a, b) => 
+        const sorted = Array.from(plosMap.values()).sort((a, b) =>
             (a.kode_plo || '').localeCompare(b.kode_plo || '', undefined, { numeric: true })
         );
 
@@ -151,7 +143,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <Link href="/koordinator/dashboard" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720]">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Beranda
+                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali
                     </Link>
                     <div className="flex items-center gap-2">
                         {(() => {

@@ -99,9 +99,11 @@ export default function SoalShow({ soal }) {
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Back button */}
                 <div className="flex items-center justify-between">
-                    <Link href="/koordinator/soal"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Kelola Soal
+                    <Link
+                        href={soal.mata_kuliah_id ? `/koordinator/mata-kuliah/${soal.mata_kuliah_id}` : (soal.mata_kuliah?.id ? `/koordinator/mata-kuliah/${soal.mata_kuliah.id}` : '/koordinator/dashboard')}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors"
+                    >
+                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali
                     </Link>
                 </div>
 

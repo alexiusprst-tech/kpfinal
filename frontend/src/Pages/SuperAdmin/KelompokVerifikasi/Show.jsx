@@ -512,7 +512,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                     href={`/superadmin/kelompok-verifikasi/${kelompok.id}/edit`}
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold rounded-xl shadow-2xs transition-colors"
                                 >
-                                    <Pencil className="w-3.5 h-3.5" /> Ubah Penugasan
+                                    <Pencil className="w-3.5 h-3.5" /> Ubah Kelompok
                                 </Link>
                                 <button
                                     onClick={() => handleAction('deactivate')}

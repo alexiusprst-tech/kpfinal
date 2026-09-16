@@ -331,9 +331,13 @@
         <td style="width: 60%;"></td>
         <td style="width: 40%; text-align: center;">
             <div>Jakarta, {{ $tanggalCetak }}</div>
-            <div style="font-weight: bold; margin-top: 2px;">Administrator Sistem</div>
-            <div class="sign-space"></div>
-            <div style="font-weight: bold; text-decoration: underline;">Super Admin Akademik</div>
+            <div style="font-weight: bold; margin-top: 2px;">Ketua Program Studi,</div>
+            <div class="sign-space" style="height: 50px; line-height: 50px; text-align: center;">
+                @if(!empty($tanda_tangan_kaprodi))
+                    <img src="{{ $tanda_tangan_kaprodi }}" alt="TTD Ka. Prodi" style="max-height: 48px; max-width: 140px; vertical-align: middle;" />
+                @endif
+            </div>
+            <div style="font-weight: bold; text-decoration: underline;">{{ $kaProdi ?? 'Kaprodi' }}</div>
             <div style="font-size: 8.5px; color: #64748b;">Universitas Telkom</div>
         </td>
     </tr>

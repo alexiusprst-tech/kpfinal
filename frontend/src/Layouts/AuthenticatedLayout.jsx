@@ -206,18 +206,18 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
 
     const pathname = typeof window !== "undefined" ? window.location.pathname : "";
     const navSections = getNavSections(user, pathname);
+    const homeItem = navSections.find((item) => item.type === "item") || navSections[0];
+    const homeHref = homeItem?.href || "/dashboard";
 
     return (
         <div className="min-h-screen bg-[#F0F3F8] flex flex-col lg:flex-row font-sans">
 
             {/* MOBILE TOPBAR */}
             <div className="lg:hidden bg-white text-slate-900 border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center p-1.5 flex-shrink-0 border border-slate-200">
-                        <img src="/images/logo-telkom.png" alt="Logo Telkom" width="36" height="36" className="h-full w-auto object-contain" />
-                    </div>
+                <Link href={homeHref} className="flex items-center gap-2.5 cursor-pointer">
+                    <img src="/images/logo-telkom.png" alt="Logo Telkom" width="36" height="36" className="h-9 w-auto object-contain flex-shrink-0" />
                     <span className="font-extrabold text-sm text-[#801720] tracking-tight">Verifikasi Soal</span>
-                </div>
+                </Link>
                 <div className="flex items-center gap-2">
                     <NotificationDropdown align="right" />
                     <button
@@ -248,16 +248,18 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
                     <div>
                         {/* Brand + Toggle */}
                         <div className={`flex items-center mb-8 pb-5 border-b border-slate-100 ${sidebarCollapsed ? "justify-center" : "justify-between px-1"}`}>
-                            {!sidebarCollapsed && (
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm flex-shrink-0 p-1.5 border border-slate-200/80">
-                                        <img src="/images/logo-telkom.png" alt="Logo Telkom" width="40" height="40" className="h-full w-auto object-contain" />
-                                    </div>
+                            {!sidebarCollapsed ? (
+                                <Link href={homeHref} className="flex items-center gap-3 min-w-0 cursor-pointer select-none">
+                                    <img src="/images/logo-telkom.png" alt="Logo Telkom" width="40" height="40" className="h-10 w-auto object-contain flex-shrink-0" />
                                     <div className="min-w-0">
                                         <h1 className="font-black text-sm leading-tight tracking-tight text-[#801720] truncate">Sistem Verifikasi</h1>
                                         <p className="text-[11px] text-slate-500 font-bold tracking-wide">Telkom University</p>
                                     </div>
-                                </div>
+                                </Link>
+                            ) : (
+                                <Link href={homeHref} className="cursor-pointer select-none" title="Beranda">
+                                    <img src="/images/logo-telkom.png" alt="Logo Telkom" width="32" height="32" className="h-8 w-auto object-contain" />
+                                </Link>
                             )}
                             <button
                                 type="button"

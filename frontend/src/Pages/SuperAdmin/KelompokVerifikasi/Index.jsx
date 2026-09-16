@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    Plus, Pencil, Trash2, Eye, Search, X, FolderKanban,
+    Plus, Trash2, Eye, Search, X, FolderKanban,
     Play, Lock, Clock, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
-    Users, Shield, BookOpen, RotateCcw, PowerOff, Check, GraduationCap
+    Users, Shield, BookOpen, RotateCcw, Check, GraduationCap, MoreVertical
 } from 'lucide-react';
 
 import FlashAlert from '@/Components/FlashAlert';
@@ -58,6 +58,19 @@ export default function KelompokVerifikasiIndex({
 }) {
     const { flash } = usePage().props;
     const [search, setSearch] = useState(filters?.search || '');
+    const [openMenuId, setOpenMenuId] = useState(null);
+    const menuRef = useRef(null);
+
+    // Tutup dropdown saat klik di luar
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                setOpenMenuId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Normalize props
     const dataList = (list && Array.isArray(list.data)) ? list : (kelompokList && Array.isArray(kelompokList.data)) ? kelompokList : { data: [], current_page: 1, per_page: 10, total: 0, last_page: 1, links: [] };
@@ -324,7 +337,7 @@ export default function KelompokVerifikasiIndex({
                                                 {/* Periode */}
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                                     <span className="font-bold text-gray-800 block">
-                                                        {item.periode?.nama || '—'}
+                                                        {item.periode?.nama || 'â€”'}
                                                     </span>
                                                     <span className="text-[10px] text-gray-400">
                                                         {item.periode?.tahun_ajaran?.nama || ''}
@@ -346,7 +359,7 @@ export default function KelompokVerifikasiIndex({
                                                 {/* Koordinator MK */}
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                                     {koordinatorCount === 0 ? (
-                                                        <span className="text-gray-400">—</span>
+                                                        <span className="text-gray-400">â€”</span>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#801720] font-bold rounded-lg text-[11px] border border-red-100 whitespace-nowrap">
                                                             <GraduationCap className="w-3.5 h-3.5 text-[#801720] shrink-0" />
@@ -377,95 +390,47 @@ export default function KelompokVerifikasiIndex({
                                                     {formatDate(item.created_at)}
                                                 </td>
 
-                                                {/* Aksi */}
+                                                {/* Aksi  Kebab Menu */}
                                                 <td className="py-3.5 px-4 text-right">
-                                                    <div className="inline-flex items-center gap-1.5 justify-end">
-                                                        <Link
-                                                            href={`/superadmin/kelompok-verifikasi/${item.id}`}
-                                                            className="p-1.5 text-gray-500 hover:text-[#801720] hover:bg-gray-100 rounded-xl transition-colors"
-                                                            title="Lihat Detail"
+                                                    <div className="relative inline-block" ref={openMenuId === item.id ? menuRef : null}>
+                                                        {/* Tombol  */}
+                                                        <button
+                                                            onClick={() => setOpenMenuId(openMenuId === item.id ? null : item.id)}
+                                                            className="p-1.5 rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
+                                                            title="Aksi"
                                                         >
-                                                            <Eye className="w-4 h-4" />
-                                                        </Link>
+                                                            <MoreVertical className="w-4 h-4" />
+                                                        </button>
 
-                                                        {item.status === 'DRAFT' && (
-                                                            <>
+                                                        {/* Dropdown */}
+                                                        {openMenuId === item.id && (
+                                                            <div className="absolute right-0 top-full mt-1 z-50 min-w-[170px] bg-white border border-gray-100 rounded-2xl shadow-xl py-1 animate-fadeIn">
+
+                                                                {/* Lihat Detail  selalu tampil */}
                                                                 <Link
-                                                                    href={`/superadmin/kelompok-verifikasi/${item.id}/edit`}
-                                                                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                                                                    title="Ubah Kelompok"
+                                                                    href={`/superadmin/kelompok-verifikasi/${item.id}`}
+                                                                    onClick={() => setOpenMenuId(null)}
+                                                                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                                                                 >
-                                                                    <Pencil className="w-4 h-4" />
+                                                                    <Eye className="w-3.5 h-3.5 text-gray-500" />
+                                                                    Lihat Detail
                                                                 </Link>
-                                                                <button
-                                                                    onClick={() => handleAction(item, 'activate')}
-                                                                    className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors cursor-pointer"
-                                                                    title="Aktifkan Kelompok"
-                                                                >
-                                                                    <Play className="w-4 h-4" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleAction(item, 'delete')}
-                                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                                                                    title="Hapus Draf"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </>
-                                                        )}
 
-                                                        {item.status === 'ACTIVE' && (
-                                                            <>
-                                                                <Link
-                                                                    href={`/superadmin/kelompok-verifikasi/${item.id}/edit`}
-                                                                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                                                                    title="Ubah Penugasan"
-                                                                >
-                                                                    <Pencil className="w-4 h-4" />
-                                                                </Link>
-                                                                <button
-                                                                    onClick={() => handleAction(item, 'deactivate')}
-                                                                    className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-xl transition-colors cursor-pointer"
-                                                                    title="Nonaktifkan Kelompok"
-                                                                >
-                                                                    <PowerOff className="w-4 h-4" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleAction(item, 'delete')}
-                                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                                                                    title="Hapus Kelompok"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </>
+                                                                {/* Divider + Hapus */}
+                                                                {item.status !== 'CLOSED' && (
+                                                                    <>
+                                                                        <div className="my-1 border-t border-gray-100" />
+                                                                        <button
+                                                                            onClick={() => { setOpenMenuId(null); handleAction(item, 'delete'); }}
+                                                                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                                                        >
+                                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                                            {item.status === 'DRAFT' ? 'Hapus Draf' : 'Hapus Kelompok'}
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </div>
                                                         )}
-
-                                                        {item.status === 'INACTIVE' && (
-                                                            <>
-                                                                <Link
-                                                                    href={`/superadmin/kelompok-verifikasi/${item.id}/edit`}
-                                                                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                                                                    title="Ubah Penugasan"
-                                                                >
-                                                                    <Pencil className="w-4 h-4" />
-                                                                </Link>
-                                                                <button
-                                                                    onClick={() => handleAction(item, 'activate')}
-                                                                    className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors cursor-pointer"
-                                                                    title="Aktifkan Kembali"
-                                                                >
-                                                                    <Play className="w-4 h-4" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleAction(item, 'delete')}
-                                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                                                                    title="Hapus Kelompok"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </>
-                                                        )}
-
                                                     </div>
                                                 </td>
                                             </tr>

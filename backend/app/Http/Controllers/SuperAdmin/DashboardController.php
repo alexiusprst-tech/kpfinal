@@ -13,6 +13,7 @@ use App\Models\PenugasanKoordinator;
 use App\Models\PenugasanVerifikator;
 use App\Models\PeriodeVerifikasi;
 use App\Models\Plo;
+use App\Models\Setting;
 use App\Models\Soal;
 use Illuminate\Http\Request;
 
@@ -571,21 +572,23 @@ class DashboardController extends Controller
 
         // PDF Generation
         $data = [
-            'namaPeriode'     => $namaPeriode,
-            'periode'         => $periode,
-            'jenisLaporan'    => $jenisLaporan,
-            'tanggalCetak'    => $tanggalCetak,
-            'totalDosen'      => $totalDosen,
-            'totalMataKuliah' => $totalMataKuliah,
-            'totalPlo'        => $totalPlo,
-            'totalClo'        => $totalClo,
-            'totalSoal'       => $totalSoal,
-            'totalApproved'   => $totalApproved,
-            'totalRevision'   => $totalRevision,
-            'totalRejected'   => $totalRejected,
-            'totalPending'    => $totalPending,
-            'progressPct'     => $progressPct,
-            'soalList'        => $soalList,
+            'namaPeriode'          => $namaPeriode,
+            'periode'              => $periode,
+            'jenisLaporan'         => $jenisLaporan,
+            'tanggalCetak'         => $tanggalCetak,
+            'totalDosen'           => $totalDosen,
+            'totalMataKuliah'      => $totalMataKuliah,
+            'totalPlo'             => $totalPlo,
+            'totalClo'             => $totalClo,
+            'totalSoal'            => $totalSoal,
+            'totalApproved'        => $totalApproved,
+            'totalRevision'        => $totalRevision,
+            'totalRejected'        => $totalRejected,
+            'totalPending'         => $totalPending,
+            'progressPct'          => $progressPct,
+            'soalList'             => $soalList,
+            'kaProdi'              => Setting::get('kaprodi_nama', config('app.kaprodi', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
+            'tanda_tangan_kaprodi'  => $this->imageToBase64(Setting::getKaprodiSignaturePath()),
         ];
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.laporan-dashboard', $data)
@@ -594,5 +597,23 @@ class DashboardController extends Controller
         $filename = 'Laporan-Verifikasi-' . \Illuminate\Support\Str::slug($namaPeriode . '-' . $jenisLaporan) . '.pdf';
 
         return $pdf->download($filename);
+    }
+
+    private function imageToBase64(?string $path): ?string
+    {
+        if (empty($path) || !file_exists($path)) {
+            return null;
+        }
+
+        try {
+            $type = pathinfo($path, PATHINFO_EXTENSION) ?: 'png';
+            $data = file_get_contents($path);
+            if ($data === false) {
+                return null;
+            }
+            return 'data:image/' . $type . ';base64,' . base64_encode($data);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

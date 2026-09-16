@@ -3,7 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     FileText, Plus, Upload, Trash2, Send, X, AlertTriangle,
-    Download, RefreshCw, CheckCircle2, Eye, Sparkles
+    RefreshCw, CheckCircle2, Eye, Sparkles
 } from 'lucide-react';
 import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
@@ -151,18 +151,6 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
             <FlashAlert flash={flash} />
 
             <div className="space-y-6">
-                {/* No Assignment Banner */}
-                {hasNoAssignment && (
-                    <div className="bg-amber-500 text-white rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/20 flex items-start gap-4 border border-amber-400">
-                        <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-0.5 text-amber-100" />
-                        <div className="space-y-1">
-                            <h3 className="font-extrabold text-sm uppercase tracking-wider">Akses Terbatas</h3>
-                            <p className="text-xs font-semibold text-amber-50 leading-relaxed">
-                                Akun Anda saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin. Unggah soal tidak dapat dilakukan.
-                            </p>
-                        </div>
-                    </div>
-                )}
 
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -245,31 +233,35 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                                             </p>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                {/* Download */}
-                                                <a href={`/koordinator/soal/download/${soal.id}`}
-                                                    className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg" title="Unduh">
-                                                    <Download className="w-3.5 h-3.5" />
-                                                </a>
+                                            <div className="flex items-center justify-end gap-2">
                                                 {/* Submit (if DRAFT) */}
                                                 {soal.status === 'DRAFT' && (
-                                                    <button onClick={() => handleSubmit(soal)} className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer" title="Kirim untuk Verifikasi">
+                                                    <button
+                                                        onClick={() => handleSubmit(soal)}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                                                        title="Kirim untuk Verifikasi"
+                                                    >
                                                         <Send className="w-3.5 h-3.5" />
+                                                        <span>Kirim</span>
                                                     </button>
                                                 )}
-                                                {/* Lihat Detail Revisi (if REVISION) */}
-                                                {soal.status === 'REVISION' && (
-                                                    <Link
-                                                        href={`/koordinator/mata-kuliah/${soal.mata_kuliah_id || soal.mata_kuliah?.id}`}
-                                                        className="p-1.5 hover:bg-amber-50 text-amber-600 rounded-lg cursor-pointer inline-flex items-center justify-center"
-                                                        title="Lihat Detail Revisi"
-                                                    >
-                                                        <Eye className="w-3.5 h-3.5" />
-                                                    </Link>
-                                                )}
+
+                                                {/* Tinjau */}
+                                                <Link
+                                                    href={`/koordinator/soal/${soal.id}`}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5 text-white" />
+                                                    <span>Tinjau</span>
+                                                </Link>
+
                                                 {/* Delete (if DRAFT) */}
                                                 {soal.status === 'DRAFT' && (
-                                                    <button onClick={() => handleDelete(soal)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg cursor-pointer" title="Hapus">
+                                                    <button
+                                                        onClick={() => handleDelete(soal)}
+                                                        className="p-1.5 rounded-xl bg-white border border-gray-200 text-red-600 hover:bg-red-50 hover:border-red-200 shadow-2xs transition-all inline-flex items-center justify-center cursor-pointer"
+                                                        title="Hapus"
+                                                    >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
                                                 )}

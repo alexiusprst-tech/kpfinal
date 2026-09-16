@@ -281,9 +281,9 @@ class BeritaAcaraController extends Controller
                 'mataKuliah'               => $mataKuliah,
                 'evaluatorNama'            => $user->name,
                 'evaluatorKode'            => $dosen->kode_dosen ?? '-',
-                'programStudi'             => Setting::get('prodi_nama', config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi'))),
+                'programStudi'             => Setting::get('prodi_nama', config('app.program_studi', 'S1 Sistem Informasi')),
                 'koordinatorNama'          => $koordinatorDosen->nama_lengkap,
-                'kaProdi'                  => Setting::get('kaprodi_nama', config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.'))),
+                'kaProdi'                  => Setting::get('kaprodi_nama', config('app.kaprodi', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
                 'clos'                     => $clos,
                 'jumlahSoal'               => 1,
                 'jumlahApproved'           => 1,
@@ -455,9 +455,9 @@ class BeritaAcaraController extends Controller
                 'mataKuliah'               => $mataKuliah,
                 'evaluatorNama'            => $user->name,
                 'evaluatorKode'            => $dosen->kode_dosen ?? '-',
-                'programStudi'             => Setting::get('prodi_nama', config('app.program_studi', env('PRODI_NAME', 'S1 Sistem Informasi'))),
+                'programStudi'             => Setting::get('prodi_nama', config('app.program_studi', 'S1 Sistem Informasi')),
                 'koordinatorNama'          => $koordinatorDosen->nama_lengkap,
-                'kaProdi'                  => Setting::get('kaprodi_nama', config('app.kaprodi', env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.'))),
+                'kaProdi'                  => Setting::get('kaprodi_nama', config('app.kaprodi', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.')),
                 'soalList'                 => $soalList,
                 'clos'                     => $clos,
                 'jumlahSoal'               => 1,
@@ -709,7 +709,10 @@ PS;
                 }
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('PhpWord conversion failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error("Konversi DOCX ke PDF gagal untuk berkas [{$docxPath}]: " . $e->getMessage(), [
+                'exception' => $e,
+                'file' => $docxPath,
+            ]);
         }
 
         return null;

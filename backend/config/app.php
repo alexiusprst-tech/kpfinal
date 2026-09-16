@@ -123,4 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'program_studi' => env('PRODI_NAME', 'S1 Sistem Informasi'),
+    'kaprodi'       => env('KAPRODI_NAME', 'Qilbaaini Effendi Muftikhali, S.Kom., M.Kom.'),
+
 ];

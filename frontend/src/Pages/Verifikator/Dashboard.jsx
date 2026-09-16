@@ -58,19 +58,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
     return (
         <AuthenticatedLayout title="Beranda Dosen Verifikator">
             <Head title="Beranda Dosen Verifikator - Sistem Verifikasi Soal" />
-
             <div className="space-y-6">
-                {noAssignmentMessage && (
-                    <div className="bg-amber-500 text-white rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/20 flex items-start gap-4 border border-amber-400">
-                        <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-0.5 text-amber-100" />
-                        <div className="space-y-1">
-                            <h3 className="font-extrabold text-sm uppercase tracking-wider">Pemberitahuan Penugasan</h3>
-                            <p className="text-xs font-semibold text-amber-50 leading-relaxed">
-                                {noAssignmentMessage}
-                            </p>
-                        </div>
-                    </div>
-                )}
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>

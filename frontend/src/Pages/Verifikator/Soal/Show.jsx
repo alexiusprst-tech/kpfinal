@@ -116,6 +116,22 @@ export default function VerifikatorSoalShow({ soal }) {
         e.preventDefault();
         if (!action) return;
 
+        // Validasi: Saat Minta Revisi, catatan evaluasi CLO wajib diisi
+        if (action === 'REVISION' && allCloItems.length > 0) {
+            const hasMissingCatatan = allCloItems.some(
+                (item) => !(cloFeedback[item.fullKode]?.catatan || '').trim()
+            );
+            if (hasMissingCatatan) {
+                await showAlert({
+                    title: 'Catatan Evaluasi Wajib Diisi',
+                    text: 'Saat meminta revisi, kolom "Catatan Evaluasi" untuk setiap CLO wajib diisi terlebih dahulu.',
+                    icon: 'warning',
+                    confirmButtonColor: '#801720',
+                });
+                return;
+            }
+        }
+
         const actionLabels = {
             APPROVED: 'menyetujui',
             REVISION: 'meminta revisi untuk',
@@ -128,7 +144,7 @@ export default function VerifikatorSoalShow({ soal }) {
             icon: action === 'APPROVED' ? 'question' : 'warning',
             confirmButtonText: 'Ya, Kirim Keputusan',
             cancelButtonText: 'Batal',
-            confirmButtonColor: action === 'APPROVED' ? '#059669' : action === 'REVISION' ? '#d97706' : '#801720',
+            confirmButtonColor: '#801720',
         });
 
         if (!result.isConfirmed) return;
@@ -343,27 +359,18 @@ export default function VerifikatorSoalShow({ soal }) {
                                         label: 'Setujui',
                                         desc: 'Soal memenuhi standar dan siap digunakan',
                                         icon: CheckCircle2,
-                                        activeClass: 'border-emerald-500 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/20',
-                                        hoverClass: 'hover:border-emerald-200 hover:bg-emerald-50/30',
-                                        iconClass: 'text-emerald-600',
                                     },
                                     {
                                         value: 'REVISION',
                                         label: 'Minta Revisi',
                                         desc: 'Perlu perbaikan oleh Koordinator MK',
                                         icon: RefreshCw,
-                                        activeClass: 'border-amber-500 bg-amber-50/80 text-amber-800 ring-2 ring-amber-500/20',
-                                        hoverClass: 'hover:border-amber-200 hover:bg-amber-50/30',
-                                        iconClass: 'text-amber-600',
                                     },
                                     {
                                         value: 'REJECTED',
                                         label: 'Tolak',
                                         desc: 'Soal ditolak dan tidak dapat digunakan',
                                         icon: XCircle,
-                                        activeClass: 'border-red-500 bg-red-50/80 text-red-800 ring-2 ring-red-500/20',
-                                        hoverClass: 'hover:border-red-200 hover:bg-red-50/30',
-                                        iconClass: 'text-red-600',
                                     },
                                 ].map((opt) => {
                                     const Icon = opt.icon;
@@ -373,8 +380,8 @@ export default function VerifikatorSoalShow({ soal }) {
                                             key={opt.value}
                                             className={`relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
                                                 isSelected
-                                                    ? opt.activeClass
-                                                    : `border-gray-200 bg-white text-gray-700 ${opt.hoverClass}`
+                                                    ? 'border-[#801720] bg-red-50/80 text-[#801720] ring-2 ring-[#801720]/20'
+                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-[#801720]/40 hover:bg-red-50/20'
                                             }`}
                                         >
                                             <input
@@ -387,10 +394,10 @@ export default function VerifikatorSoalShow({ soal }) {
                                             />
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isSelected ? 'bg-white shadow-xs' : 'bg-gray-100'}`}>
-                                                    <Icon className={`w-4 h-4 ${isSelected ? opt.iconClass : 'text-gray-500'}`} />
+                                                    <Icon className={`w-4 h-4 ${isSelected ? 'text-[#801720]' : 'text-gray-500'}`} />
                                                 </div>
-                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-current' : 'border-gray-300'}`}>
-                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-current" />}
+                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-[#801720]' : 'border-gray-300'}`}>
+                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-[#801720]" />}
                                                 </div>
                                             </div>
                                             <span className="text-xs font-bold">{opt.label}</span>
@@ -407,9 +414,12 @@ export default function VerifikatorSoalShow({ soal }) {
                                             <ClipboardList className="w-4 h-4 text-[#801720]" />
                                             Catatan Evaluasi CLO
                                         </h3>
-                                        <span className="text-[11px] text-gray-400 font-medium">
-                                            Kolom "Catatan Evaluasi" wajib diisi untuk setiap CLO
-                                        </span>
+                                        {action === 'REVISION' && (
+                                            <span className="text-[11px] text-red-600 font-semibold flex items-center gap-1">
+                                                <AlertTriangle className="w-3 h-3" />
+                                                Wajib diisi untuk setiap CLO saat meminta revisi
+                                            </span>
+                                        )}
                                     </div>
 
                                     <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
@@ -492,13 +502,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                 <button
                                     type="submit"
                                     disabled={processing || !action}
-                                    className={`w-full inline-flex items-center justify-center gap-2 py-3 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                                        action === 'APPROVED'
-                                            ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25'
-                                            : action === 'REVISION'
-                                            ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/25'
-                                            : 'bg-[#801720] hover:bg-[#6a1219] shadow-[#801720]/25'
-                                    }`}
+                                    className="w-full inline-flex items-center justify-center gap-2 py-3 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-[#801720]/25 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed bg-[#801720] hover:bg-[#6a1219]"
                                 >
                                     <Send className="w-3.5 h-3.5" />
                                     {processing ? 'Menyimpan Keputusan...' : 'Kirim Keputusan Verifikasi'}
