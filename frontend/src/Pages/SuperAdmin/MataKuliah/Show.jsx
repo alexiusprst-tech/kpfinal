@@ -123,7 +123,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
 
             {/* Breadcrumbs */}
             <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-semibold mb-5">
-                <Link href="/dashboard" className="hover:text-slate-800 transition-colors">Dashboard</Link>
+                <Link href="/dashboard" className="hover:text-slate-800 transition-colors">Beranda</Link>
                 <ChevronRight className="w-3 h-3 text-slate-400" />
                 <Link href="/superadmin/mata-kuliah" className="hover:text-slate-800 transition-colors">Mata Kuliah</Link>
                 <ChevronRight className="w-3 h-3 text-slate-400" />

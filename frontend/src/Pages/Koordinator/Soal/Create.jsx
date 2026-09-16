@@ -374,16 +374,16 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
 
     if (!uploadOpen) {
         return (
-            <AuthenticatedLayout title="Upload Soal">
-                <Head title="Upload Soal" />
+            <AuthenticatedLayout title="Unggah Soal">
+                <Head title="Unggah Soal" />
                 <div className="max-w-lg mx-auto mt-10 bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
                     <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-                    <h1 className="font-bold text-gray-800">Upload Soal Tidak Tersedia</h1>
+                    <h1 className="font-bold text-gray-800">Unggah Soal Tidak Tersedia</h1>
                     <p className="text-sm text-gray-500 mt-2">
-                        Periode verifikasi tidak sedang aktif atau deadline upload sudah lewat. Hubungi Super Admin jika Anda memerlukan perpanjangan.
+                        Periode verifikasi tidak sedang aktif atau batas waktu unggah sudah lewat. Hubungi Super Admin jika Anda memerlukan perpanjangan.
                     </p>
                     <Link href="/koordinator/dashboard" className="inline-flex items-center gap-1.5 mt-5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219]">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Dashboard
+                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Beranda
                     </Link>
                 </div>
             </AuthenticatedLayout>
@@ -391,8 +391,8 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
     }
 
     return (
-        <AuthenticatedLayout title="Buat & Upload Lembar Soal">
-            <Head title="Buat & Upload Lembar Soal" />
+        <AuthenticatedLayout title="Buat & Unggah Lembar Soal">
+            <Head title="Buat & Unggah Lembar Soal" />
             <FlashAlert flash={flash} />
 
             <div className="w-full space-y-6 pb-12">
@@ -408,7 +408,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-extrabold text-gray-800 flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-[#801720]" /> Buat & Upload Lembar Soal
+                            <Sparkles className="w-5 h-5 text-[#801720]" /> Buat & Unggah Lembar Soal
                         </h1>
                         <p className="text-xs text-gray-500 mt-0.5">
                             Konfigurasi pemetaan PLO & CLO, unduh template resmi jika diperlukan, dan unggah naskah soal final untuk diverifikasi.
@@ -827,7 +827,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                         disabled={processing || !data.file}
                         className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50 disabled:opacity-50 transition-all cursor-pointer"
                     >
-                        Simpan sebagai Draft
+                        Simpan sebagai Draf
                     </button>
                     <button
                         type="button"
@@ -835,7 +835,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                         disabled={processing || !data.file}
                         className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold shadow-sm shadow-[#801720]/25 disabled:opacity-50 transition-all cursor-pointer"
                     >
-                        {processing ? 'Menyimpan & Mengirim...' : 'Submit Soal untuk Verifikasi'}
+                        {processing ? 'Menyimpan & Mengirim...' : 'Kirim Soal untuk Verifikasi'}
                     </button>
                 </div>
             </div>

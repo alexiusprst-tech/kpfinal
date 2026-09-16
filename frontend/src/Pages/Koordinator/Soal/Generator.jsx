@@ -334,7 +334,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                 </div>
 
                                 <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">No Form</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nomor Formulir</label>
                                     <input
                                         type="text"
                                         value={formData.form_no}
@@ -458,7 +458,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                                     onChange={e => handlePloChange(ploIdx, 'deskripsi', e.target.value)}
                                                     rows={1}
                                                     className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#801720]/20 resize-none bg-white"
-                                                    placeholder="Deskripsi Program Learning Outcome..."
+                                                    placeholder="Deskripsi PLO..."
                                                 />
                                             </div>
                                             <button
@@ -474,7 +474,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                         {/* Nested CLOs */}
                                         <div className="pl-6 border-l-2 border-gray-200 space-y-3">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase">Course Learning Outcomes ({ploItem.clo.length})</span>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase">Capaian Pembelajaran Mata Kuliah / CLO ({ploItem.clo.length})</span>
                                                 <button
                                                     type="button"
                                                     onClick={() => addClo(ploIdx)}
@@ -512,7 +512,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                                                 type="text"
                                                                 value={cloItem.bobot_lo}
                                                                 onChange={e => handleCloChange(ploIdx, cloIdx, 'bobot_lo', e.target.value)}
-                                                                placeholder="e.g. 20%"
+                                                                placeholder="cth. 20%"
                                                                 className="mt-0.5 w-full border border-gray-200 rounded px-1.5 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-[#801720]/20 font-semibold"
                                                             />
                                                         </div>

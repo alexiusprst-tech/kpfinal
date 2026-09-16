@@ -11,11 +11,11 @@ import NotificationDropdown from '@/Components/NotificationDropdown';
 import StatCard from '@/Components/StatCard';
 
 const STATUS_CONFIG = {
-    BELUM_UPLOAD: { label: 'Belum Upload', color: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' },
-    IN_REVIEW:    { label: 'In Review',    color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
-    SUBMITTED:    { label: 'In Review',    color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
-    RESUBMITTED:  { label: 'In Review',    color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
-    DRAFT:        { label: 'In Review',    color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
+    BELUM_UPLOAD: { label: 'Belum Diunggah', color: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' },
+    IN_REVIEW:    { label: 'Sedang Diverifikasi',    color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
+    SUBMITTED:    { label: 'Sedang Diverifikasi',    color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
+    RESUBMITTED:  { label: 'Sedang Diverifikasi',    color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
+    DRAFT:        { label: 'Sedang Diverifikasi',    color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
     REVISION:     { label: 'Revisi',       color: 'bg-amber-50 text-amber-700 border-amber-200',   dot: 'bg-amber-500' },
     APPROVED:     { label: 'Disetujui',    color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
     REJECTED:     { label: 'Ditolak',      color: 'bg-red-50 text-red-700 border-red-200',         dot: 'bg-red-500' },
@@ -81,8 +81,8 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
     const pagedMk = filteredMk.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
     return (
-        <AuthenticatedLayout title="Dashboard Koordinator">
-            <Head title="Dashboard Koordinator - Sistem Verifikasi Soal" />
+        <AuthenticatedLayout title="Beranda Koordinator">
+            <Head title="Beranda Koordinator - Sistem Verifikasi Soal" />
 
             <div className="space-y-6">
                 {noAssignmentMessage && (
@@ -100,7 +100,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-                            Dashboard Koordinator
+                            Beranda Koordinator
                         </h1>
                         <p className="text-xs text-slate-500 font-semibold mt-0.5">
                             Kelola naskah soal ujian dan pemetaan CPL-CPMK mata kuliah yang Anda ampu
@@ -172,7 +172,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                             {deadline && (
                                 <div className="flex items-center gap-2 bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/5">
                                     <Calendar className="w-4 h-4 text-amber-300" />
-                                    <span>Deadline Upload: <strong className="text-white font-bold">{formatDate(deadline.deadline)}</strong> ({deadline.sisa_hari} hari lagi)</span>
+                                    <span>Batas Waktu Unggah: <strong className="text-white font-bold">{formatDate(deadline.deadline)}</strong> ({deadline.sisa_hari} hari lagi)</span>
                                 </div>
                             )}
 
@@ -188,7 +188,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                     <StatCard label="Mata Kuliah Saya" value={stats.total_mk || 0}     icon={BookOpen}      color="bg-slate-700" />
                     <StatCard label="Belum Diupload"   value={stats.belum_upload || 0} icon={FilePlus2}     color="bg-slate-500" />
-                    <StatCard label="In Review"        value={stats.in_review || 0}    icon={Clock}         color="bg-purple-600" />
+                    <StatCard label="Sedang Diverifikasi" value={stats.in_review || 0}    icon={Clock}         color="bg-purple-600" />
                     <StatCard label="Perlu Revisi"     value={stats.revisi || 0}       icon={AlertTriangle} color="bg-amber-500" />
                     <StatCard label="Disetujui"        value={stats.approved || 0}     icon={CheckCircle2}  color="bg-emerald-600" />
                     <StatCard label="Ditolak"          value={stats.rejected || 0}     icon={XCircle}       color="bg-red-500" />
@@ -231,8 +231,8 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                 className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 bg-white text-slate-700 font-medium"
                             >
                                 <option value="">Semua Status</option>
-                                <option value="BELUM_UPLOAD">Belum Upload</option>
-                                <option value="IN_REVIEW">In Review</option>
+                                <option value="BELUM_UPLOAD">Belum Diunggah</option>
+                                <option value="IN_REVIEW">Sedang Diverifikasi</option>
                                 <option value="REVISION">Perlu Revisi</option>
                                 <option value="APPROVED">Disetujui</option>
                                 <option value="REJECTED">Ditolak</option>
@@ -260,7 +260,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                 onClick={() => { setSearch(''); setSemesterFilter(''); setStatusFilter(''); setPage(1); }}
                                 className="mt-3 text-xs font-bold text-[#801720] hover:underline"
                             >
-                                Reset Filter
+                                Atur Ulang Filter
                             </button>
                         </div>
                     ) : (
@@ -351,7 +351,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                                 className="py-2 px-3 rounded-xl bg-[#801720] text-white text-xs font-bold hover:bg-[#9B1B26] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                                             >
                                                 <Upload className="w-3.5 h-3.5" />
-                                                <span>Upload Soal</span>
+                                                <span>Unggah Soal</span>
                                             </Link>
                                             <Link
                                                 href={`/koordinator/mata-kuliah/${mk.id}`}

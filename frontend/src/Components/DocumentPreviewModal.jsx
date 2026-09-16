@@ -43,7 +43,7 @@ export default function DocumentPreviewModal({ open, onClose, fileName, previewU
                     setLoading(false);
                 })
                 .catch((err) => {
-                    console.error('Failed to preview docx:', err);
+                    console.error('Gagal memuat pratinjau docx:', err);
                     setError('Gagal memuat pratinjau dokumen DOCX. Anda dapat mengunduh berkas untuk membukanya secara manual.');
                     setLoading(false);
                 });
@@ -76,7 +76,7 @@ export default function DocumentPreviewModal({ open, onClose, fileName, previewU
                     <body>
                         <div class="header">
                             <h1>${fileName || 'Pratinjau Naskah Word'}</h1>
-                            <span style="font-size: 11px; font-weight: 700; color: #801720; background: #fef2f2; padding: 4px 10px; border-radius: 9999px; border: 1px solid #fecaca;">DOCX PREVIEW</span>
+                            <span style="font-size: 11px; font-weight: 700; color: #801720; background: #fef2f2; padding: 4px 10px; border-radius: 9999px; border: 1px solid #fecaca;">PRATINJAU DOCX</span>
                         </div>
                         <div class="content-wrapper">
                             <div id="docx-container"><div class="loading">Memuat dan merender naskah Word...</div></div>
@@ -125,7 +125,7 @@ export default function DocumentPreviewModal({ open, onClose, fileName, previewU
                                     {fileName || 'Pratinjau Berkas'}
                                 </h3>
                                 <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-gray-200 text-gray-700 flex-shrink-0">
-                                    {ext || 'FILE'}
+                                    {ext || 'BERKAS'}
                                 </span>
                             </div>
                             <p className="text-[11px] text-gray-400">

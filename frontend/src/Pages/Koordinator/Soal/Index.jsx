@@ -11,10 +11,10 @@ import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 
 
 const STATUS_CONFIG = {
-    IN_REVIEW:   { label: 'In Review',       color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    SUBMITTED:   { label: 'Submitted',       color: 'bg-blue-100 text-blue-700',      dot: 'bg-blue-500' },
+    IN_REVIEW:   { label: 'Sedang Diverifikasi', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'Terkirim',        color: 'bg-blue-100 text-blue-700',      dot: 'bg-blue-500' },
     RESUBMITTED: { label: 'Revisi Terkirim', color: 'bg-indigo-100 text-indigo-700', dot: 'bg-indigo-500' },
-    DRAFT:       { label: 'Draft',           color: 'bg-gray-100 text-gray-700',      dot: 'bg-gray-400' },
+    DRAFT:       { label: 'Draf',            color: 'bg-gray-100 text-gray-700',      dot: 'bg-gray-400' },
     REVISION:    { label: 'Revisi',          color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui',       color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
     REJECTED:    { label: 'Ditolak',         color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
@@ -91,10 +91,10 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
     const handleSubmit = async (item = submitItem) => {
         if (!item) return;
         const result = await showConfirm({
-            title: 'Submit Soal untuk Verifikasi?',
-            text: `Submit "${item.judul}"? Soal akan dikirim ke verifikator. Setelah disubmit, file tidak dapat diubah sampai mendapat feedback.`,
+            title: 'Kirim Soal untuk Verifikasi?',
+            text: `Kirim "${item.judul}"? Soal akan dikirim ke verifikator. Setelah dikirim, file tidak dapat diubah sampai mendapat masukan.`,
             icon: 'question',
-            confirmButtonText: 'Ya, Submit Soal',
+            confirmButtonText: 'Ya, Kirim Soal',
             confirmButtonColor: '#059669',
         });
         if (result.isConfirmed) {
@@ -107,7 +107,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
     const handleDelete = async (item = deleteItem) => {
         if (!item) return;
         const result = await showConfirm({
-            title: 'Hapus Draft Soal?',
+            title: 'Hapus Draf Soal?',
             text: `Apakah Anda yakin ingin menghapus draft soal "${item?.judul}"?`,
             icon: 'warning',
             confirmButtonText: 'Ya, Hapus',
@@ -139,7 +139,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
 
     const STATUS_FILTERS = [
         { key: '', label: 'Semua Status' },
-        { key: 'IN_REVIEW', label: 'In Review' },
+        { key: 'IN_REVIEW', label: 'Sedang Diverifikasi' },
         { key: 'REVISION', label: 'Revisi' },
         { key: 'APPROVED', label: 'Disetujui' },
         { key: 'REJECTED', label: 'Ditolak' },
@@ -158,7 +158,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                         <div className="space-y-1">
                             <h3 className="font-extrabold text-sm uppercase tracking-wider">Akses Terbatas</h3>
                             <p className="text-xs font-semibold text-amber-50 leading-relaxed">
-                                Akun Anda saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin. Upload soal tidak dapat dilakukan.
+                                Akun Anda saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin. Unggah soal tidak dapat dilakukan.
                             </p>
                         </div>
                     </div>
@@ -170,7 +170,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                         <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
                             <FileText className="w-6 h-6 text-[#801720]" /> Kelola Soal Saya
                         </h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Upload, submit, dan pantau status soal Anda</p>
+                        <p className="text-sm text-gray-500 mt-0.5">Unggah, kirim, dan pantau status soal Anda</p>
                     </div>
                     <div className="flex items-center gap-2">
                         {hasNoAssignment ? (
@@ -178,12 +178,12 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                                 title="Belum ada penugasan aktif"
                                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-200 text-slate-400 rounded-xl text-xs font-bold cursor-not-allowed select-none opacity-70"
                             >
-                                <Plus className="w-3.5 h-3.5" /> Upload Soal Baru
+                                <Plus className="w-3.5 h-3.5" /> Unggah Soal Baru
                             </span>
                         ) : (
                             <Link href="/koordinator/soal/create"
                                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#6a1219] transition-all shadow-sm cursor-pointer select-none">
-                                <Plus className="w-3.5 h-3.5" /> Upload Soal Baru
+                                <Plus className="w-3.5 h-3.5" /> Unggah Soal Baru
                             </Link>
                         )}
                     </div>
@@ -226,7 +226,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                                     <tr>
                                         <td colSpan={7} className="text-center py-16">
                                             <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                            <p className="text-gray-400 text-sm">Belum ada soal. Mulai upload soal pertama Anda.</p>
+                                            <p className="text-gray-400 text-sm">Belum ada soal. Mulai unggah soal pertama Anda.</p>
                                         </td>
                                     </tr>
                                 ) : soalList.data?.map((soal, idx) => (
@@ -248,12 +248,12 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                                             <div className="flex items-center justify-end gap-1.5">
                                                 {/* Download */}
                                                 <a href={`/koordinator/soal/download/${soal.id}`}
-                                                    className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg" title="Download">
+                                                    className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg" title="Unduh">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </a>
                                                 {/* Submit (if DRAFT) */}
                                                 {soal.status === 'DRAFT' && (
-                                                    <button onClick={() => handleSubmit(soal)} className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer" title="Submit untuk Verifikasi">
+                                                    <button onClick={() => handleSubmit(soal)} className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer" title="Kirim untuk Verifikasi">
                                                         <Send className="w-3.5 h-3.5" />
                                                     </button>
                                                 )}
@@ -299,26 +299,26 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
 
 
             {/* Submit Confirm */}
-            <Modal open={!!submitItem} onClose={() => setSubmitItem(null)} title="Submit Soal untuk Verifikasi">
+            <Modal open={!!submitItem} onClose={() => setSubmitItem(null)} title="Kirim Soal untuk Verifikasi">
                 <div className="flex items-start gap-3 mb-5">
                     <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
                         <Send className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-gray-800">Submit "<span className="text-[#801720]">{submitItem?.judul}</span>"?</p>
-                        <p className="text-xs text-gray-500 mt-1">Soal akan dikirim ke verifikator. Setelah disubmit, file tidak bisa diubah sampai mendapat feedback.</p>
+                        <p className="text-sm font-semibold text-gray-800">Kirim "<span className="text-[#801720]">{submitItem?.judul}</span>"?</p>
+                        <p className="text-xs text-gray-500 mt-1">Soal akan dikirim ke verifikator. Setelah dikirim, file tidak bisa diubah sampai mendapat masukan.</p>
                     </div>
                 </div>
                 <div className="flex justify-end gap-2">
                     <button onClick={() => setSubmitItem(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50">Batal</button>
                     <button onClick={handleSubmit} disabled={processing} className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-60">
-                        {processing ? 'Submitting...' : 'Ya, Submit'}
+                        {processing ? 'Mengirim...' : 'Ya, Kirim'}
                     </button>
                 </div>
             </Modal>
 
             {/* Upload Revisi Modal */}
-            <Modal open={!!showRevisi} onClose={() => setShowRevisi(null)} title="Upload Revisi Soal">
+            <Modal open={!!showRevisi} onClose={() => setShowRevisi(null)} title="Unggah Revisi Soal">
                 {showRevisi && (
                     <div className="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-200">
                         <p className="text-xs font-semibold text-amber-800">Catatan Verifikator:</p>
@@ -348,7 +348,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                     <div className="flex justify-end pt-2">
                         <button type="submit" disabled={processing || !revisiFile}
                             className="px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 disabled:opacity-60">
-                            {processing ? 'Mengupload...' : 'Upload Revisi'}
+                            {processing ? 'Mengunggah...' : 'Unggah Revisi'}
                         </button>
                     </div>
                 </form>

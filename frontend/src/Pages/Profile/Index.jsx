@@ -149,7 +149,7 @@ function SectionDataDiri({ user, dosen }) {
 
                     {isSuperAdmin && !isDosen && (
                         <div>
-                            <FieldLabel>Peran / Role Otoritas</FieldLabel>
+                            <FieldLabel>Peran Otoritas</FieldLabel>
                             <InputField icon={Shield} type="text" value="Super Administrator (Sistem)" disabled />
                             <p className="text-[11px] text-slate-400 mt-1">Hak akses penuh pengelola aplikasi.</p>
                         </div>
@@ -233,7 +233,7 @@ function SectionPassword({ mustChange }) {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
-                showToast("success", "Password berhasil diperbarui.");
+                showToast("success", "Kata sandi berhasil diperbarui.");
             },
         });
     };
@@ -279,14 +279,14 @@ function SectionPassword({ mustChange }) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                        <FieldLabel>Password Saat Ini <span className="text-red-500">*</span></FieldLabel>
+                        <FieldLabel>Kata Sandi Saat Ini <span className="text-red-500">*</span></FieldLabel>
                         <div className="relative">
                             <InputField
                                 icon={Lock}
                                 type={show.current ? "text" : "password"}
                                 value={data.current_password}
                                 onChange={e => setData("current_password", e.target.value)}
-                                placeholder="Password saat ini"
+                                placeholder="Kata sandi saat ini"
                                 className="pr-10"
                                 required
                             />
@@ -296,14 +296,14 @@ function SectionPassword({ mustChange }) {
                     </div>
 
                     <div>
-                        <FieldLabel>Password Baru <span className="text-red-500">*</span></FieldLabel>
+                        <FieldLabel>Kata Sandi Baru <span className="text-red-500">*</span></FieldLabel>
                         <div className="relative">
                             <InputField
                                 icon={Lock}
                                 type={show.new ? "text" : "password"}
                                 value={data.password}
                                 onChange={e => setData("password", e.target.value)}
-                                placeholder="Password baru"
+                                placeholder="Kata sandi baru"
                                 className="pr-10"
                                 required
                             />
@@ -313,14 +313,14 @@ function SectionPassword({ mustChange }) {
                     </div>
 
                     <div>
-                        <FieldLabel>Konfirmasi Password <span className="text-red-500">*</span></FieldLabel>
+                        <FieldLabel>Konfirmasi Kata Sandi <span className="text-red-500">*</span></FieldLabel>
                         <div className="relative">
                             <InputField
                                 icon={Lock}
                                 type={show.confirm ? "text" : "password"}
                                 value={data.password_confirmation}
                                 onChange={e => setData("password_confirmation", e.target.value)}
-                                placeholder="Ulangi password"
+                                placeholder="Ulangi kata sandi"
                                 className="pr-10"
                                 required
                             />
@@ -329,8 +329,8 @@ function SectionPassword({ mustChange }) {
                         {data.password && data.password_confirmation && (
                             <p className={`flex items-center gap-1 text-[11px] font-bold mt-1.5 ${data.password === data.password_confirmation ? "text-emerald-600" : "text-red-600"}`}>
                                 {data.password === data.password_confirmation
-                                    ? <><CheckCircle className="w-3.5 h-3.5" /> Password cocok</>
-                                    : <><XCircle className="w-3.5 h-3.5" /> Password tidak cocok</>
+                                    ? <><CheckCircle className="w-3.5 h-3.5" /> Kata sandi cocok</>
+                                    : <><XCircle className="w-3.5 h-3.5" /> Kata sandi tidak cocok</>
                                 }
                             </p>
                         )}
@@ -344,7 +344,7 @@ function SectionPassword({ mustChange }) {
                         className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 disabled:opacity-60 transition-all shadow-sm cursor-pointer"
                     >
                         <ShieldCheck className="w-4 h-4" />
-                        {processing ? "Memperbarui..." : "Perbarui Password"}
+                        {processing ? "Memperbarui..." : "Perbarui Kata Sandi"}
                     </button>
                 </div>
             </form>
@@ -547,7 +547,7 @@ function SectionTandaTangan({ dosen, isSuperAdmin, kaprodi, user }) {
                         <FieldLabel>
                             {currentSignature
                                 ? (isSuperAdmin ? "Ganti Tanda Tangan Ka. Prodi" : "Ganti Tanda Tangan")
-                                : (isSuperAdmin ? "Upload Tanda Tangan Ka. Prodi" : "Upload Tanda Tangan Baru")}
+                                : (isSuperAdmin ? "Unggah Tanda Tangan Ka. Prodi" : "Unggah Tanda Tangan Baru")}
                         </FieldLabel>
                         <div
                             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -578,7 +578,7 @@ function SectionTandaTangan({ dosen, isSuperAdmin, kaprodi, user }) {
                                         className="w-40 h-28 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 bg-white"
                                         style={{ background: "repeating-conic-gradient(#f1f5f9 0% 25%, #ffffff 0% 50%) 0 0/14px 14px" }}
                                     >
-                                        <img src={preview} alt="Preview Tanda Tangan" className="max-h-full max-w-full object-contain" />
+                                        <img src={preview} alt="Pratinjau Tanda Tangan" className="max-h-full max-w-full object-contain" />
                                     </div>
                                     <p className="text-xs font-bold text-emerald-700 flex items-center gap-1">
                                         <CheckCircle className="w-3.5 h-3.5" /> {file?.name}
@@ -639,7 +639,7 @@ function SectionHakAkses({ user, isDosen }) {
                     <span>Hak Akses & Otoritas Sistem</span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#801720]/10 text-[#801720]">
-                    {user?.role || "USER"}
+                    {user?.role || "Pengguna"}
                 </span>
             </div>
 
@@ -666,7 +666,7 @@ function SectionHakAkses({ user, isDosen }) {
             ) : (
                 <div className="space-y-2 text-slate-600">
                     <p className="leading-relaxed">
-                        Role akun Anda disinkronisasi secara otomatis berdasarkan penugasan aktif (Koordinator MK / Verifikator Soal) pada periode verifikasi yang sedang berjalan.
+                        Peran akun Anda disinkronisasi secara otomatis berdasarkan penugasan aktif (Koordinator MK / Verifikator Soal) pada periode verifikasi yang sedang berjalan.
                     </p>
                 </div>
             )}
@@ -692,9 +692,9 @@ export default function ProfileIndex({ user, dosen, kaprodi }) {
                     <div className="bg-amber-500 text-white rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/20 flex items-start gap-4 border border-amber-400">
                         <AlertCircle className="w-6 h-6 flex-shrink-0 mt-0.5" />
                         <div className="space-y-1">
-                            <h3 className="font-extrabold text-sm uppercase tracking-wider">Perhatian: Wajib Ubah Password Login Pertama</h3>
+                            <h3 className="font-extrabold text-sm uppercase tracking-wider">Perhatian: Wajib Ubah Kata Sandi Saat Pertama Kali Masuk</h3>
                             <p className="text-xs font-semibold text-amber-50 leading-relaxed">
-                                Demi keamanan akun Anda, silakan ubah password default pada form <strong>Keamanan & Kata Sandi</strong> di bawah ini. Anda baru dapat mengakses menu aplikasi lainnya setelah memperbarui password.
+                                Demi keamanan akun Anda, silakan ubah kata sandi default pada form <strong>Keamanan & Kata Sandi</strong> di bawah ini. Anda baru dapat mengakses menu aplikasi lainnya setelah memperbarui kata sandi.
                             </p>
                         </div>
                     </div>

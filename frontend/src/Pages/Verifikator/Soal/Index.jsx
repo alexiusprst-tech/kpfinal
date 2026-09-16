@@ -4,10 +4,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { FileCheck, Download, Eye, ArrowRight, X } from 'lucide-react';
 
 const STATUS_CONFIG = {
-    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
-    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    IN_REVIEW:   { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
+    DRAFT:       { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
     REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
     REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
@@ -28,7 +28,7 @@ import FlashAlert from '@/Components/FlashAlert';
 
 const STATUS_FILTERS = [
     { key: '', label: 'Semua Status' },
-    { key: 'IN_REVIEW', label: 'In Review' },
+    { key: 'IN_REVIEW', label: 'Ditinjau' },
     { key: 'REVISION', label: 'Revisi' },
     { key: 'APPROVED', label: 'Disetujui' },
     { key: 'REJECTED', label: 'Ditolak' },
@@ -53,7 +53,7 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
                     <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
                         <FileCheck className="w-6 h-6 text-[#801720]" /> Verifikasi Soal
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Review dan berikan keputusan verifikasi pada soal yang masuk</p>
+                    <p className="text-sm text-gray-500 mt-0.5">Tinjau dan berikan keputusan verifikasi pada soal yang masuk</p>
                 </div>
 
                 {/* Status Filter */}
@@ -107,12 +107,12 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
                                         <td className="px-5 py-4">
                                             <div className="flex items-center justify-end gap-1.5">
                                                 <a href={`/verifikator/soal/${soal.id}/download`}
-                                                    className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg" title="Download">
+                                                    className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg" title="Unduh">
                                                     <Download className="w-3.5 h-3.5" />
                                                 </a>
                                                 <a href={`/verifikator/soal/${soal.id}`}
                                                     className="flex items-center gap-1 px-2.5 py-1.5 bg-[#801720] text-white rounded-lg text-xs font-semibold hover:bg-[#6a1219] transition-colors">
-                                                    <Eye className="w-3 h-3" /> Review
+                                                    <Eye className="w-3 h-3" /> Tinjau
                                                 </a>
                                             </div>
                                         </td>

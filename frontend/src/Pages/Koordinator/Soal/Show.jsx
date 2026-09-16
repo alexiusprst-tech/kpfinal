@@ -11,10 +11,10 @@ import DocumentPreviewModal from '@/Components/DocumentPreviewModal';
 
 
 const STATUS_CONFIG = {
-    IN_REVIEW:   { label: 'In Review',       color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    SUBMITTED:   { label: 'Submitted',       color: 'bg-blue-100 text-blue-700',       dot: 'bg-blue-500' },
+    IN_REVIEW:   { label: 'Sedang Diverifikasi', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'Terkirim',        color: 'bg-blue-100 text-blue-700',       dot: 'bg-blue-500' },
     RESUBMITTED: { label: 'Revisi Terkirim', color: 'bg-indigo-100 text-indigo-700', dot: 'bg-indigo-500' },
-    DRAFT:       { label: 'Draft',           color: 'bg-gray-100 text-gray-700',       dot: 'bg-gray-400' },
+    DRAFT:       { label: 'Draf',            color: 'bg-gray-100 text-gray-700',       dot: 'bg-gray-400' },
     REVISION:    { label: 'Revisi',          color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui',       color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
     REJECTED:    { label: 'Ditolak',         color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
@@ -71,10 +71,10 @@ export default function SoalShow({ soal }) {
 
     const handleSubmit = async () => {
         const result = await showConfirm({
-            title: 'Submit Soal untuk Verifikasi?',
-            text: `Submit "${soal.judul}"? Soal akan dikirim ke verifikator. Setelah disubmit, file tidak dapat diubah sampai mendapat feedback.`,
+            title: 'Kirim Soal untuk Verifikasi?',
+            text: `Kirim "${soal.judul}"? Soal akan dikirim ke verifikator. Setelah dikirim, file tidak dapat diubah sampai mendapat masukan.`,
             icon: 'question',
-            confirmButtonText: 'Ya, Submit Soal',
+            confirmButtonText: 'Ya, Kirim Soal',
             confirmButtonColor: '#059669',
         });
         if (result.isConfirmed) {
@@ -153,7 +153,7 @@ export default function SoalShow({ soal }) {
                                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#801720]/25 transition-all hover:scale-[1.02] active:scale-95"
                                 title="Unduh berkas naskah soal"
                             >
-                                <Download className="w-3.5 h-3.5" /> Download
+                                <Download className="w-3.5 h-3.5" /> Unduh
                             </a>
                         </div>
                     </div>
@@ -162,11 +162,11 @@ export default function SoalShow({ soal }) {
                         <div className="flex gap-2 mt-5">
                             <Link href={`/koordinator/soal/${soal.id}/edit`}
                                 className="flex-1 text-center inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50">
-                                <Pencil className="w-4 h-4" /> Edit
+                                <Pencil className="w-4 h-4" /> Ubah
                             </Link>
                             <button onClick={handleSubmit} disabled={submitting}
                                 className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#801720] text-white text-sm font-semibold hover:bg-[#6a1219] cursor-pointer">
-                                <Send className="w-4 h-4" /> {submitting ? 'Submitting...' : 'Submit untuk Verifikasi'}
+                                <Send className="w-4 h-4" /> {submitting ? 'Mengirim...' : 'Kirim untuk Verifikasi'}
                             </button>
                         </div>
                     )}

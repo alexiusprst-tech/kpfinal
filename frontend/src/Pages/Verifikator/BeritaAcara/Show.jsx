@@ -13,9 +13,9 @@ const STATUS_BADGE = {
     REVISION:    { label: 'Revisi',      cls: 'bg-amber-100 text-amber-700 border-amber-200',       icon: RotateCcw },
     REJECTED:    { label: 'Ditolak',     cls: 'bg-red-100 text-red-600 border-red-200',             icon: XCircle },
     SUBMITTED:   { label: 'Menunggu',    cls: 'bg-blue-100 text-blue-700 border-blue-200',          icon: Clock },
-    IN_REVIEW:   { label: 'In Review',   cls: 'bg-purple-100 text-purple-700 border-purple-200',    icon: Clock },
+    IN_REVIEW:   { label: 'Ditinjau',    cls: 'bg-purple-100 text-purple-700 border-purple-200',    icon: Clock },
     RESUBMITTED: { label: 'Menunggu',    cls: 'bg-blue-100 text-blue-700 border-blue-200',          icon: Clock },
-    DRAFT:       { label: 'Draft',       cls: 'bg-gray-100 text-gray-600 border-gray-200',          icon: FileText },
+    DRAFT:       { label: 'Draf',        cls: 'bg-gray-100 text-gray-600 border-gray-200',          icon: FileText },
 };
 
 function StatusBadge({ status }) {

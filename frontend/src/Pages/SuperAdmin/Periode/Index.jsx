@@ -119,7 +119,7 @@ function PeriodeForm({ form, setForm, onSubmit, processing, isEdit }) {
                 </Field>
             </div>
 
-            <Field label="Deadline Upload Soal" required>
+            <Field label="Batas Waktu Unggah Soal" required>
                 <input type="date" value={form.deadline_upload}
                     onChange={e => setForm(f => ({ ...f, deadline_upload: e.target.value }))}
                     className={inputCls} required />
@@ -356,7 +356,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                 <tr className="border-b border-gray-100">
                                     <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Nama Periode</th>
                                     <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                                    <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Deadline Upload</th>
+                                    <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Batas Waktu Unggah</th>
                                     <th className="text-right px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
@@ -389,7 +389,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                                     <Eye className="w-4 h-4" />
                                                 </button>
                                                 <button type="button" onClick={() => openEdit(item)}
-                                                    className="p-2 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer" title="Edit">
+                                                    className="p-2 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer" title="Ubah">
                                                     <Pencil className="w-4 h-4" />
                                                 </button>
                                                 {item.status !== 'ACTIVE' && (
@@ -446,7 +446,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
             </Modal>
 
             {/* ─── Edit Periode Modal ──────────────────────────────────────── */}
-            <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Edit Periode Verifikasi">
+            <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Ubah Periode Verifikasi">
                 <PeriodeForm
                     form={form} setForm={setForm}
                     onSubmit={handleEdit} processing={processing}
@@ -466,7 +466,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                     {fmt(viewItem.periode.tanggal_mulai)} – {fmt(viewItem.periode.tanggal_selesai)}
                                 </p>
                                 <p className="text-xs text-red-500 font-semibold mt-0.5">
-                                    Deadline: {fmt(viewItem.periode.deadline_upload)}
+                                    Batas Waktu: {fmt(viewItem.periode.deadline_upload)}
                                 </p>
                                 {viewItem.periode.catatan && (
                                     <p className="text-xs text-gray-500 mt-1 italic">"{viewItem.periode.catatan}"</p>
@@ -499,7 +499,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                     <div className="space-y-4">
                                         {[
                                             { label: 'Periode dimulai',      date: viewItem.periode.tanggal_mulai,   desc: 'Periode verifikasi dimulai dan penugasan aktif',              done: viewItem.timeline.mulai_lewat,    icon: CheckCircle },
-                                            { label: 'Deadline upload soal', date: viewItem.periode.deadline_upload, desc: 'Batas akhir pengunggahan draft soal oleh Koordinator MK',     done: viewItem.timeline.deadline_lewat, icon: CalendarClock },
+                                            { label: 'Batas waktu unggah soal', date: viewItem.periode.deadline_upload, desc: 'Batas akhir pengunggahan draf soal oleh Koordinator MK',     done: viewItem.timeline.deadline_lewat, icon: CalendarClock },
                                             { label: 'Periode berakhir',     date: viewItem.periode.tanggal_selesai, desc: 'Periode verifikasi resmi berakhir',                           done: viewItem.timeline.selesai_lewat,  icon: Flag },
                                         ].map((step, i, arr) => {
                                             const Icon = step.icon;
@@ -591,11 +591,11 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
                                             {[
                                                 ['Total',    viewItem.statistik.total    ?? 0, 'text-gray-700'],
-                                                ['Draft',    viewItem.statistik.draft    ?? 0, 'text-gray-500'],
-                                                ['Pending',  viewItem.statistik.pending  ?? 0, 'text-blue-600'],
+                                                ['Draf',     viewItem.statistik.draft    ?? 0, 'text-gray-500'],
+                                                ['Menunggu', viewItem.statistik.pending  ?? 0, 'text-blue-600'],
                                                 ['Revisi',   viewItem.statistik.revisi   ?? 0, 'text-amber-600'],
-                                                ['Approved', viewItem.statistik.approved ?? 0, 'text-emerald-600'],
-                                                ['Rejected', viewItem.statistik.rejected ?? 0, 'text-red-500'],
+                                                ['Disetujui',viewItem.statistik.approved ?? 0, 'text-emerald-600'],
+                                                ['Ditolak',  viewItem.statistik.rejected ?? 0, 'text-red-500'],
                                             ].map(([label, value, color]) => (
                                                 <div key={label} className="bg-gray-50 rounded-xl p-2 border border-gray-100">
                                                     <p className={`text-base font-extrabold ${color}`}>{value}</p>
@@ -633,7 +633,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                 <button type="button"
                                     onClick={() => { const itm = viewItem.periode; closeDetail(); openEdit(itm); }}
                                     className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors">
-                                    <Pencil className="w-3.5 h-3.5" /> Edit
+                                    <Pencil className="w-3.5 h-3.5" /> Ubah
                                 </button>
                                 {viewItem.periode.status !== 'ACTIVE' && (
                                     <button type="button" onClick={() => activate(viewItem.periode)}

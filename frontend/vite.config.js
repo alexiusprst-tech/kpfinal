@@ -29,6 +29,7 @@ export default defineConfig({
     plugins: [
         {
             name: 'clean-and-hot',
+            apply: 'build',
             buildStart() {
                 removeHotFile();
                 cleanBuildDir();

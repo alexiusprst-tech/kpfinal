@@ -1092,7 +1092,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                         onClick={() => handleSubmit('DRAFT')}
                                         className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
                                     >
-                                        <Save className="w-3.5 h-3.5" /> Simpan Draft
+                                        <Save className="w-3.5 h-3.5" /> Simpan Draf
                                     </button>
 
                                     <button

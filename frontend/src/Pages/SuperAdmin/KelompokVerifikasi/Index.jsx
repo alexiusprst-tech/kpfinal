@@ -14,7 +14,7 @@ import { formatDate } from '@/Utils/date';
 
 
 const STATUS_CONFIG = {
-    DRAFT:    { label: 'Draft',     bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200/60', dot: 'bg-amber-500' },
+    DRAFT:    { label: 'Draf',      bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200/60', dot: 'bg-amber-500' },
     ACTIVE:   { label: 'Aktif',     bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200/60', dot: 'bg-emerald-500' },
     INACTIVE: { label: 'Nonaktif',  bg: 'bg-gray-100',   text: 'text-gray-600',    border: 'border-gray-200/60', dot: 'bg-gray-400' },
     CLOSED:   { label: 'Selesai',   bg: 'bg-slate-100',  text: 'text-slate-600',   border: 'border-slate-300/60', dot: 'bg-slate-500' },
@@ -180,7 +180,7 @@ export default function KelompokVerifikasiIndex({
                         iconBg="bg-amber-50"
                         iconColor="text-amber-600"
                         value={stats?.draft}
-                        label="DRAFT"
+                        label="DRAF"
                         sublabel="Belum Diaktifkan"
                     />
                     <StatCard
@@ -241,7 +241,7 @@ export default function KelompokVerifikasiIndex({
                                 className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] transition-all bg-gray-50/50 hover:bg-white cursor-pointer"
                             >
                                 <option value="">Semua Status</option>
-                                <option value="DRAFT">Draft</option>
+                                <option value="DRAFT">Draf</option>
                                 <option value="ACTIVE">Aktif</option>
                                 <option value="INACTIVE">Nonaktif</option>
                                 <option value="CLOSED">Selesai (Closed)</option>
@@ -393,7 +393,7 @@ export default function KelompokVerifikasiIndex({
                                                                 <Link
                                                                     href={`/superadmin/kelompok-verifikasi/${item.id}/edit`}
                                                                     className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                                                                    title="Edit Kelompok"
+                                                                    title="Ubah Kelompok"
                                                                 >
                                                                     <Pencil className="w-4 h-4" />
                                                                 </Link>
@@ -407,7 +407,7 @@ export default function KelompokVerifikasiIndex({
                                                                 <button
                                                                     onClick={() => handleAction(item, 'delete')}
                                                                     className="p-1.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                                                                    title="Hapus Draft"
+                                                                    title="Hapus Draf"
                                                                 >
                                                                     <Trash2 className="w-4 h-4" />
                                                                 </button>
@@ -419,7 +419,7 @@ export default function KelompokVerifikasiIndex({
                                                                 <Link
                                                                     href={`/superadmin/kelompok-verifikasi/${item.id}/edit`}
                                                                     className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                                                                    title="Edit Penugasan"
+                                                                    title="Ubah Penugasan"
                                                                 >
                                                                     <Pencil className="w-4 h-4" />
                                                                 </Link>
@@ -445,7 +445,7 @@ export default function KelompokVerifikasiIndex({
                                                                 <Link
                                                                     href={`/superadmin/kelompok-verifikasi/${item.id}/edit`}
                                                                     className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                                                                    title="Edit Penugasan"
+                                                                    title="Ubah Penugasan"
                                                                 >
                                                                     <Pencil className="w-4 h-4" />
                                                                 </Link>

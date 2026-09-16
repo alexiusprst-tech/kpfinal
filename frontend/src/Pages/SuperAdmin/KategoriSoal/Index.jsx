@@ -52,8 +52,8 @@ function KategoriSoalForm({ form, setForm, onSubmit, processing, editItem }) {
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Status</label>
                     <select value={form.status || 'ACTIVE'} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none">
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="INACTIVE">INACTIVE</option>
+                        <option value="ACTIVE">Aktif</option>
+                        <option value="INACTIVE">Nonaktif</option>
                     </select>
                 </div>
             )}
@@ -172,7 +172,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
 
     const usage = selectedKategori?.usage;
     const doughnutData = usage && {
-        labels: ['Approved', 'Dalam Review', 'Revisi', 'Ditolak'],
+        labels: ['Disetujui', 'Dalam Review', 'Revisi', 'Ditolak'],
         datasets: [{
             data: [usage.approved, usage.dalam_review, usage.revisi, usage.ditolak],
             backgroundColor: ['#9B1724', '#F97316', '#EAB308', '#94A3B8'],
@@ -264,7 +264,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                                                 <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
                                                     <div className="flex items-center justify-end gap-1">
                                                         <Link href={`/superadmin/kategori-soal/${item.id}`} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"><Eye className="w-3.5 h-3.5" /></Link>
-                                                        <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
+                                                        <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="Ubah"><Pencil className="w-3.5 h-3.5" /></button>
                                                         <button onClick={() => handleDelete(item)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg cursor-pointer" title="Hapus"><Trash2 className="w-3.5 h-3.5" /></button>
 
                                                     </div>
@@ -361,7 +361,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                                             </div>
                                             <div className="space-y-1.5 text-xs flex-1">
                                                 {[
-                                                    ['Approved', selectedKategori.usage.approved, '#9B1724'],
+                                                    ['Disetujui', selectedKategori.usage.approved, '#9B1724'],
                                                     ['Dalam Review', selectedKategori.usage.dalam_review, '#F97316'],
                                                     ['Revisi', selectedKategori.usage.revisi, '#EAB308'],
                                                     ['Ditolak', selectedKategori.usage.ditolak, '#94A3B8'],
@@ -401,7 +401,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                                 <div className="p-5 border-t border-gray-100 flex gap-2">
                                     <button onClick={() => openEdit(selectedKategori.kategori)}
                                         className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50">
-                                        <Pencil className="w-3.5 h-3.5" /> Edit Kategori
+                                        <Pencil className="w-3.5 h-3.5" /> Ubah Kategori
                                     </button>
                                     <button onClick={() => toggleStatus(selectedKategori.kategori)}
                                         className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold ${
@@ -425,7 +425,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                     editItem={null}
                 />
             </Modal>
-            <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Edit Kategori Soal">
+            <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Ubah Kategori Soal">
                 <KategoriSoalForm
                     form={form}
                     setForm={setForm}

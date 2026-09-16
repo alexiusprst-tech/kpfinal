@@ -95,10 +95,10 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
 
     const submitUlang = async () => {
         const result = await showConfirm({
-            title: 'Submit Ulang Perbaikan?',
+            title: 'Kirim Ulang Perbaikan?',
             text: 'File revisi akan dikirimkan kembali ke verifikator untuk diperiksa ulang.',
             icon: 'question',
-            confirmButtonText: 'Ya, Submit Ulang',
+            confirmButtonText: 'Ya, Kirim Ulang',
             confirmButtonColor: '#059669',
         });
         if (result.isConfirmed) {
@@ -200,7 +200,7 @@ function resolveCloNote(val) {
 
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                     <h1 className="text-lg font-extrabold text-gray-800">
-                        {step === 'form' ? 'Unggah Berkas Perbaikan' : 'Preview Berkas Revisi'}
+                        {step === 'form' ? 'Unggah Berkas Perbaikan' : 'Pratinjau Berkas Revisi'}
                     </h1>
 
                     {step === 'form' && (
@@ -268,7 +268,7 @@ function resolveCloNote(val) {
                                 disabled={!data.file}
                                 className="w-full py-2.5 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#6a1219] disabled:opacity-50 transition-all cursor-pointer"
                             >
-                                Lanjut ke Preview
+                                Lanjut ke Pratinjau
                             </button>
                         </div>
                     )}
@@ -331,7 +331,7 @@ function resolveCloNote(val) {
                                 {ext === 'doc' && (
                                     <div className="p-6 bg-amber-50 border border-amber-200 rounded-2xl text-center space-y-2">
                                         <FileText className="w-8 h-8 text-amber-600 mx-auto" />
-                                        <h4 className="text-xs font-bold text-gray-800">Format .doc Tidak Mendukung Live Preview</h4>
+                                        <h4 className="text-xs font-bold text-gray-800">Format .doc Tidak Mendukung Pratinjau Langsung</h4>
                                         <p className="text-[11px] text-gray-600 leading-relaxed">
                                             Format .doc adalah format biner Microsoft Word terdahulu. Berkas tetap akan terkirim dengan baik saat Anda menekan tombol "Ya, Kirim Revisi".
                                         </p>

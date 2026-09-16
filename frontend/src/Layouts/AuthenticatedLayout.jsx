@@ -30,8 +30,8 @@ function getNavSections(user, pathname = "") {
 
     if (user.role === "SUPER_ADMIN") {
         return [
-            { type: "item", label: "Dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
-            { type: "divider", label: "Master Data" },
+            { type: "item", label: "Beranda", href: "/superadmin/dashboard", icon: LayoutDashboard },
+            { type: "divider", label: "Data Master" },
             { type: "item", label: "Periode Verifikasi", href: "/superadmin/periode", icon: Clock },
             { type: "item", label: "Mata Kuliah", href: "/superadmin/mata-kuliah", icon: BookOpen },
             { type: "item", label: "PLO", href: "/superadmin/plo", icon: Target },
@@ -64,7 +64,7 @@ function getNavSections(user, pathname = "") {
 
         if (activeRole === "verifikator") {
             return [
-                { type: "item", label: "Dashboard", href: "/verifikator/dashboard", icon: LayoutDashboard },
+                { type: "item", label: "Beranda", href: "/verifikator/dashboard", icon: LayoutDashboard },
                 { type: "divider", label: "Verifikator Soal" },
                 { type: "item", label: "Verifikasi Soal", href: "/verifikator/soal", icon: FileCheck },
                 { type: "item", label: "Berita Acara", href: "/verifikator/berita-acara", icon: FileText },
@@ -72,7 +72,7 @@ function getNavSections(user, pathname = "") {
         }
 
         return [
-            { type: "item", label: "Dashboard", href: "/koordinator/dashboard", icon: LayoutDashboard },
+            { type: "item", label: "Beranda", href: "/koordinator/dashboard", icon: LayoutDashboard },
             { type: "divider", label: "Koordinator MK" },
             { type: "item", label: "Upload Soal", href: "/koordinator/soal", icon: FileText },
         ];
@@ -80,7 +80,7 @@ function getNavSections(user, pathname = "") {
 
     if (user.is_verifikator || user.role === "VERIFIKATOR") {
         return [
-            { type: "item", label: "Dashboard", href: "/verifikator/dashboard", icon: LayoutDashboard },
+            { type: "item", label: "Beranda", href: "/verifikator/dashboard", icon: LayoutDashboard },
             { type: "divider", label: "Verifikator Soal" },
             { type: "item", label: "Verifikasi Soal", href: "/verifikator/soal", icon: FileCheck },
             { type: "item", label: "Berita Acara", href: "/verifikator/berita-acara", icon: FileText },
@@ -89,7 +89,7 @@ function getNavSections(user, pathname = "") {
 
     // Default Koordinator (may have no assignment)
     return [
-        { type: "item", label: "Dashboard", href: "/koordinator/dashboard", icon: LayoutDashboard },
+        { type: "item", label: "Beranda", href: "/koordinator/dashboard", icon: LayoutDashboard },
         { type: "divider", label: "Koordinator MK" },
         { type: "item", label: "Upload Soal", href: "/koordinator/soal", icon: FileText },
     ];
@@ -167,7 +167,7 @@ function NavLink({ item, collapsed }) {
     );
 }
 
-export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
+export default function AuthenticatedLayout({ children, title = "Beranda" }) {
     const { auth, activePeriod, flash } = usePage().props;
     const user = auth?.user;
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -214,7 +214,7 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
             <div className="lg:hidden bg-white text-slate-900 border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
                 <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center p-1.5 flex-shrink-0 border border-slate-200">
-                        <img src="/images/logo-telkom.png" alt="Telkom Logo" width="36" height="36" className="h-full w-auto object-contain" />
+                        <img src="/images/logo-telkom.png" alt="Logo Telkom" width="36" height="36" className="h-full w-auto object-contain" />
                     </div>
                     <span className="font-extrabold text-sm text-[#801720] tracking-tight">Verifikasi Soal</span>
                 </div>
@@ -251,7 +251,7 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
                             {!sidebarCollapsed && (
                                 <div className="flex items-center gap-3 min-w-0">
                                     <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm flex-shrink-0 p-1.5 border border-slate-200/80">
-                                        <img src="/images/logo-telkom.png" alt="Telkom Logo" width="40" height="40" className="h-full w-auto object-contain" />
+                                        <img src="/images/logo-telkom.png" alt="Logo Telkom" width="40" height="40" className="h-full w-auto object-contain" />
                                     </div>
                                     <div className="min-w-0">
                                         <h1 className="font-black text-sm leading-tight tracking-tight text-[#801720] truncate">Sistem Verifikasi</h1>
@@ -333,12 +333,12 @@ export default function AuthenticatedLayout({ children, title = "Dashboard" }) {
                                     </div>
                                     <div className="overflow-hidden min-w-0 flex-1">
                                         <p className={`text-xs font-extrabold ${isPathActive('/profile') ? 'text-[#801720]' : 'text-slate-800 group-hover:text-[#801720]'} truncate leading-tight transition-colors`}>
-                                            {user?.name || "User"}
+                                            {user?.name || "Pengguna"}
                                         </p>
                                         <p className="text-[10px] text-slate-500 truncate font-semibold">
                                             {user?.has_dual_role
                                                 ? (pathname.startsWith("/verifikator") ? "Dosen Verifikator" : "Koordinator MK")
-                                                : (user?.role || "User")}
+                                                : (user?.role || "Pengguna")}
                                         </p>
                                     </div>
                                 </Link>

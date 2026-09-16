@@ -295,7 +295,7 @@ export default function Dashboard({
         labels: filteredCourses.map(c => c.short_label || c.nama_mk),
         datasets: [
             {
-                label: 'Disetujui (Approved)',
+                label: 'Disetujui',
                 data: filteredCourses.map(c => c.approved),
                 backgroundColor: '#10B981',
                 hoverBackgroundColor: '#059669',
@@ -504,14 +504,14 @@ export default function Dashboard({
     };
 
     return (
-        <AuthenticatedLayout title="Dashboard Super Admin">
-            <Head title="Dashboard Super Admin" />
+        <AuthenticatedLayout title="Beranda Super Admin">
+            <Head title="Beranda Super Admin" />
 
             <div className="space-y-6">
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Dashboard Overview</h1>
+                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Ringkasan Beranda</h1>
                         <p className="text-xs text-slate-500 font-semibold mt-0.5">Sistem tata kelola dan pemantauan verifikasi soal akademik Telkom University</p>
                     </div>
 
@@ -523,7 +523,7 @@ export default function Dashboard({
                             className="flex items-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1B26] text-white rounded-xl text-xs font-bold shadow-md shadow-red-900/10 hover:shadow-lg transition-all cursor-pointer group"
                         >
                             <FileDown className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
-                            <span>Generate Laporan</span>
+                            <span>Buat Laporan</span>
                         </button>
                     </div>
                 </div>
@@ -653,7 +653,7 @@ export default function Dashboard({
                                         <div className="flex items-center justify-between text-xs py-0.5">
                                             <span className="flex items-center gap-2.5 text-slate-500 font-medium">
                                                 <Calendar className="w-4 h-4 text-slate-400" />
-                                                <span>Deadline Upload</span>
+                                                <span>Batas Waktu Unggah</span>
                                             </span>
                                             <span className="font-bold text-slate-800">
                                                 {activePeriodSummary.deadline_upload}
@@ -1108,7 +1108,7 @@ export default function Dashboard({
                                     <FileDown className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-extrabold text-slate-800">Generate Laporan Verifikasi</h3>
+                                    <h3 className="text-base font-extrabold text-slate-800">Buat Laporan Verifikasi</h3>
                                     <p className="text-xs text-gray-500 font-medium">Ekspor data ringkasan & berkas soal akademik</p>
                                 </div>
                             </div>
@@ -1197,7 +1197,7 @@ export default function Dashboard({
                                         </div>
                                         <div className="text-left">
                                             <div className="text-xs font-extrabold text-gray-800 flex items-center gap-1.5">
-                                                <span>PDF Document</span>
+                                                <span>Dokumen PDF</span>
                                                 <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-200/70 text-red-800">.pdf</span>
                                             </div>
                                             <p className="text-[11px] text-gray-500 font-medium mt-0.5">Format PDF resmi cetak & arsip laporan verifikasi soal</p>

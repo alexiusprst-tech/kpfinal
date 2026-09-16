@@ -355,10 +355,13 @@ class KelompokVerifikasiController extends Controller
 
         $formattedActivities = AuditLog::formatLogs($recentActivities);
 
+        $dosenAll = Dosen::where('status', 'ACTIVE')->orderBy('kode_dosen')->get();
+
         return Inertia::render('SuperAdmin/KelompokVerifikasi/Show', [
             'kelompok'              => $kelompokVerifikasi,
             'mkListStats'           => $mkListStats,
             'verifikatorListStats'  => $verifikatorListStats,
+            'dosenAll'              => $dosenAll,
             'progress'              => [
                 'upload'       => $uploadProgress,
                 'verification' => $verificationProgress,

@@ -12,11 +12,11 @@ import { relativeTime } from '@/Utils/date';
 
 
 const STATUS_CONFIG = {
-    BELUM_UPLOAD: { label: 'Belum Upload', color: 'bg-slate-100 text-slate-700 border border-slate-200', dot: 'bg-slate-400' },
-    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
-    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
-    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
+    BELUM_UPLOAD: { label: 'Belum Diunggah', color: 'bg-slate-100 text-slate-700 border border-slate-200', dot: 'bg-slate-400' },
+    IN_REVIEW:   { label: 'Sedang Diverifikasi', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'Sedang Diverifikasi', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'Sedang Diverifikasi', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
+    DRAFT:       { label: 'Sedang Diverifikasi', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
     REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700 border border-amber-200',   dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
     REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600 border border-red-200',         dot: 'bg-red-400' },
@@ -46,10 +46,10 @@ function SoalActions({ soal, onSubmit }) {
             return (
                 <div className="flex items-center justify-end gap-1.5">
                     <Link href={`/koordinator/soal/${soal.id}/edit`} className={`${base} bg-gray-100 text-gray-700 hover:bg-gray-200`}>
-                        <Pencil className="w-3 h-3" /> Edit
+                        <Pencil className="w-3 h-3" /> Ubah
                     </Link>
                     <button onClick={() => onSubmit(soal)} className={`${base} bg-[#801720] text-white hover:bg-[#6a1219]`}>
-                        <Send className="w-3 h-3" /> Submit
+                        <Send className="w-3 h-3" /> Kirim
                     </button>
                 </div>
             );
@@ -128,10 +128,10 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
     const handleSubmit = async (soal = confirmSoal) => {
         if (!soal) return;
         const result = await showConfirm({
-            title: 'Submit Soal untuk Verifikasi?',
-            text: `Submit "${soal.judul}"? Soal akan dikirim ke verifikator untuk diperiksa.`,
+            title: 'Kirim Soal untuk Verifikasi?',
+            text: `Kirim "${soal.judul}"? Soal akan dikirim ke verifikator untuk diperiksa.`,
             icon: 'question',
-            confirmButtonText: 'Ya, Submit Soal',
+            confirmButtonText: 'Ya, Kirim Soal',
             confirmButtonColor: '#059669',
         });
         if (result.isConfirmed) {
@@ -151,13 +151,13 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <Link href="/koordinator/dashboard" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720]">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Dashboard
+                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Beranda
                     </Link>
                     <div className="flex items-center gap-2">
                         {(() => {
                             const canUpload = uploadOpen && !hasActiveSoal;
                             const statusLabels = {
-                                DRAFT: 'Draft',
+                                DRAFT: 'Draf',
                                 SUBMITTED: 'menunggu verifikasi',
                                 IN_REVIEW: 'sedang diverifikasi',
                                 RESUBMITTED: 'menunggu verifikasi ulang',
@@ -171,13 +171,13 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                         href={`/koordinator/soal/create?mata_kuliah_id=${mataKuliah.id}`}
                                         className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] shadow-sm transition-all duration-200"
                                     >
-                                        <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
+                                        <FilePlus2 className="w-3.5 h-3.5" /> Unggah Soal
                                     </Link>
                                 );
                             }
 
                             const tooltipText = !uploadOpen
-                                ? 'Periode verifikasi tidak aktif atau deadline sudah lewat'
+                                ? 'Periode verifikasi tidak aktif atau batas waktu sudah lewat'
                                 : `Soal Anda sedang ${statusLabel}. Tunggu keputusan verifikator sebelum mengunggah soal baru.`;
 
                             return (
@@ -185,7 +185,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 text-gray-400 rounded-xl text-xs font-semibold cursor-not-allowed select-none"
                                     title={tooltipText}
                                 >
-                                    <FilePlus2 className="w-3.5 h-3.5" /> Upload Soal
+                                    <FilePlus2 className="w-3.5 h-3.5" /> Unggah Soal
                                 </span>
                             );
                         })()}
@@ -215,7 +215,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
                         {[
-                            ['In Review', stats.in_review, 'text-purple-600 bg-purple-50/60 border-purple-100'],
+                            ['Sedang Diverifikasi', stats.in_review, 'text-purple-600 bg-purple-50/60 border-purple-100'],
                             ['Perlu Revisi', stats.revision, 'text-amber-600 bg-amber-50/60 border-amber-100'],
                             ['Disetujui', stats.approved, 'text-emerald-600 bg-emerald-50/60 border-emerald-100'],
                             ['Ditolak', stats.rejected, 'text-red-600 bg-red-50/60 border-red-100'],
@@ -258,7 +258,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                                 <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Judul / File</th>
                                                 <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Status</th>
 
-                                                <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Diupload</th>
+                                                <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Diunggah</th>
                                                 <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Diperbarui</th>
                                                 <th className="text-right px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Aksi</th>
                                             </tr>
@@ -365,7 +365,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                         <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mb-3">
                             <AlertTriangle className="w-5 h-5 text-amber-600" />
                         </div>
-                        <h3 className="font-bold text-gray-800">Submit soal ini?</h3>
+                        <h3 className="font-bold text-gray-800">Kirim soal ini?</h3>
                         <p className="text-sm text-gray-500 mt-1">
                             "{confirmSoal.judul}" akan dikirim untuk verifikasi dan tidak dapat diedit lagi sampai ada keputusan dari verifikator.
                         </p>
@@ -376,7 +376,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                             </button>
                             <button onClick={handleSubmit}
                                 className="flex-1 px-4 py-2 rounded-xl bg-[#801720] text-white text-sm font-semibold hover:bg-[#6a1219]">
-                                Ya, Submit
+                                Ya, Kirim
                             </button>
                         </div>
                     </div>

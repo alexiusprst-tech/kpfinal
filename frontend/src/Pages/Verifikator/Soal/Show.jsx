@@ -11,10 +11,10 @@ import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
 import DocumentPreviewModal from '@/Components/DocumentPreviewModal';
 
 const STATUS_CONFIG = {
-    IN_REVIEW:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    SUBMITTED:   { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    RESUBMITTED: { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
-    DRAFT:       { label: 'In Review', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    IN_REVIEW:   { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    SUBMITTED:   { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    RESUBMITTED: { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
+    DRAFT:       { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
     REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
     REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
@@ -117,9 +117,9 @@ export default function VerifikatorSoalShow({ soal }) {
         if (!action) return;
 
         const actionLabels = {
-            APPROVED: 'menyetujui (Approve)',
+            APPROVED: 'menyetujui',
             REVISION: 'meminta revisi untuk',
-            REJECTED: 'menolak (Reject)',
+            REJECTED: 'menolak',
         };
 
         const result = await showConfirm({
@@ -146,8 +146,8 @@ export default function VerifikatorSoalShow({ soal }) {
 
     return (
         <>
-        <AuthenticatedLayout title={`Review: ${soal.judul}`}>
-            <Head title={`Review: ${soal.judul}`} />
+        <AuthenticatedLayout title={`Tinjau: ${soal.judul}`}>
+            <Head title={`Tinjau: ${soal.judul}`} />
             <FlashAlert flash={flash} />
 
             <div className="w-full space-y-6 pb-12">
@@ -234,7 +234,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                         className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#801720]/25 transition-all hover:scale-[1.02] active:scale-95"
                                         title="Unduh berkas naskah soal"
                                     >
-                                        <Download className="w-3.5 h-3.5" /> Download
+                                        <Download className="w-3.5 h-3.5" /> Unduh
                                     </a>
                                 </div>
                             </div>
@@ -340,7 +340,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                 {[
                                     {
                                         value: 'APPROVED',
-                                        label: 'Setujui (Approve)',
+                                        label: 'Setujui',
                                         desc: 'Soal memenuhi standar dan siap digunakan',
                                         icon: CheckCircle2,
                                         activeClass: 'border-emerald-500 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/20',
@@ -358,7 +358,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                     },
                                     {
                                         value: 'REJECTED',
-                                        label: 'Tolak (Reject)',
+                                        label: 'Tolak',
                                         desc: 'Soal ditolak dan tidak dapat digunakan',
                                         icon: XCircle,
                                         activeClass: 'border-red-500 bg-red-50/80 text-red-800 ring-2 ring-red-500/20',

@@ -328,8 +328,8 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
     };
 
     return (
-        <AuthenticatedLayout title={`Edit ${kelompok.nama}`}>
-            <Head title={`Edit ${kelompok.nama} - Super Admin`} />
+        <AuthenticatedLayout title={`Ubah ${kelompok.nama}`}>
+            <Head title={`Ubah ${kelompok.nama} - Super Admin`} />
 
             <div className="w-full space-y-6 pb-16">
                 
@@ -343,7 +343,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                             <ArrowLeft className="w-4 h-4" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-black text-gray-900 tracking-tight">Edit Kelompok Verifikasi</h1>
+                            <h1 className="text-xl font-black text-gray-900 tracking-tight">Ubah Kelompok Verifikasi</h1>
                             <p className="text-xs text-gray-500 font-medium mt-0.5">
                                 Perbarui informasi, mata kuliah, koordinator (maks 3), dan tim verifikator (maks 5)
                             </p>
@@ -424,10 +424,10 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                     className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] font-bold"
                                     required
                                 >
-                                    <option value="DRAFT">DRAFT (Belum diterbitkan ke dosen)</option>
-                                    <option value="ACTIVE">ACTIVE (Penugasan aktif & berjalan)</option>
-                                    <option value="INACTIVE">INACTIVE (Penugasan dinonaktifkan)</option>
-                                    <option value="CLOSED">CLOSED (Penugasan ditutup / selesai)</option>
+                                    <option value="DRAFT">DRAF (Belum diterbitkan ke dosen)</option>
+                                    <option value="ACTIVE">AKTIF (Penugasan aktif & berjalan)</option>
+                                    <option value="INACTIVE">NONAKTIF (Penugasan dinonaktifkan)</option>
+                                    <option value="CLOSED">SELESAI (Penugasan ditutup / selesai)</option>
                                 </select>
                             </div>
 

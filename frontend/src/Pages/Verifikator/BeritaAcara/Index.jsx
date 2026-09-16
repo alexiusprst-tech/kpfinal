@@ -173,7 +173,7 @@ export default function BeritaAcaraIndex({
                                                     {a.pending > 0 && (
                                                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                                                             <Clock className="w-3.5 h-3.5" />
-                                                            <span>{a.pending} Pending</span>
+                                                            <span>{a.pending} Menunggu</span>
                                                         </span>
                                                     )}
                                                     {a.revision > 0 && (
@@ -254,7 +254,7 @@ export default function BeritaAcaraIndex({
                                             </h4>
                                             <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium pt-1">
                                                 <span>Koord: <strong className="text-slate-700">{h.koordinator?.nama_lengkap || h.koordinator?.nama || '—'}</strong></span>
-                                                <span className="text-emerald-600 font-extrabold">{h.jumlah_approved} Approved</span>
+                                                <span className="text-emerald-600 font-extrabold">{h.jumlah_approved} Disetujui</span>
                                             </div>
                                         </div>
 

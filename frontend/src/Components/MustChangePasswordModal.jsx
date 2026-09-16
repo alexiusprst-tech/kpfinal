@@ -216,7 +216,7 @@ export default function MustChangePasswordModal({ open }) {
                                 disabled={processing || !isLengthValid || !isMatchValid}
                                 className="flex-1 py-3 px-4 bg-[#801720] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-50 transition-all shadow-md shadow-[#801720]/20 flex items-center justify-center gap-2 cursor-pointer"
                             >
-                                {processing ? 'Menyimpan...' : 'Simpan & Masuk ke Dashboard'}
+                                {processing ? 'Menyimpan...' : 'Simpan & Masuk ke Beranda'}
                             </button>
 
                             <button
@@ -224,7 +224,7 @@ export default function MustChangePasswordModal({ open }) {
                                 onClick={handleLogout}
                                 className="py-3 px-4 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center cursor-pointer flex-shrink-0"
                             >
-                                Logout
+                                Keluar
                             </button>
                         </div>
                     </form>

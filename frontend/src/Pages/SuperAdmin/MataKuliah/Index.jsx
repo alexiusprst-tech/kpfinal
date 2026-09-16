@@ -359,7 +359,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                                 <button
                                                     onClick={() => handleEditOpen(mk)}
                                                     className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
-                                                    title="Edit"
+                                                    title="Ubah"
                                                 >
                                                     <Edit2 className="w-3.5 h-3.5" />
                                                 </button>
@@ -597,7 +597,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                 <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-extrabold text-[#1E293B]">Edit Mata Kuliah</h2>
+                            <h2 className="text-lg font-extrabold text-[#1E293B]">Ubah Mata Kuliah</h2>
                             <button
                                 type="button"
                                 onClick={() => setEditMk(null)}
@@ -651,8 +651,8 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                         onChange={(e) => editForm.setData('status', e.target.value)}
                                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
                                     >
-                                        <option value="ACTIVE">ACTIVE</option>
-                                        <option value="INACTIVE">INACTIVE</option>
+                                        <option value="ACTIVE">Aktif</option>
+                                        <option value="INACTIVE">Nonaktif</option>
                                     </select>
                                 </div>
                             </div>

@@ -51,8 +51,8 @@ export default function SoalEdit({ soal, kategoriAll }) {
     };
 
     return (
-        <AuthenticatedLayout title="Edit Soal">
-            <Head title="Edit Soal" />
+        <AuthenticatedLayout title="Ubah Soal">
+            <Head title="Ubah Soal" />
             <FlashAlert flash={flash} />
 
             <div className="max-w-2xl mx-auto space-y-6">
@@ -62,7 +62,7 @@ export default function SoalEdit({ soal, kategoriAll }) {
                 </Link>
 
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                    <h1 className="text-xl font-extrabold text-gray-800">Edit Soal</h1>
+                    <h1 className="text-xl font-extrabold text-gray-800">Ubah Soal</h1>
                     <p className="text-sm text-gray-500 mt-1">{soal.mata_kuliah?.nama_mk}</p>
 
                     <form onSubmit={submit} className="mt-5 space-y-4">
@@ -120,7 +120,7 @@ export default function SoalEdit({ soal, kategoriAll }) {
                                         <div className="text-left">
                                             <p className="text-sm font-semibold text-gray-700">{soal.nama_file}</p>
                                             <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                                                <UploadCloud className="w-3.5 h-3.5" /> Klik atau drag file baru untuk mengganti
+                                                <UploadCloud className="w-3.5 h-3.5" /> Klik atau seret file baru untuk mengganti
                                             </p>
                                         </div>
                                     </div>
