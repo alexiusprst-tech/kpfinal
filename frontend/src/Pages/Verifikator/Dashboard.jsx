@@ -7,6 +7,7 @@ import {
     TrendingUp, FileText, Search, User, Filter, Check, Printer, Bell,
     FilePlus2
 } from 'lucide-react';
+import ProfileDropdown from '@/Components/ProfileDropdown';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import StatCard from '@/Components/StatCard';
 
@@ -87,6 +88,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                             </div>
                         )}
                         <NotificationDropdown align="right" />
+                        <ProfileDropdown align="right" />
                     </div>
                 </div>
 

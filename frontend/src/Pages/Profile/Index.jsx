@@ -24,6 +24,7 @@ import {
     Layers,
     CheckCheck,
     FileCheck,
+    Camera,
 } from "lucide-react";
 import { showToast, showConfirm } from "@/Utils/sweetalert";
 import FlashAlert from "@/Components/FlashAlert";
@@ -89,6 +90,195 @@ function ErrorMsg({ message }) {
         <p className="flex items-center gap-1.5 text-xs text-red-600 font-semibold mt-1.5">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {message}
         </p>
+    );
+}
+
+/* ── Section 0: Foto Profil ─────────────────────────────────────── */
+function SectionFotoProfil({ user }) {
+    const fileInputRef = useRef(null);
+    const [dragOver, setDragOver]     = useState(false);
+    const [preview, setPreview]       = useState(null);
+    const [file, setFile]             = useState(null);
+    const [uploading, setUploading]   = useState(false);
+    const [deleting, setDeleting]     = useState(false);
+
+    const initials = user?.name
+        ? user.name
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase()
+        : "U";
+
+    const currentAvatar = user?.avatar_url || user?.avatar || null;
+
+    const handleFile = (f) => {
+        if (!f) return;
+        if (!["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(f.type)) {
+            showToast("error", "Format foto harus JPG, PNG, JPEG, atau WEBP.");
+            return;
+        }
+        if (f.size > 2 * 1024 * 1024) {
+            showToast("error", "Ukuran foto maksimal 2 MB.");
+            return;
+        }
+        setFile(f);
+        const reader = new FileReader();
+        reader.onload = (e) => setPreview(e.target.result);
+        reader.readAsDataURL(f);
+    };
+
+    const handleUpload = () => {
+        if (!file) return;
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("foto", file);
+
+        router.post("/profile/photo", formData, {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                setFile(null);
+                setPreview(null);
+                showToast("success", "Foto profil berhasil diperbarui.");
+            },
+            onError: (errs) => {
+                showToast("error", errs?.foto || "Gagal mengunggah foto profil.");
+            },
+            onFinish: () => setUploading(false),
+        });
+    };
+
+    const handleDelete = async () => {
+        const result = await showConfirm({
+            title: "Hapus Foto Profil?",
+            text: "Foto profil Anda akan dihapus dan tampilan avatar akan kembali menggunakan inisial nama akun.",
+            icon: "warning",
+            confirmButtonText: "Ya, Hapus",
+            cancelButtonText: "Batal",
+            confirmButtonColor: "#801720",
+        });
+        if (!result.isConfirmed) return;
+
+        setDeleting(true);
+        router.delete("/profile/photo", {
+            preserveScroll: true,
+            onSuccess: () => {
+                setFile(null);
+                setPreview(null);
+                showToast("success", "Foto profil berhasil dihapus.");
+            },
+            onError: () => {
+                showToast("error", "Gagal menghapus foto profil.");
+            },
+            onFinish: () => setDeleting(false),
+        });
+    };
+
+    return (
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-7 space-y-5">
+            <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#801720]/10 text-[#801720] flex items-center justify-center flex-shrink-0">
+                        <Camera className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h2 className="text-base font-extrabold text-slate-800">Foto Profil</h2>
+                        <p className="text-xs text-slate-400 font-medium">Unggah atau perbarui foto profil akun Anda.</p>
+                    </div>
+                </div>
+                {currentAvatar && !preview && (
+                    <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors border border-red-200 cursor-pointer disabled:opacity-50"
+                        title="Hapus foto profil"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{deleting ? "Menghapus..." : "Hapus Foto"}</span>
+                    </button>
+                )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+                {/* Current or Preview Avatar */}
+                <div className="relative flex-shrink-0">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-slate-100 shadow-md bg-slate-100 flex items-center justify-center">
+                        {preview ? (
+                            <img src={preview} alt="Pratinjau Baru" className="w-full h-full object-cover" />
+                        ) : currentAvatar ? (
+                            <img src={currentAvatar} alt={user?.name} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-[#E8EDF5] text-[#475569] flex items-center justify-center font-black text-2xl sm:text-3xl">
+                                {initials}
+                            </div>
+                        )}
+                    </div>
+                    {preview && (
+                        <div className="absolute -top-1.5 -right-1.5 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow-xs">
+                            Pratinjau
+                        </div>
+                    )}
+                </div>
+
+                {/* Upload Action / Dropzone */}
+                <div className="flex-1 w-full space-y-3">
+                    <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                        onDragLeave={() => setDragOver(false)}
+                        onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files?.[0]); }}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 ${
+                            dragOver
+                                ? "border-[#801720] bg-[#801720]/5 scale-[1.01]"
+                                : preview
+                                ? "border-emerald-400 bg-emerald-50/40"
+                                : "border-slate-200 hover:border-[#801720]/40 hover:bg-slate-50/70"
+                        }`}
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            className="hidden"
+                            onChange={(e) => handleFile(e.target.files?.[0])}
+                        />
+                        <div className="flex flex-col items-center justify-center gap-1.5">
+                            <Upload className="w-5 h-5 text-slate-400" />
+                            <p className="text-xs font-bold text-slate-700">
+                                {preview ? "Ganti foto terpilih" : "Pilih atau seret foto ke sini"}
+                            </p>
+                            <p className="text-[11px] text-slate-400">PNG, JPG, JPEG, atau WEBP (Maks. 2 MB)</p>
+                        </div>
+                    </div>
+
+                    {preview && (
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                                type="button"
+                                onClick={() => { setFile(null); setPreview(null); }}
+                                className="px-3.5 py-2 text-xs text-slate-600 border border-slate-300 rounded-xl hover:bg-slate-100 font-semibold transition-all cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleUpload}
+                                disabled={uploading}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-60 transition-all shadow-sm cursor-pointer"
+                            >
+                                <Upload className="w-3.5 h-3.5" />
+                                {uploading ? "Menyimpan..." : "Simpan Foto Profil"}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -468,11 +658,6 @@ function SectionTandaTangan({ dosen, isSuperAdmin, kaprodi, user }) {
                         </p>
                     </div>
                 </div>
-                {isSuperAdmin && (
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
-                        PENGATURAN BAP
-                    </span>
-                )}
             </div>
 
             {/* If Super Admin, allow editing Ka. Prodi Name */}
@@ -701,15 +886,32 @@ export default function ProfileIndex({ user, dosen, kaprodi }) {
                 )}
 
                 {/* Header Banner Card */}
-                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 relative overflow-hidden">
-                    <div className="absolute right-0 top-0 w-96 h-96 bg-[#801720]/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-                    
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+                <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                         <div className="flex items-center gap-4 sm:gap-5">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#801720] text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#801720]/20 border-2 border-white">
-                                <span className="text-2xl sm:text-3xl font-black tracking-wider">
-                                    {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
-                                </span>
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0 shadow-lg shadow-slate-900/10 border-2 border-white">
+                                {user?.avatar_url || user?.avatar ? (
+                                    <img
+                                        src={user.avatar_url || user.avatar}
+                                        alt={user.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-[#801720] text-white flex items-center justify-center">
+                                        <span className="text-2xl sm:text-3xl font-black tracking-wider">
+                                            {user?.name
+                                                ? user.name
+                                                      .trim()
+                                                      .split(/\s+/)
+                                                      .filter(Boolean)
+                                                      .slice(0, 2)
+                                                      .map((n) => n[0])
+                                                      .join("")
+                                                      .toUpperCase()
+                                                : "U"}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -749,8 +951,9 @@ export default function ProfileIndex({ user, dosen, kaprodi }) {
                         <SectionPassword mustChange={mustChange} />
                     </div>
 
-                    {/* Right Column (5 cols): Tanda Tangan Digital & Info Hak Akses */}
+                    {/* Right Column (5 cols): Foto Profil, Tanda Tangan Digital & Info Hak Akses */}
                     <div className="lg:col-span-5 space-y-6">
+                        <SectionFotoProfil user={user} />
                         <SectionTandaTangan dosen={dosen} isSuperAdmin={isSuperAdmin} kaprodi={kaprodi} user={user} />
                         <SectionHakAkses user={user} isDosen={isDosen} />
                     </div>

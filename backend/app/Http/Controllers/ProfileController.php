@@ -47,6 +47,10 @@ class ProfileController extends Controller
                 'id'                            => $user->id,
                 'name'                          => $user->name,
                 'email'                         => $user->email,
+                'avatar'                        => $user->avatar,
+                'avatar_url'                    => $user->avatar
+                    ? asset('storage/' . $user->avatar) . '?v=' . (Storage::disk('public')->exists($user->avatar) ? Storage::disk('public')->lastModified($user->avatar) : time())
+                    : null,
                 'role'                          => $user->role,
                 'status'                        => $user->status,
                 'must_change_password'          => (bool) $user->must_change_password,
@@ -236,6 +240,54 @@ class ProfileController extends Controller
         $dosen->update(['tanda_tangan' => null]);
 
         return back()->with('success', 'Tanda tangan berhasil dihapus.');
+    }
+
+    /**
+     * Upload / update user profile photo.
+     */
+    public function updatePhoto(Request $request)
+    {
+        $request->validate([
+            'foto' => 'required|image|mimes:png,jpg,jpeg,webp|max:2048',
+        ], [
+            'foto.required' => 'File foto profil wajib dipilih.',
+            'foto.image'    => 'File harus berupa gambar.',
+            'foto.mimes'    => 'Format file harus PNG, JPG, JPEG, atau WEBP.',
+            'foto.max'      => 'Ukuran file maksimal 2 MB.',
+        ]);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        // Delete old avatar if exists
+        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        $ext = $request->file('foto')->getClientOriginalExtension() ?: 'jpg';
+        $filename = 'avatar_' . $user->id . '_' . time() . '.' . $ext;
+        $path = $request->file('foto')->storeAs('avatars', $filename, 'public');
+
+        $user->update(['avatar' => $path]);
+
+        return back()->with('success', 'Foto profil berhasil diperbarui.');
+    }
+
+    /**
+     * Delete user profile photo.
+     */
+    public function deletePhoto()
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        $user->update(['avatar' => null]);
+
+        return back()->with('success', 'Foto profil berhasil dihapus.');
     }
 }
 

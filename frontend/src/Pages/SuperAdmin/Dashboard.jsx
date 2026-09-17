@@ -38,7 +38,7 @@ import {
     Legend as ChartLegend
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import NotificationDropdown from '@/Components/NotificationDropdown';
+import ProfileDropdown from '@/Components/ProfileDropdown';
 import StatCard from '@/Components/StatCard';
 import { relativeTime } from '@/Utils/date';
 
@@ -516,7 +516,6 @@ export default function Dashboard({
                     </div>
 
                     <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                        <NotificationDropdown align="right" />
                         <button
                             type="button"
                             onClick={() => setShowReportModal(true)}
@@ -525,6 +524,7 @@ export default function Dashboard({
                             <FileDown className="w-4 h-4" />
                             <span>Buat Laporan</span>
                         </button>
+                        <ProfileDropdown align="right" />
                     </div>
                 </div>
 

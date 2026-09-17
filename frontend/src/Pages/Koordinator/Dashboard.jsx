@@ -7,6 +7,7 @@ import {
     Users, Target, Activity as ActivityIcon, CalendarClock, Bell, ShieldCheck, Calendar,
     Clock, XCircle, Sparkles, Check, FileCheck, Layers, FileSpreadsheet
 } from 'lucide-react';
+import ProfileDropdown from '@/Components/ProfileDropdown';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import StatCard from '@/Components/StatCard';
 
@@ -116,6 +117,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                             </div>
                         )}
                         <NotificationDropdown align="right" />
+                        <ProfileDropdown align="right" />
                     </div>
                 </div>
 

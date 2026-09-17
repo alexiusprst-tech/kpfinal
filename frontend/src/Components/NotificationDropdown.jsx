@@ -103,7 +103,7 @@ export default function NotificationDropdown({ align = 'right', className = '' }
             >
                 <Bell className="w-5 h-5 text-slate-700" />
                 {notifCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[#801720] text-white rounded-full text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow-xs animate-pulse">
+                    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[#801720] text-white rounded-full text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow-xs">
                         {notifCount > 99 ? '99+' : notifCount}
                     </span>
                 )}

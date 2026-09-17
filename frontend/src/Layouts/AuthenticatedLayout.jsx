@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { showToast, showConfirm } from "@/Utils/sweetalert";
 import NotificationDropdown from "@/Components/NotificationDropdown";
+import ProfileDropdown from "@/Components/ProfileDropdown";
 import MustChangePasswordModal from "@/Components/MustChangePasswordModal";
 
 function getNavSections(user, pathname = "") {
@@ -182,14 +183,14 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
         }
     }, [flash?.success, flash?.error, flash?.warning, flash?.info]);
 
+    // Polling notifikasi setiap 30 detik untuk non-admin (Koordinator & Verifikator)
     useEffect(() => {
+        if (!user || user.role === 'SUPER_ADMIN') return;
         const interval = setInterval(() => {
-            if (auth?.user) {
-                router.reload({ only: ["notifications"], preserveScroll: true, preserveState: true });
-            }
-        }, 15000);
+            router.reload({ only: ['notifications'] });
+        }, 30000);
         return () => clearInterval(interval);
-    }, [auth?.user]);
+    }, [user?.id, user?.role]);
 
     const handleLogout = async (e) => {
         e.preventDefault();
@@ -219,7 +220,10 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
                     <span className="font-extrabold text-sm text-[#801720] tracking-tight">Verifikasi Soal</span>
                 </Link>
                 <div className="flex items-center gap-2">
-                    <NotificationDropdown align="right" />
+                    {user?.role !== "SUPER_ADMIN" && (
+                        <NotificationDropdown align="right" />
+                    )}
+                    <ProfileDropdown align="right" compact={true} />
                     <button
                         type="button"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -289,73 +293,7 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
                         </nav>
                     </div>
 
-                    {/* Bottom */}
-                    <div className="pt-5 border-t border-slate-100 space-y-2 mt-6">
-                        {!sidebarCollapsed && (
-                            <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/80 text-xs">
-                                <div className="text-[10px] uppercase font-extrabold text-slate-500 mb-1 tracking-wider">Periode Aktif</div>
-                                <div className="flex items-center gap-2 font-extrabold text-slate-800 text-sm">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                                    <span className="truncate">{activePeriod?.nama || "Tidak ada periode"}</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {sidebarCollapsed ? (
-                            <div className="flex flex-col items-center gap-2">
-                                <Link
-                                    href="/profile"
-                                    className={`w-9 h-9 rounded-full ${isPathActive('/profile') ? 'bg-[#801720] text-white shadow-md shadow-[#801720]/25 ring-2 ring-[#801720]' : 'bg-[#801720]/10 text-[#801720] hover:bg-[#801720]/20'} font-black text-sm flex items-center justify-center border border-[#801720]/20 transition-all group relative cursor-pointer`}
-                                    title={`Profil Saya: ${user?.name}`}
-                                >
-                                    {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
-                                    <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-lg">
-                                        Profil Saya
-                                    </span>
-                                </Link>
-                                <button
-                                    type="button"
-                                    onClick={handleLogout}
-                                    className="p-2 rounded-xl bg-slate-50 hover:bg-red-50 hover:text-red-600 text-slate-500 transition-all border border-slate-200/80 cursor-pointer"
-                                    title="Keluar"
-                                    aria-label="Keluar dari sistem"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ) : (
-                            <div className={`flex items-center justify-between p-2 rounded-2xl ${isPathActive('/profile') ? 'bg-[#801720]/10 border-[#801720]/30 shadow-xs' : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200/80'} transition-all border gap-2`}>
-                                <Link
-                                    href="/profile"
-                                    className="flex items-center gap-2.5 overflow-hidden flex-1 min-w-0 group py-0.5 px-1 rounded-xl transition-all cursor-pointer"
-                                    title="Buka Profil Saya"
-                                >
-                                    <div className={`w-8 h-8 rounded-full ${isPathActive('/profile') ? 'bg-[#801720] text-white' : 'bg-[#801720]/10 text-[#801720] group-hover:bg-[#801720] group-hover:text-white'} font-black text-sm flex items-center justify-center flex-shrink-0 border border-[#801720]/20 transition-colors`}>
-                                        {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
-                                    </div>
-                                    <div className="overflow-hidden min-w-0 flex-1">
-                                        <p className={`text-xs font-extrabold ${isPathActive('/profile') ? 'text-[#801720]' : 'text-slate-800 group-hover:text-[#801720]'} truncate leading-tight transition-colors`}>
-                                            {user?.name || "Pengguna"}
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 truncate font-semibold">
-                                            {user?.has_dual_role
-                                                ? (pathname.startsWith("/verifikator") ? "Dosen Verifikator" : "Koordinator MK")
-                                                : (user?.role || "Pengguna")}
-                                        </p>
-                                    </div>
-                                </Link>
-                                <button
-                                    type="button"
-                                    onClick={handleLogout}
-                                    className="p-1.5 rounded-xl bg-slate-100 hover:bg-red-600 hover:text-white text-slate-500 transition-all flex-shrink-0 cursor-pointer"
-                                    title="Keluar"
-                                    aria-label="Keluar dari sistem"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    {/* Bottom sidebar clean - profile moved to top right */}
                 </div>
             </aside>
 

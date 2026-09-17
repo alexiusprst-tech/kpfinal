@@ -81,6 +81,9 @@ class HandleInertiaRequests extends Middleware
                     'id'             => $user->id,
                     'name'           => $user->name,
                     'email'          => $user->email,
+                    'avatar'         => $user->avatar
+                        ? asset('storage/' . $user->avatar) . '?v=' . (\Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar) ? \Illuminate\Support\Facades\Storage::disk('public')->lastModified($user->avatar) : time())
+                        : null,
                     'role'           => $user->role,
                     'is_koordinator'    => (bool)$hasActiveKoor,
                     'is_verifikator'    => (bool)$hasActiveVerif,
@@ -101,7 +104,7 @@ class HandleInertiaRequests extends Middleware
                 'deadline_upload' => $activePeriod->deadline_upload,
                 'status'          => $activePeriod->status,
             ] : null,
-            'notifications' => $request->user() ? [
+            'notifications' => ($request->user() && $request->user()->role !== 'SUPER_ADMIN') ? [
                 'list' => \App\Models\Notification::where('user_id', $request->user()->id)
                     ->orderBy('created_at', 'desc')
                     ->take(10)
