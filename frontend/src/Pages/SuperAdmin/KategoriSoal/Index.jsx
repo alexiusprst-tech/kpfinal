@@ -1,20 +1,29 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    Plus, Pencil, Trash2, AlertTriangle, X, FolderKanban, Search, CheckCircle2,
-    PauseCircle, FileText, Eye, ChevronLeft, ChevronRight, History, Calendar,
+    Plus,
+    Pencil,
+    Trash2,
+    AlertTriangle,
+    X,
+    FolderKanban,
+    Search,
+    CheckCircle2,
+    PauseCircle,
+    FileText,
+    Eye,
+    ChevronLeft,
+    ChevronRight,
+    History
 } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showConfirm } from '@/Utils/sweetalert';
 import { formatDate, formatDateTime, relativeTime } from '@/Utils/date';
-
-
 
 function Modal({ open, onClose, title, children }) {
     if (!open) return null;
@@ -38,20 +47,20 @@ function KategoriSoalForm({ form, setForm, onSubmit, processing, editItem }) {
             <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Nama Kategori <span className="text-red-500">*</span></label>
                 <input type="text" value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none"
                     placeholder="Contoh: Pilihan Ganda" required />
             </div>
             <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Deskripsi</label>
                 <textarea rows={2} value={form.deskripsi} onChange={e => setForm(f => ({ ...f, deskripsi: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none resize-none"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none resize-none"
                     placeholder="Keterangan singkat..." />
             </div>
             {editItem && (
                 <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Status</label>
                     <select value={form.status || 'ACTIVE'} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none">
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none">
                         <option value="ACTIVE">Aktif</option>
                         <option value="INACTIVE">Nonaktif</option>
                     </select>
@@ -59,7 +68,7 @@ function KategoriSoalForm({ form, setForm, onSubmit, processing, editItem }) {
             )}
             <div className="flex justify-end pt-2">
                 <button type="submit" disabled={processing}
-                    className="px-5 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-60 cursor-pointer">
+                    className="px-5 py-2.5 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] disabled:opacity-60 cursor-pointer">
                     {processing ? 'Menyimpan...' : 'Simpan'}
                 </button>
             </div>
@@ -153,7 +162,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                 : `Nonaktifkan kategori "${kategori.nama}"?`,
             icon: 'question',
             confirmButtonText: isActivating ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan',
-            confirmButtonColor: isActivating ? '#059669' : '#801720',
+            confirmButtonColor: isActivating ? '#059669' : '#9E1B28',
         });
         if (result.isConfirmed) {
             router.put(`/superadmin/kategori-soal/${kategori.id}`, {
@@ -162,20 +171,17 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
         }
     };
 
-
     const openEdit = (item) => {
         setForm({ nama: item.nama, deskripsi: item.deskripsi || '', status: item.status });
         setEditItem(item);
     };
 
-
-
     const usage = selectedKategori?.usage;
     const doughnutData = usage && {
-        labels: ['Disetujui', 'Dalam Review', 'Revisi', 'Ditolak'],
+        labels: ['Disetujui', 'Dalam Review', 'Revisi'],
         datasets: [{
-            data: [usage.approved, usage.dalam_review, usage.revisi, usage.ditolak],
-            backgroundColor: ['#9B1724', '#F97316', '#EAB308', '#94A3B8'],
+            data: [usage.approved, usage.dalam_review, usage.revisi],
+            backgroundColor: ['#9B1724', '#F97316', '#EAB308'],
             borderWidth: 0,
         }],
     };
@@ -183,12 +189,11 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
     return (
         <AuthenticatedLayout title="Kategori Soal">
             <Head title="Kategori Soal" />
-            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 <div>
                     <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
-                        <FolderKanban className="w-6 h-6 text-[#801720]" /> Kategori Soal
+                        <FolderKanban className="w-6 h-6 text-[#9E1B28]" /> Kategori Soal
                     </h1>
                     <p className="text-sm text-gray-500 mt-0.5">Kelola kategori soal yang digunakan untuk klasifikasi jenis soal.</p>
                 </div>
@@ -197,7 +202,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                     {/* LEFT: List */}
                     <div className="space-y-5 min-w-0">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            <StatCard icon={FolderKanban} iconBg="bg-red-50" iconColor="text-[#801720]" value={stats.total} label="Total Kategori" sublabel="Semua kategori" />
+                            <StatCard icon={FolderKanban} iconBg="bg-red-50" iconColor="text-[#9E1B28]" value={stats.total} label="Total Kategori" sublabel="Semua kategori" />
                             <StatCard icon={CheckCircle2} iconBg="bg-emerald-50" iconColor="text-emerald-600" value={stats.aktif} label="Aktif" sublabel="Kategori aktif" />
                             <StatCard icon={PauseCircle} iconBg="bg-orange-50" iconColor="text-orange-500" value={stats.nonaktif} label="Nonaktif" sublabel="Kategori nonaktif" />
                             <StatCard icon={FileText} iconBg="bg-blue-50" iconColor="text-blue-500" value={stats.digunakan} label="Digunakan" sublabel="Digunakan pada soal" />
@@ -211,24 +216,24 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                                         value={search}
                                         onChange={e => setSearch(e.target.value)}
                                         placeholder="Cari kategori soal..."
-                                        className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 bg-white"
+                                        className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 bg-white"
                                     />
                                 </form>
                                 <select value={filters?.status || ''} onChange={e => applyFilters({ status: e.target.value })}
-                                    className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20">
+                                    className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20">
                                     <option value="">Semua Status</option>
                                     <option value="ACTIVE">Aktif</option>
                                     <option value="INACTIVE">Nonaktif</option>
                                 </select>
                                 <select value={filters?.sort || 'terbaru'} onChange={e => applyFilters({ sort: e.target.value })}
-                                    className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20">
+                                    className="text-sm border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20">
                                     <option value="terbaru">Urutkan: Terbaru</option>
                                     <option value="nama">Urutkan: Nama</option>
                                     <option value="jumlah">Urutkan: Jumlah Soal</option>
                                 </select>
                             </div>
                             <button onClick={() => { setForm({ nama: '', deskripsi: '', status: 'ACTIVE' }); setShowAdd(true); }}
-                                className="flex items-center gap-1.5 px-4 py-2.5 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] transition-all shadow-sm">
+                                className="flex items-center gap-1.5 px-4 py-2.5 bg-[#9E1B28] text-white rounded-xl text-xs font-semibold hover:bg-[#801720] transition-all shadow-sm">
                                 <Plus className="w-3.5 h-3.5" /> Tambah Kategori
                             </button>
                         </div>
@@ -281,7 +286,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                                         {list.links?.map((link, i) => (
                                             <button key={i} disabled={!link.url}
                                                 onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                                                className={`min-w-[28px] h-7 px-1.5 rounded-lg font-semibold flex items-center justify-center ${link.active ? 'bg-[#801720] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}>
+                                                className={`min-w-[28px] h-7 px-1.5 rounded-lg font-semibold flex items-center justify-center ${link.active ? 'bg-[#9E1B28] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}>
                                                 {link.label.includes('Previous') ? <ChevronLeft className="w-3.5 h-3.5" /> : link.label.includes('Next') ? <ChevronRight className="w-3.5 h-3.5" /> : link.label}
                                             </button>
                                         ))}
@@ -310,8 +315,8 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                                         <Link href="/superadmin/kategori-soal" className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></Link>
                                     </div>
                                     <div className="flex items-start gap-3">
-                                        <div className="w-11 h-11 rounded-xl bg-[#801720]/10 flex items-center justify-center flex-shrink-0">
-                                            <FolderKanban className="w-5 h-5 text-[#801720]" />
+                                        <div className="w-11 h-11 rounded-xl bg-[#9E1B28]/10 flex items-center justify-center flex-shrink-0">
+                                            <FolderKanban className="w-5 h-5 text-[#9E1B28]" />
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-[10px] font-bold text-gray-400 uppercase">Nama Kategori</p>
@@ -364,7 +369,6 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                                                     ['Disetujui', selectedKategori.usage.approved, '#9B1724'],
                                                     ['Dalam Review', selectedKategori.usage.dalam_review, '#F97316'],
                                                     ['Revisi', selectedKategori.usage.revisi, '#EAB308'],
-                                                    ['Ditolak', selectedKategori.usage.ditolak, '#94A3B8'],
                                                 ].map(([label, value, color]) => (
                                                     <div key={label} className="flex items-center gap-2">
                                                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
@@ -387,7 +391,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                                         <div className="space-y-3 max-h-52 overflow-y-auto">
                                             {selectedKategori.riwayat.map(log => (
                                                 <div key={log.id} className="flex items-start gap-2.5">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-[#9E1B28] mt-1.5 flex-shrink-0" />
                                                     <div className="min-w-0">
                                                         <p className="text-xs text-gray-700 font-semibold">{log.description}</p>
                                                         <p className="text-[10px] text-gray-400">{log.user} · {relativeTime(log.created_at)}</p>
@@ -438,7 +442,7 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
                 <div className="flex items-start gap-3 mb-5">
                     <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0"><AlertTriangle className="w-5 h-5 text-red-500" /></div>
                     <div>
-                        <p className="text-sm font-semibold text-gray-800">Hapus <span className="text-[#801720]">"{deleteItem?.nama}"</span>?</p>
+                        <p className="text-sm font-semibold text-gray-800">Hapus <span className="text-[#9E1B28]">"{deleteItem?.nama}"</span>?</p>
                         <p className="text-xs text-gray-500 mt-1">Tindakan ini tidak dapat dibatalkan.</p>
                     </div>
                 </div>

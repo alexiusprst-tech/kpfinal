@@ -27,7 +27,6 @@ class DashboardController extends Controller
         'CHANGE_PASSWORD'             => 'mengubah kata sandi akun',
         'VERIFIKASI_APPROVED'         => 'menyetujui soal',
         'VERIFIKASI_REVISION'         => 'meminta revisi atas soal',
-        'VERIFIKASI_REJECTED'         => 'menolak soal',
         'BERITA_ACARA_CREATED'        => 'mengunduh berita acara verifikasi',
         'BERITA_ACARA_ALL_DOWNLOADED' => 'mengunduh semua berita acara',
         'BERITA_ACARA_SOAL_DOWNLOADED'=> 'mengunduh berita acara soal',
@@ -102,7 +101,6 @@ class DashboardController extends Controller
             'in_review'    => $inReviewCount,
             'revisi'       => $soalList->where('status', Soal::STATUS_REVISION)->count(),
             'approved'     => $soalList->where('status', Soal::STATUS_APPROVED)->count(),
-            'rejected'     => $soalList->where('status', Soal::STATUS_REJECTED)->count(),
         ];
     }
 
@@ -133,7 +131,6 @@ class DashboardController extends Controller
                 'approved'   => $mkSoal->where('status', Soal::STATUS_APPROVED)->count(),
                 'revision'   => $mkSoal->where('status', Soal::STATUS_REVISION)->count(),
                 'in_review'  => $mkSoal->whereIn('status', [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED])->count(),
-                'rejected'   => $mkSoal->where('status', Soal::STATUS_REJECTED)->count(),
                 'plo'        => $a->mataKuliah?->plo ? $a->mataKuliah->plo->map(fn ($p) => [
                     'id' => $p->id,
                     'kode_plo' => $p->kode_plo,
@@ -154,7 +151,7 @@ class DashboardController extends Controller
 
         return $soalList
             ->filter(function ($soal) use ($staleThreshold) {
-                if (in_array($soal->status, [Soal::STATUS_REVISION, Soal::STATUS_REJECTED])) {
+                if ($soal->status === Soal::STATUS_REVISION) {
                     return true;
                 }
                 if (in_array($soal->status, self::PENDING_STATUSES) && $soal->updated_at->lt($staleThreshold)) {
@@ -164,7 +161,6 @@ class DashboardController extends Controller
             })
             ->sortBy(function ($soal) {
                 $priority = match ($soal->status) {
-                    Soal::STATUS_REJECTED => 0,
                     Soal::STATUS_REVISION => 1,
                     default => 2,
                 };

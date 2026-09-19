@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
-    BookOpen, Trash2, ChevronRight, ChevronDown, Info, 
-    ArrowLeft, Check, AlertCircle, Settings, Search, Save,
-    Plus, Activity, Target, HelpCircle
+import {
+    BookOpen,
+    Trash2,
+    ChevronRight,
+    Info,
+    ArrowLeft,
+    Search,
+    Save
 } from 'lucide-react';
 
 export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] }) {
@@ -115,8 +119,6 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
         return selectedClosDetails.map((c, i) => i === 0 ? base + remainder : base);
     })() : [];
 
-
-
     return (
         <AuthenticatedLayout title="Pemetaan PLO & CLO">
             <Head title="Pemetaan PLO & CLO Mata Kuliah" />
@@ -132,11 +134,20 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
 
             {/* Heading section */}
             <div className="flex items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-[#1E293B] tracking-tight">Pemetaan PLO & CLO - Mata Kuliah</h1>
-                    <p className="text-xs sm:text-sm text-[#64748B] font-medium mt-0.5">
-                        Kelola pemetaan Capaian Pembelajaran Lulusan (PLO) dan Capaian Pembelajaran Mata Kuliah (CLO) untuk setiap mata kuliah.
-                    </p>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href="/superadmin/mata-kuliah"
+                        className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer shrink-0"
+                        title="Kembali ke Daftar Mata Kuliah"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-extrabold text-[#1E293B] tracking-tight">Pemetaan PLO & CLO - Mata Kuliah</h1>
+                        <p className="text-xs sm:text-sm text-[#64748B] font-medium mt-0.5">
+                            Kelola pemetaan Capaian Pembelajaran Lulusan (PLO) dan Capaian Pembelajaran Mata Kuliah (CLO) untuk setiap mata kuliah.
+                        </p>
+                    </div>
                 </div>
                 <a
                     href="/docs/buku-kurikulum-2024.pdf"
@@ -145,7 +156,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                     className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 shadow-xs transition-all cursor-pointer"
                     title="Buka Buku Kurikulum 2024 (Panduan Pemetaan)"
                 >
-                    <BookOpen className="w-4 h-4 text-[#801720]" />
+                    <BookOpen className="w-4 h-4 text-[#9E1B28]" />
                     <span>Panduan Pemetaan</span>
                 </a>
             </div>
@@ -159,7 +170,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                         <select
                             value={mataKuliah.id}
                             onChange={(e) => handleCourseChange(e.target.value)}
-                            className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 hover:border-slate-355 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-[#801720] cursor-pointer"
+                            className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 hover:border-slate-355 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-[#9E1B28] cursor-pointer"
                         >
                             {allMataKuliah.map((mk) => (
                                 <option key={mk.id} value={mk.id}>
@@ -200,7 +211,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                         <button
                             onClick={handleSavePemetaan}
                             disabled={isSaving}
-                            className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1724] text-white rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer disabled:opacity-50"
+                            className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#9E1B28] hover:bg-[#9B1724] text-white rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer disabled:opacity-50"
                         >
                             <Save className="w-4 h-4" />
                             <span>{isSaving ? 'Menyimpan...' : 'Simpan Pemetaan'}</span>
@@ -215,7 +226,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                     onClick={() => setActiveTab('plo')}
                     className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors cursor-pointer relative ${
                         activeTab === 'plo'
-                            ? 'border-[#801720] text-[#801720]'
+                            ? 'border-[#9E1B28] text-[#9E1B28]'
                             : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                 >
@@ -225,7 +236,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                     onClick={() => setActiveTab('clo')}
                     className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors cursor-pointer relative ${
                         activeTab === 'clo'
-                            ? 'border-[#801720] text-[#801720]'
+                            ? 'border-[#9E1B28] text-[#9E1B28]'
                             : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                 >
@@ -253,7 +264,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                                 value={ploSearch}
                                 onChange={(e) => setPloSearch(e.target.value)}
                                 placeholder="Cari PLO..."
-                                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#801720]"
+                                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#9E1B28]"
                             />
                         </div>
 
@@ -268,7 +279,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                                             onClick={() => togglePlo(plo.id)}
                                             className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
                                                 isSelected
-                                                    ? 'border-[#801720] bg-[#801720]/5 shadow-xs'
+                                                    ? 'border-[#9E1B28] bg-[#9E1B28]/5 shadow-xs'
                                                     : 'border-slate-200 hover:border-slate-300'
                                             }`}
                                         >
@@ -276,11 +287,11 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                                                 type="checkbox"
                                                 checked={isSelected}
                                                 readOnly
-                                                className="mt-0.5 w-4 h-4 text-[#801720] border-slate-350 rounded focus:ring-[#801720]/20 cursor-pointer accent-[#801720]"
+                                                className="mt-0.5 w-4 h-4 text-[#9E1B28] border-slate-350 rounded focus:ring-[#9E1B28]/20 cursor-pointer accent-[#9E1B28]"
                                             />
                                             <div className="flex-1 flex items-start gap-2.5">
                                                 <span className={`px-2 py-0.5 rounded font-extrabold text-[10px] flex-shrink-0 ${
-                                                    isSelected ? 'bg-[#801720] text-white' : 'bg-slate-100 text-slate-650'
+                                                    isSelected ? 'bg-[#9E1B28] text-white' : 'bg-slate-100 text-slate-650'
                                                  }`}>
                                                     {plo.kode_plo}
                                                 </span>
@@ -321,7 +332,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                                         selectedPlosDetails.map((plo) => (
                                             <tr key={plo.id} className="hover:bg-slate-50/40 transition-colors">
                                                 <td className="py-3 pr-2 align-top">
-                                                    <span className="px-2 py-0.5 rounded bg-[#801720]/5 text-[#801720] border border-[#801720]/10 font-bold text-[10px]">
+                                                    <span className="px-2 py-0.5 rounded bg-[#9E1B28]/5 text-[#9E1B28] border border-[#9E1B28]/10 font-bold text-[10px]">
                                                         {plo.kode_plo}
                                                     </span>
                                                 </td>
@@ -372,7 +383,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                                 value={cloSearch}
                                 onChange={(e) => setCloSearch(e.target.value)}
                                 placeholder="Cari CLO..."
-                                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#801720]"
+                                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#9E1B28]"
                             />
                         </div>
 
@@ -390,7 +401,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                                             onClick={() => toggleClo(clo.id)}
                                             className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
                                                 isSelected
-                                                    ? 'border-[#801720] bg-[#801720]/5 shadow-xs'
+                                                    ? 'border-[#9E1B28] bg-[#9E1B28]/5 shadow-xs'
                                                     : 'border-slate-200 hover:border-slate-300'
                                             }`}
                                         >
@@ -398,12 +409,12 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
                                                 type="checkbox"
                                                 checked={isSelected}
                                                 readOnly
-                                                className="mt-0.5 w-4 h-4 text-[#801720] border-slate-355 rounded focus:ring-[#801720]/20 cursor-pointer accent-[#801720]"
+                                                className="mt-0.5 w-4 h-4 text-[#9E1B28] border-slate-355 rounded focus:ring-[#9E1B28]/20 cursor-pointer accent-[#9E1B28]"
                                             />
                                             <div className="flex-1 flex items-start gap-2.5">
                                                 <div className="flex flex-col gap-1.5 flex-shrink-0">
                                                     <span className={`px-2 py-0.5 rounded font-extrabold text-[10px] self-start ${
-                                                        isSelected ? 'bg-[#801720] text-white' : 'bg-slate-100 text-slate-650'
+                                                        isSelected ? 'bg-[#9E1B28] text-white' : 'bg-slate-100 text-slate-650'
                                                     }`}>
                                                         {clo.kode_clo}
                                                     </span>
@@ -510,7 +521,7 @@ export default function Show({ mataKuliah, allPlo, allClo, allMataKuliah = [] })
 
             {/* Catatan Pemetaan bottom info box */}
             <div className="mt-6 bg-slate-50 border border-slate-200/60 p-4 rounded-2xl flex items-start gap-3 shadow-xs">
-                <BookOpen className="w-5 h-5 text-[#801720] mt-0.5 flex-shrink-0" />
+                <BookOpen className="w-5 h-5 text-[#9E1B28] mt-0.5 flex-shrink-0" />
                 <div className="space-y-0.5">
                     <h4 className="text-xs font-extrabold text-slate-800">Catatan Pemetaan</h4>
                     <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">

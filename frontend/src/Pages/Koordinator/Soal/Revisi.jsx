@@ -1,8 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    ArrowLeft, UploadCloud, FileText, X, AlertTriangle, User, CheckCircle2, Send, MessageSquare, Loader2, Eye
+    ArrowLeft,
+    UploadCloud,
+    FileText,
+    AlertTriangle,
+    MessageSquare,
+    Loader2,
+    Eye
 } from 'lucide-react';
 
 const ALLOWED_EXT = ['pdf', 'doc', 'docx'];
@@ -14,9 +20,7 @@ function formatSize(bytes) {
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
 
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
-
+import { showAlert, showConfirm } from '@/Utils/sweetalert';
 
 export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) {
     const { flash } = usePage().props;
@@ -135,13 +139,17 @@ function resolveCloNote(val) {
     return (
         <AuthenticatedLayout title="Perbaiki Soal">
             <Head title="Perbaiki Soal" />
-            <FlashAlert flash={flash} />
 
             <div className={`mx-auto space-y-6 transition-all duration-300 ${step === 'preview' ? 'max-w-4xl' : 'max-w-2xl'}`}>
-                <Link href={`/koordinator/soal/${soal.id}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720]">
-                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali
-                </Link>
+                <div>
+                    <Link
+                        href={`/koordinator/soal/${soal.id}`}
+                        className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer inline-flex items-center shrink-0"
+                        title="Kembali"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                </div>
 
                 {/* Revision reason */}
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-3">
@@ -175,7 +183,7 @@ function resolveCloNote(val) {
                                     return (
                                         <div key={idx} className="flex flex-col gap-1 text-xs bg-white rounded-xl p-3 border border-amber-200/70">
                                             <div className="flex items-center gap-2">
-                                                <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px] whitespace-nowrap flex-shrink-0">
+                                                <span className="px-2 py-0.5 rounded bg-red-100 text-[#9E1B28] font-extrabold text-[10px] whitespace-nowrap flex-shrink-0">
                                                     {kode}
                                                 </span>
                                                 {resolved?.no_soal && (
@@ -221,7 +229,7 @@ function resolveCloNote(val) {
                                     onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files?.[0]); }}
                                     onClick={() => fileInputRef.current?.click()}
                                     className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${
-                                        dragOver ? 'border-[#801720] bg-red-50/40' : data.file ? 'border-emerald-400 bg-emerald-50/30' : 'border-gray-300 hover:border-[#801720]/40'
+                                        dragOver ? 'border-[#9E1B28] bg-red-50/40' : data.file ? 'border-emerald-400 bg-emerald-50/30' : 'border-gray-300 hover:border-[#9E1B28]/40'
                                     }`}
                                 >
                                     <input
@@ -258,7 +266,7 @@ function resolveCloNote(val) {
                                     value={data.catatan}
                                     onChange={(e) => setData('catatan', e.target.value)}
                                     placeholder="Jelaskan perubahan atau perbaikan yang telah dilakukan..."
-                                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs resize-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none"
+                                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs resize-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none"
                                 />
                             </div>
 
@@ -266,7 +274,7 @@ function resolveCloNote(val) {
                                 type="button"
                                 onClick={goToPreview}
                                 disabled={!data.file}
-                                className="w-full py-2.5 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#6a1219] disabled:opacity-50 transition-all cursor-pointer"
+                                className="w-full py-2.5 bg-[#9E1B28] text-white rounded-xl text-xs font-bold hover:bg-[#801720] disabled:opacity-50 transition-all cursor-pointer"
                             >
                                 Lanjut ke Pratinjau
                             </button>
@@ -295,7 +303,7 @@ function resolveCloNote(val) {
                             {/* Live Document Preview */}
                             <div className="space-y-2">
                                 <h3 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-                                    <Eye className="w-3.5 h-3.5 text-[#801720]" /> Pratinjau Isi Berkas:
+                                    <Eye className="w-3.5 h-3.5 text-[#9E1B28]" /> Pratinjau Isi Berkas:
                                 </h3>
 
                                 {ext === 'pdf' && fileUrl && (
@@ -312,7 +320,7 @@ function resolveCloNote(val) {
                                     <div className="border border-gray-200 rounded-2xl p-4 sm:p-6 bg-white min-h-[450px] shadow-xs relative overflow-y-auto max-h-[600px]">
                                         {renderingDocx && (
                                             <div className="flex flex-col items-center justify-center py-16 text-gray-500 gap-2">
-                                                <Loader2 className="w-8 h-8 text-[#801720] animate-spin" />
+                                                <Loader2 className="w-8 h-8 text-[#9E1B28] animate-spin" />
                                                 <p className="text-xs font-semibold">Memuat dan merender naskah Word...</p>
                                             </div>
                                         )}

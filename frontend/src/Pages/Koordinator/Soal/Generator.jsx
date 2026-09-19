@@ -1,13 +1,19 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import axios from 'axios';
 import {
-    ArrowLeft, Plus, Trash2, FileText, Download,
-    CheckCircle2, AlertTriangle, Sparkles, MoveUp, MoveDown
+    ArrowLeft,
+    Plus,
+    Trash2,
+    FileText,
+    CheckCircle2,
+    AlertTriangle,
+    Sparkles,
+    MoveUp,
+    MoveDown
 } from 'lucide-react';
-import { showToast, showAlert } from '@/Utils/sweetalert';
-
+import { showToast } from '@/Utils/sweetalert';
 
 export default function SoalGenerator({ mataKuliah, activePeriode, initialData }) {
     const [originalPloList] = useState(initialData?.plo || []);
@@ -219,7 +225,6 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
         });
     };
 
-
     // Helper to keep track of visual question area indexes sequentially
     let previewQuestionIndex = 1;
 
@@ -230,9 +235,12 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
             <div className="space-y-6 max-w-[1600px] mx-auto">
                 {/* Header Actions */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <Link href={`/koordinator/mata-kuliah/${mataKuliah.id}`}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Detail Mata Kuliah
+                    <Link
+                        href={`/koordinator/mata-kuliah/${mataKuliah.id}`}
+                        className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer inline-flex items-center shrink-0"
+                        title="Kembali ke Detail Mata Kuliah"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
                     </Link>
                     
                     <div className="flex items-center gap-2">
@@ -271,7 +279,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                         {/* Box 1: Informasi Ujian */}
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                             <h2 className="text-sm font-extrabold text-gray-800 flex items-center gap-2 border-b border-gray-100 pb-2">
-                                <Sparkles className="w-4 h-4 text-[#801720]" /> Informasi Lembar Ujian
+                                <Sparkles className="w-4 h-4 text-[#9E1B28]" /> Informasi Lembar Ujian
                             </h2>
                             
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -281,7 +289,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                         type="text"
                                         value={formData.kode_nama_mk}
                                         onChange={e => handleHeaderChange('kode_nama_mk', e.target.value)}
-                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20"
                                     />
                                 </div>
 
@@ -289,7 +297,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nama Evaluasi</label>
                                     <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
                                         <span>{formData.nama_evaluasi || 'Ujian Tengah Semester (UTS)'}</span>
-                                        <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#801720]/10 text-[#801720] rounded flex-shrink-0">
+                                        <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#9E1B28]/10 text-[#9E1B28] rounded flex-shrink-0">
                                             Sesuai Periode
                                         </span>
                                     </div>
@@ -307,7 +315,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tipe Ujian</label>
                                     <div className="mt-1 flex items-center justify-between border border-gray-200 bg-gray-50/80 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800">
                                         <span>{formData.tipe_ujian || 'UTS'}</span>
-                                        <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#801720]/10 text-[#801720] rounded flex-shrink-0">
+                                        <span className="px-1.5 py-0.5 text-[9px] font-bold bg-[#9E1B28]/10 text-[#9E1B28] rounded flex-shrink-0">
                                             {formData.tipe_ujian || 'UTS'}
                                         </span>
                                     </div>
@@ -319,7 +327,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                         type="text"
                                         value={formData.tanggal_evaluasi}
                                         onChange={e => handleHeaderChange('tanggal_evaluasi', e.target.value)}
-                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20"
                                     />
                                 </div>
 
@@ -329,7 +337,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                         type="text"
                                         value={formData.tipe_soal}
                                         onChange={e => handleHeaderChange('tipe_soal', e.target.value)}
-                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20"
                                     />
                                 </div>
 
@@ -339,7 +347,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                         type="text"
                                         value={formData.form_no}
                                         onChange={e => handleHeaderChange('form_no', e.target.value)}
-                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                        className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20"
                                     />
                                 </div>
                             </div>
@@ -349,7 +357,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                             <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                 <h2 className="text-sm font-extrabold text-gray-800 flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-[#801720]" /> Petunjuk Pengerjaan
+                                    <FileText className="w-4 h-4 text-[#9E1B28]" /> Petunjuk Pengerjaan
                                 </h2>
                                 <button
                                     type="button"
@@ -386,7 +394,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                             value={item}
                                             onChange={e => handlePetunjukChange(idx, e.target.value)}
                                             rows={2}
-                                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#801720]/20 resize-none bg-white"
+                                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#9E1B28]/20 resize-none bg-white"
                                             placeholder="Masukkan petunjuk pengerjaan..."
                                         />
                                         <button
@@ -409,7 +417,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                             <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                 <h2 className="text-sm font-extrabold text-gray-800 flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4 text-[#801720]" /> Struktur PLO &amp; CLO
+                                    <Sparkles className="w-4 h-4 text-[#9E1B28]" /> Struktur PLO &amp; CLO
                                 </h2>
                                 <button
                                     type="button"
@@ -432,7 +440,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                                     type="text"
                                                     value={ploItem.kode}
                                                     onChange={e => handlePloChange(ploIdx, 'kode', e.target.value)}
-                                                    className="mt-1 w-full border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#801720]/20 bg-white"
+                                                    className="mt-1 w-full border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#9E1B28]/20 bg-white"
                                                 />
                                             </div>
                                             <div className="flex-1">
@@ -457,7 +465,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                                     value={ploItem.deskripsi}
                                                     onChange={e => handlePloChange(ploIdx, 'deskripsi', e.target.value)}
                                                     rows={1}
-                                                    className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#801720]/20 resize-none bg-white"
+                                                    className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#9E1B28]/20 resize-none bg-white"
                                                     placeholder="Deskripsi PLO..."
                                                 />
                                             </div>
@@ -493,7 +501,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                                                 type="text"
                                                                 value={cloItem.kode}
                                                                 onChange={e => handleCloChange(ploIdx, cloIdx, 'kode', e.target.value)}
-                                                                className="mt-0.5 w-full border border-gray-200 rounded px-1.5 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#801720]/20"
+                                                                className="mt-0.5 w-full border border-gray-200 rounded px-1.5 py-0.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#9E1B28]/20"
                                                             />
                                                         </div>
                                                         <div className="flex-1">
@@ -502,7 +510,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                                                 value={cloItem.deskripsi}
                                                                 onChange={e => handleCloChange(ploIdx, cloIdx, 'deskripsi', e.target.value)}
                                                                 rows={2}
-                                                                className="mt-0.5 w-full border border-gray-200 rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#801720]/20 resize-none"
+                                                                className="mt-0.5 w-full border border-gray-200 rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#9E1B28]/20 resize-none"
                                                                 placeholder="Deskripsi CLO..."
                                                             />
                                                         </div>
@@ -513,7 +521,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                                                 value={cloItem.bobot_lo}
                                                                 onChange={e => handleCloChange(ploIdx, cloIdx, 'bobot_lo', e.target.value)}
                                                                 placeholder="cth. 20%"
-                                                                className="mt-0.5 w-full border border-gray-200 rounded px-1.5 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-[#801720]/20 font-semibold"
+                                                                className="mt-0.5 w-full border border-gray-200 rounded px-1.5 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-[#9E1B28]/20 font-semibold"
                                                             />
                                                         </div>
                                                         <button
@@ -535,7 +543,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                                             value={cloItem.soal || ''}
                                                             onChange={e => handleCloChange(ploIdx, cloIdx, 'soal', e.target.value)}
                                                             rows={2}
-                                                            className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#801720]/20 resize-y bg-gray-50/50 hover:bg-white focus:bg-white"
+                                                            className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#9E1B28]/20 resize-y bg-gray-50/50 hover:bg-white focus:bg-white"
                                                             placeholder={`Tuliskan teks soal / pertanyaan untuk ${cloItem.kode}...`}
                                                         />
                                                     </div>
@@ -578,7 +586,7 @@ export default function SoalGenerator({ mataKuliah, activePeriode, initialData }
                                 <button
                                     onClick={() => handleExport('pdf')}
                                     disabled={isExporting || !isWeightValid}
-                                    className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                                    className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                                     title={!isWeightValid ? "Total bobot LO setiap PLO harus 100% untuk mengaktifkan ekspor" : ""}
                                 >
                                     <FileText className="w-3.5 h-3.5" /> {isExporting ? 'Proses Ekspor...' : 'Ekspor PDF'}

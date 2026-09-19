@@ -32,7 +32,6 @@ class Verifikasi extends Model
 
     const ACTION_APPROVED = 'APPROVED';
     const ACTION_REVISION = 'REVISION';
-    const ACTION_REJECTED = 'REJECTED';
 
     public function soal()
     {

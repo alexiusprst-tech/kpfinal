@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { FileCheck, Eye, ArrowRight, X } from 'lucide-react';
+import { FileCheck, Eye } from 'lucide-react';
 
 const STATUS_CONFIG = {
     IN_REVIEW:   { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
@@ -10,7 +10,6 @@ const STATUS_CONFIG = {
     DRAFT:       { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
     REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }) {
@@ -23,15 +22,12 @@ function StatusBadge({ status }) {
     );
 }
 
-import FlashAlert from '@/Components/FlashAlert';
-
 
 const STATUS_FILTERS = [
     { key: '', label: 'Semua Status' },
     { key: 'IN_REVIEW', label: 'Ditinjau' },
     { key: 'REVISION', label: 'Revisi' },
     { key: 'APPROVED', label: 'Disetujui' },
-    { key: 'REJECTED', label: 'Ditolak' },
 ];
 
 export default function VerifikatorSoalIndex({ soalList, filters }) {
@@ -46,12 +42,11 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
     return (
         <AuthenticatedLayout title="Verifikasi Soal">
             <Head title="Verifikasi Soal" />
-            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 <div>
                     <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
-                        <FileCheck className="w-6 h-6 text-[#801720]" /> Verifikasi Soal
+                        <FileCheck className="w-6 h-6 text-[#9E1B28]" /> Verifikasi Soal
                     </h1>
                     <p className="text-sm text-gray-500 mt-0.5">Tinjau dan berikan keputusan verifikasi pada soal yang masuk</p>
                 </div>
@@ -64,7 +59,7 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
                             onClick={() => handleFilter(tab.key)}
                             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                                 (statusFilter === tab.key) || (!statusFilter && tab.key === '')
-                                    ? 'bg-[#801720] text-white border-[#801720] shadow-xs'
+                                    ? 'bg-[#9E1B28] text-white border-[#9E1B28] shadow-xs'
                                     : 'border-gray-200 text-gray-600 bg-white hover:bg-gray-50'
                             }`}
                         >
@@ -107,7 +102,7 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
                                         <td className="px-5 py-4">
                                             <div className="flex items-center justify-end">
                                                 <a href={`/verifikator/soal/${soal.id}`}
-                                                    className="flex items-center gap-1 px-2.5 py-1.5 bg-[#801720] text-white rounded-lg text-xs font-semibold hover:bg-[#6a1219] transition-colors">
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 bg-[#9E1B28] text-white rounded-lg text-xs font-semibold hover:bg-[#801720] transition-colors">
                                                     <Eye className="w-3 h-3" /> Tinjau
                                                 </a>
                                             </div>
@@ -124,7 +119,7 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
                                 {soalList.links?.map((link, i) => (
                                     <button key={i} disabled={!link.url}
                                         onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
-                                        className={`px-2.5 py-1 rounded-lg font-semibold ${link.active ? 'bg-[#801720] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}
+                                        className={`px-2.5 py-1 rounded-lg font-semibold ${link.active ? 'bg-[#9E1B28] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}
                                         dangerouslySetInnerHTML={{ __html: link.label }} />
                                 ))}
                             </div>

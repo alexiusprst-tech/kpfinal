@@ -1,17 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    Plus, Trash2, Eye, Search, X, FolderKanban,
-    Play, Lock, Clock, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
-    Users, Shield, BookOpen, RotateCcw, Check, GraduationCap, MoreVertical
+    ArrowLeft,
+    Plus,
+    Pencil,
+    Eye,
+    Search,
+    X,
+    FolderKanban,
+    Play,
+    Lock,
+    Clock,
+    Shield,
+    BookOpen,
+    RotateCcw,
+    GraduationCap,
+    MoreVertical
 } from 'lucide-react';
 
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showConfirm } from '@/Utils/sweetalert';
 import { formatDate } from '@/Utils/date';
-
-
 
 const STATUS_CONFIG = {
     DRAFT:    { label: 'Draf',      bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200/60', dot: 'bg-amber-500' },
@@ -59,18 +69,55 @@ export default function KelompokVerifikasiIndex({
     const { flash } = usePage().props;
     const [search, setSearch] = useState(filters?.search || '');
     const [openMenuId, setOpenMenuId] = useState(null);
+    const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
     const menuRef = useRef(null);
+    const buttonRefs = useRef({});
 
-    // Tutup dropdown saat klik di luar
+    const handleToggleMenu = (e, id) => {
+        e.stopPropagation();
+        if (openMenuId === id) {
+            setOpenMenuId(null);
+        } else {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const menuHeight = 90;
+            const openUpward = spaceBelow < menuHeight && rect.top > menuHeight;
+
+            setMenuPosition({
+                top: openUpward ? rect.top - menuHeight - 4 : rect.bottom + 4,
+                right: Math.max(16, window.innerWidth - rect.right),
+            });
+            setOpenMenuId(id);
+        }
+    };
+
+    // Tutup dropdown saat klik di luar atau saat scroll / resize
     useEffect(() => {
+        if (!openMenuId) return;
+
         const handleClickOutside = (e) => {
             if (menuRef.current && !menuRef.current.contains(e.target)) {
-                setOpenMenuId(null);
+                const btn = buttonRefs.current[openMenuId];
+                if (!btn || !btn.contains(e.target)) {
+                    setOpenMenuId(null);
+                }
             }
         };
+
+        const handleScrollOrResize = () => {
+            setOpenMenuId(null);
+        };
+
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        window.addEventListener('scroll', handleScrollOrResize, true);
+        window.addEventListener('resize', handleScrollOrResize);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('scroll', handleScrollOrResize, true);
+            window.removeEventListener('resize', handleScrollOrResize);
+        };
+    }, [openMenuId]);
 
     // Normalize props
     const dataList = (list && Array.isArray(list.data)) ? list : (kelompokList && Array.isArray(kelompokList.data)) ? kelompokList : { data: [], current_page: 1, per_page: 10, total: 0, last_page: 1, links: [] };
@@ -121,53 +168,42 @@ export default function KelompokVerifikasiIndex({
                 text: `Nonaktifkan kelompok "${item.nama}"? Akses verifikasi untuk dosen di kelompok ini akan dinonaktifkan sementara.`,
                 icon: 'warning',
                 confirmButtonText: 'Ya, Nonaktifkan',
-                confirmButtonColor: '#801720',
+                confirmButtonColor: '#9E1B28',
             });
             if (result.isConfirmed) {
                 router.post(`/superadmin/kelompok-verifikasi/${item.id}/deactivate`, {}, { preserveScroll: true });
-            }
-        } else if (type === 'delete') {
-            const isActive = item.status === 'ACTIVE';
-            const result = await showConfirm({
-                title: 'Hapus Kelompok Verifikasi?',
-                text: isActive
-                    ? `Kelompok "${item.nama}" sedang AKTIF. Menghapusnya akan menghapus semua penugasan koordinator & verifikator di dalamnya. Lanjutkan?`
-                    : `Hapus kelompok "${item.nama}"? Semua data penugasan terkait juga akan dihapus permanen.`,
-                icon: 'warning',
-                confirmButtonText: 'Ya, Hapus',
-                confirmButtonColor: '#CD202E',
-            });
-            if (result.isConfirmed) {
-                router.delete(`/superadmin/kelompok-verifikasi/${item.id}`, {}, { preserveScroll: true });
             }
         }
 
     };
 
-
     return (
         <AuthenticatedLayout title="Kelompok Verifikasi">
             <Head title="Kelompok Verifikasi - Super Admin" />
-            <FlashAlert flash={flash} />
 
             <div className="space-y-6 w-full pb-12">
                 
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2.5">
-                            <div className="p-2 bg-[#801720]/10 text-[#801720] rounded-xl">
-                                <FolderKanban className="w-6 h-6" />
+                {/* Header Banner */}
+                <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                                <FolderKanban className="w-3.5 h-3.5" />
+                                <span>Penugasan</span>
                             </div>
-                            <div>
-                                <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">Kelompok Verifikasi</h1>
-                                <p className="text-xs font-medium text-gray-500 mt-0.5">
-                                    Kelola target mata kuliah, koordinator MK (maks 3), dan tim verifikator (maks 5) dalam satu kelompok penugasan terpadu.
-                                </p>
-                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Kelompok Verifikasi</h1>
+                            <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                                Kelola target mata kuliah, koordinator MK, dan tim verifikator dalam satu kelompok penugasan terpadu.
+                            </p>
                         </div>
+                        <Link
+                            href="/superadmin/kelompok-verifikasi/create"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white text-[#9E1B28] rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer hover:bg-rose-50 flex-shrink-0 self-start sm:self-auto"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Buat Kelompok</span>
+                        </Link>
                     </div>
-
                 </div>
 
                 {/* Summary Cards */}
@@ -208,7 +244,7 @@ export default function KelompokVerifikasiIndex({
 
                 {/* Filter Bar */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         
                         {/* Search Input */}
                         <div className="relative lg:col-span-2">
@@ -218,7 +254,7 @@ export default function KelompokVerifikasiIndex({
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Cari nama kelompok, MK, atau dosen..."
-                                className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] transition-all bg-gray-50/50 hover:bg-white"
+                                className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all bg-gray-50/50 hover:bg-white"
                             />
                             {search && (
                                 <button
@@ -235,7 +271,7 @@ export default function KelompokVerifikasiIndex({
                             <select
                                 value={filters?.periode_id || ''}
                                 onChange={(e) => applyFilters({ periode_id: e.target.value })}
-                                className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] transition-all bg-gray-50/50 hover:bg-white cursor-pointer"
+                                className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all bg-gray-50/50 hover:bg-white cursor-pointer"
                             >
                                 <option value="">Semua Periode</option>
                                 {periodes.map((p) => (
@@ -251,7 +287,7 @@ export default function KelompokVerifikasiIndex({
                             <select
                                 value={filters?.status || ''}
                                 onChange={(e) => applyFilters({ status: e.target.value })}
-                                className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] transition-all bg-gray-50/50 hover:bg-white cursor-pointer"
+                                className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all bg-gray-50/50 hover:bg-white cursor-pointer"
                             >
                                 <option value="">Semua Status</option>
                                 <option value="DRAFT">Draf</option>
@@ -259,17 +295,6 @@ export default function KelompokVerifikasiIndex({
                                 <option value="INACTIVE">Nonaktif</option>
                                 <option value="CLOSED">Selesai (Closed)</option>
                             </select>
-                        </div>
-
-                        {/* Buat Kelompok Button */}
-                        <div>
-                            <Link
-                                href="/superadmin/kelompok-verifikasi/create"
-                                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                                <span>Buat Kelompok</span>
-                            </Link>
                         </div>
                     </div>
 
@@ -279,7 +304,7 @@ export default function KelompokVerifikasiIndex({
                             <span>Menampilkan hasil terfilter</span>
                             <button
                                 onClick={resetFilters}
-                                className="inline-flex items-center gap-1 text-[#801720] hover:underline font-bold cursor-pointer"
+                                className="inline-flex items-center gap-1 text-[#9E1B28] hover:underline font-bold cursor-pointer"
                             >
                                 <RotateCcw className="w-3 h-3" /> Reset Semua Filter
                             </button>
@@ -323,7 +348,7 @@ export default function KelompokVerifikasiIndex({
                                                 <td className="py-3.5 px-4">
                                                     <Link
                                                         href={`/superadmin/kelompok-verifikasi/${item.id}`}
-                                                        className="font-extrabold text-gray-900 hover:text-[#801720] transition-colors block text-[13px]"
+                                                        className="font-extrabold text-gray-900 hover:text-[#9E1B28] transition-colors block text-[13px]"
                                                     >
                                                         {item.nama}
                                                     </Link>
@@ -337,11 +362,13 @@ export default function KelompokVerifikasiIndex({
                                                 {/* Periode */}
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                                     <span className="font-bold text-gray-800 block">
-                                                        {item.periode?.nama || 'â€”'}
+                                                        {item.periode?.nama || '—'}
                                                     </span>
-                                                    <span className="text-[10px] text-gray-400">
-                                                        {item.periode?.tahun_ajaran?.nama || ''}
-                                                    </span>
+                                                    {item.periode?.tahun_ajaran?.nama && item.periode?.tahun_ajaran?.nama !== '-' && (
+                                                        <span className="text-[10px] text-gray-400">
+                                                            {item.periode.tahun_ajaran.nama}
+                                                        </span>
+                                                    )}
                                                 </td>
 
                                                 {/* Mata Kuliah */}
@@ -359,10 +386,10 @@ export default function KelompokVerifikasiIndex({
                                                 {/* Koordinator MK */}
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                                     {koordinatorCount === 0 ? (
-                                                        <span className="text-gray-400">â€”</span>
+                                                        <span className="text-gray-400">—</span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#801720] font-bold rounded-lg text-[11px] border border-red-100 whitespace-nowrap">
-                                                            <GraduationCap className="w-3.5 h-3.5 text-[#801720] shrink-0" />
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#9E1B28] font-bold rounded-lg text-[11px] border border-red-100 whitespace-nowrap">
+                                                            <GraduationCap className="w-3.5 h-3.5 text-[#9E1B28] shrink-0" />
                                                             <span>{koordinatorCount} Koordinator</span>
                                                         </span>
                                                     )}
@@ -392,45 +419,16 @@ export default function KelompokVerifikasiIndex({
 
                                                 {/* Aksi  Kebab Menu */}
                                                 <td className="py-3.5 px-4 text-right">
-                                                    <div className="relative inline-block" ref={openMenuId === item.id ? menuRef : null}>
+                                                    <div className="inline-block">
                                                         {/* Tombol  */}
                                                         <button
-                                                            onClick={() => setOpenMenuId(openMenuId === item.id ? null : item.id)}
+                                                            ref={(el) => { buttonRefs.current[item.id] = el; }}
+                                                            onClick={(e) => handleToggleMenu(e, item.id)}
                                                             className="p-1.5 rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
                                                             title="Aksi"
                                                         >
                                                             <MoreVertical className="w-4 h-4" />
                                                         </button>
-
-                                                        {/* Dropdown */}
-                                                        {openMenuId === item.id && (
-                                                            <div className="absolute right-0 top-full mt-1 z-50 min-w-[170px] bg-white border border-gray-100 rounded-2xl shadow-xl py-1 animate-fadeIn">
-
-                                                                {/* Lihat Detail  selalu tampil */}
-                                                                <Link
-                                                                    href={`/superadmin/kelompok-verifikasi/${item.id}`}
-                                                                    onClick={() => setOpenMenuId(null)}
-                                                                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-                                                                >
-                                                                    <Eye className="w-3.5 h-3.5 text-gray-500" />
-                                                                    Lihat Detail
-                                                                </Link>
-
-                                                                {/* Divider + Hapus */}
-                                                                {item.status !== 'CLOSED' && (
-                                                                    <>
-                                                                        <div className="my-1 border-t border-gray-100" />
-                                                                        <button
-                                                                            onClick={() => { setOpenMenuId(null); handleAction(item, 'delete'); }}
-                                                                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                                                                        >
-                                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                                            {item.status === 'DRAFT' ? 'Hapus Draf' : 'Hapus Kelompok'}
-                                                                        </button>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -473,7 +471,7 @@ export default function KelompokVerifikasiIndex({
                                         preserveScroll
                                         className={`px-3 py-1.5 rounded-xl font-bold transition-colors ${
                                             link.active
-                                                ? 'bg-[#801720] text-white'
+                                                ? 'bg-[#9E1B28] text-white'
                                                 : link.url
                                                 ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                                                 : 'bg-transparent text-gray-300 cursor-not-allowed'
@@ -486,6 +484,51 @@ export default function KelompokVerifikasiIndex({
                     )}
                 </div>
             </div>
+
+            {/* Dropdown Menu Portaled to document.body (tampil di luar box card tanpa scroll) */}
+            {typeof document !== 'undefined' && openMenuId && (() => {
+                const activeItem = dataList.data?.find((d) => d.id === openMenuId);
+                if (!activeItem) return null;
+
+                return createPortal(
+                    <div
+                        ref={menuRef}
+                        style={{
+                            position: 'fixed',
+                            top: `${menuPosition.top}px`,
+                            right: `${menuPosition.right}px`,
+                            zIndex: 99999,
+                        }}
+                        className="min-w-[170px] bg-white border border-gray-100 rounded-2xl shadow-xl py-1 animate-fadeIn"
+                    >
+                        {/* Lihat Detail  selalu tampil */}
+                        <Link
+                            href={`/superadmin/kelompok-verifikasi/${activeItem.id}`}
+                            onClick={() => setOpenMenuId(null)}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                            <Eye className="w-3.5 h-3.5 text-gray-500" />
+                            Lihat Detail
+                        </Link>
+
+                        {/* Ubah Kelompok */}
+                        {activeItem.status !== 'CLOSED' && (
+                            <>
+                                <div className="my-1 border-t border-gray-100" />
+                                <Link
+                                    href={`/superadmin/kelompok-verifikasi/${activeItem.id}/edit`}
+                                    onClick={() => setOpenMenuId(null)}
+                                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                                >
+                                    <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                                    Ubah Kelompok
+                                </Link>
+                            </>
+                        )}
+                    </div>,
+                    document.body
+                );
+            })()}
         </AuthenticatedLayout>
     );
 }

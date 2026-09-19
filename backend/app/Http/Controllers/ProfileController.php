@@ -59,6 +59,7 @@ class ProfileController extends Controller
             'dosen' => $dosen ? [
                 'id'              => $dosen->id,
                 'kode_dosen'      => $dosen->kode_dosen,
+                'nip'             => $dosen->nip,
                 'nama_lengkap'    => $dosen->nama_lengkap,
                 'email'           => $dosen->email,
                 'kategori_dosen'  => $dosen->kategori_dosen,
@@ -73,7 +74,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update basic profile data (name on User + dosen fields / kaprodi fields).
+     * Update user profile data.
      */
     public function updateProfile(Request $request)
     {
@@ -84,6 +85,7 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name'           => 'required|string|max:255',
             'kode_dosen'     => 'nullable|string|max:20',
+            'nip'            => 'nullable|string|max:50',
             'email_dosen'    => 'nullable|email|max:255',
             'kategori_dosen' => 'nullable|in:TETAP,LUAR_BIASA',
             'kaprodi_nama'   => 'nullable|string|max:255',
@@ -97,6 +99,7 @@ class ProfileController extends Controller
             $dosen->update([
                 'nama_lengkap'   => $validated['name'],
                 'kode_dosen'     => $validated['kode_dosen']  ?? $dosen->kode_dosen,
+                'nip'            => array_key_exists('nip', $validated) ? $validated['nip'] : $dosen->nip,
                 'email'          => $validated['email_dosen'] ?? $dosen->email,
                 'kategori_dosen' => $validated['kategori_dosen'] ?? $dosen->kategori_dosen,
             ]);
@@ -137,6 +140,10 @@ class ProfileController extends Controller
             'password'             => Hash::make($validated['password']),
             'must_change_password' => false,
         ]);
+
+        if ($isEnforced) {
+            return redirect('/dashboard')->with('success', 'Password berhasil diperbarui. Selamat datang di portal Sistem Verifikasi Soal!');
+        }
 
         return back()->with('success', 'Password berhasil diperbarui. Sekarang Anda dapat menggunakan seluruh fitur aplikasi.');
     }

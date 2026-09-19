@@ -2,15 +2,26 @@ import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    ArrowLeft, BookOpen, Calendar, CheckCircle2, Clock, Copy, Edit, FileCheck,
-    FolderKanban, GraduationCap, History, Lock, MoreVertical, Pencil, Play, PowerOff,
-    RotateCcw, Save, Shield, Sparkles, Trash2, Users, X, AlertCircle, TrendingUp
+    ArrowLeft,
+    BookOpen,
+    CheckCircle2,
+    Copy,
+    Edit,
+    GraduationCap,
+    History,
+    Lock,
+    Pencil,
+    Play,
+    PowerOff,
+    Save,
+    Shield,
+    X,
+    AlertCircle
 } from 'lucide-react';
 
-import FlashAlert from '@/Components/FlashAlert';
 import SearchableSelect from '@/Components/SearchableSelect';
 import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
-import { formatDate, formatDateTime } from '@/Utils/date';
+import { formatDateTime } from '@/Utils/date';
 
 // Dosen dianggap "Dosen Tetap" kecuali kategorinya eksplisit Luar Biasa (LB) —
 // hanya Dosen Tetap yang boleh menjadi Verifikator Soal.
@@ -20,8 +31,6 @@ function isDosenTetap(dosen) {
     const kat = String(dosen.kategori_dosen || '').trim().toUpperCase();
     return !['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA'].includes(kat);
 }
-
-
 
 const STATUS_CONFIG = {
     DRAFT:    { label: 'Draf',      bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200/60', dot: 'bg-amber-500' },
@@ -145,7 +154,6 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
                 value: d.id,
                 label: `${d.kode_dosen} – ${d.nama_lengkap}`,
                 disabled: isThisMkKoor || isThisMkVerif,
-                badge: isThisMkKoor ? 'Dipilih' : isThisMkVerif ? 'Verifikator MK ini' : null,
             };
         });
     };
@@ -160,7 +168,6 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
                 value: d.id,
                 label: `${d.kode_dosen} – ${d.nama_lengkap}`,
                 disabled: isThisMkVerif || isThisMkKoor,
-                badge: isThisMkVerif ? 'Dipilih' : isThisMkKoor ? 'Koor MK ini' : null,
             };
         });
     };
@@ -241,7 +248,7 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
                         return (
                             <div key={mkId} className="p-4 rounded-2xl border border-gray-200/80 bg-slate-50/40 space-y-3.5">
                                 <div className="flex items-center gap-2.5 pb-2.5 border-b border-gray-100">
-                                    <span className="w-6 h-6 rounded-xl bg-[#801720] text-white flex items-center justify-center text-xs font-black shrink-0">
+                                    <span className="w-6 h-6 rounded-xl bg-[#9E1B28] text-white flex items-center justify-center text-xs font-black shrink-0">
                                         {idx + 1}
                                     </span>
                                     <span className="font-black text-sm text-gray-900">{mk?.kode_mk}</span>
@@ -261,7 +268,7 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
                                                 </span>
                                             </div>
                                             {mkList.length > 1 && currentCoordinatorList.length > 0 && (
-                                                <button type="button" onClick={() => handleCopyCoordinatorsToAll(mkId)} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#801720] hover:underline cursor-pointer">
+                                                <button type="button" onClick={() => handleCopyCoordinatorsToAll(mkId)} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#9E1B28] hover:underline cursor-pointer">
                                                     <Copy className="w-3 h-3" /> Salin ke Semua MK
                                                 </button>
                                             )}
@@ -286,7 +293,7 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
                                                 currentCoordinatorList.map((kId) => {
                                                     const kObj = dosenAll.find((d) => d.id === kId);
                                                     return (
-                                                        <span key={kId} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#801720] border border-red-200 rounded-lg text-xs font-bold">
+                                                        <span key={kId} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#9E1B28] border border-red-200 rounded-lg text-xs font-bold">
                                                             <GraduationCap className="w-3 h-3 shrink-0" />
                                                             <span className="truncate max-w-[180px]">{kObj?.kode_dosen} - {kObj?.nama_lengkap}</span>
                                                             <button type="button" onClick={() => handleToggleCoordinator(mkId, kId)} className="text-red-400 hover:text-red-700 transition-colors cursor-pointer">
@@ -315,7 +322,7 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
                                                 </span>
                                             </div>
                                             {mkList.length > 1 && currentVerifikatorList.length > 0 && (
-                                                <button type="button" onClick={() => handleCopyVerifikatorsToAll(mkId)} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#801720] hover:underline cursor-pointer">
+                                                <button type="button" onClick={() => handleCopyVerifikatorsToAll(mkId)} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#9E1B28] hover:underline cursor-pointer">
                                                     <Copy className="w-3 h-3" /> Salin ke Semua MK
                                                 </button>
                                             )}
@@ -372,7 +379,7 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#801720] hover:bg-[#681219] text-white text-xs font-extrabold rounded-xl shadow-md shadow-[#801720]/20 transition-all cursor-pointer disabled:opacity-50"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#9E1B28] hover:bg-[#681219] text-white text-xs font-extrabold rounded-xl shadow-md shadow-[#9E1B28]/20 transition-all cursor-pointer disabled:opacity-50"
                         >
                             <Save className="w-4 h-4" /> {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
                         </button>
@@ -382,7 +389,6 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
         </div>
     );
 }
-
 
 export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifikatorListStats, progress, recentActivities, dosenAll = [] }) {
     const { flash } = usePage().props;
@@ -408,21 +414,10 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                 text: `Nonaktifkan kelompok "${kelompok.nama}"? Akses verifikasi untuk dosen di kelompok ini akan dinonaktifkan sementara.`,
                 icon: 'warning',
                 confirmButtonText: 'Ya, Nonaktifkan',
-                confirmButtonColor: '#801720',
+                confirmButtonColor: '#9E1B28',
             });
             if (result.isConfirmed) {
                 router.post(`/superadmin/kelompok-verifikasi/${kelompok.id}/deactivate`, {}, { preserveScroll: true });
-            }
-        } else if (type === 'delete') {
-            const result = await showConfirm({
-                title: 'Hapus Kelompok Verifikasi?',
-                text: `Apakah Anda yakin ingin menghapus kelompok "${kelompok.nama}"?`,
-                icon: 'warning',
-                confirmButtonText: 'Ya, Hapus Data',
-                confirmButtonColor: '#CD202E',
-            });
-            if (result.isConfirmed) {
-                router.delete(`/superadmin/kelompok-verifikasi/${kelompok.id}`);
             }
         }
     };
@@ -452,11 +447,9 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
         }
     };
 
-
     return (
         <AuthenticatedLayout title={kelompok.nama}>
             <Head title={`${kelompok.nama} - Detail Kelompok`} />
-            <FlashAlert flash={flash} />
 
             <div className="w-full space-y-6 pb-16">
                 
@@ -465,9 +458,10 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                     <div className="flex items-center gap-3">
                         <Link
                             href="/superadmin/kelompok-verifikasi"
-                            className="p-2 bg-white hover:bg-gray-100 text-gray-600 rounded-xl border border-gray-200 transition-colors cursor-pointer"
+                            className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer shrink-0"
+                            title="Kembali ke Daftar Kelompok"
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <ArrowLeft className="w-5 h-5" />
                         </Link>
                         <div>
                             <div className="flex items-center gap-2.5">
@@ -475,7 +469,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                 <StatusBadge status={kelompok.status} />
                             </div>
                             <p className="text-xs text-gray-500 font-medium mt-0.5">
-                                {kelompok.periode?.nama} — {kelompok.periode?.tahun_ajaran?.nama}
+                                {kelompok.periode?.nama}
                             </p>
                         </div>
                     </div>
@@ -495,13 +489,6 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
                                 >
                                     <Play className="w-3.5 h-3.5" /> Aktifkan Kelompok
-                                </button>
-                                <button
-                                    onClick={() => handleAction('delete')}
-                                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-red-200 cursor-pointer"
-                                    title="Hapus Kelompok"
-                                >
-                                    <Trash2 className="w-4 h-4" />
                                 </button>
                             </>
                         )}
@@ -537,16 +524,8 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                 >
                                     <Play className="w-3.5 h-3.5" /> Aktifkan Kembali
                                 </button>
-                                <button
-                                    onClick={() => handleAction('delete')}
-                                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-red-200 cursor-pointer"
-                                    title="Hapus"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
                             </>
                         )}
-
 
                         {kelompok.status === 'CLOSED' && (
                             <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl">
@@ -563,7 +542,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                     <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 space-y-3">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <div className="p-2 bg-[#801720]/10 text-[#801720] rounded-xl">
+                                <div className="p-2 bg-[#9E1B28]/10 text-[#9E1B28] rounded-xl">
                                     <BookOpen className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -577,13 +556,17 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                         {/* Progress Bar */}
                         <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
                             <div
-                                className="bg-[#801720] h-full rounded-full transition-all duration-500"
+                                className="bg-[#9E1B28] h-full rounded-full transition-all duration-500"
                                 style={{ width: `${progress.upload}%` }}
                             />
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1">
-                            <span>{progress.mkWithSoal} dari {progress.totalMk} MK telah memiliki soal</span>
+                            <span>
+                                {kelompok.status === 'DRAFT'
+                                    ? 'Kelompok draf (belum diaktifkan)'
+                                    : `${progress.mkWithSoal} dari ${progress.totalMk} MK telah memiliki soal`}
+                            </span>
                         </div>
                     </div>
 
@@ -596,7 +579,13 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                 </div>
                                 <div>
                                     <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider">Progress Verifikasi</h3>
-                                    <p className="text-[11px] text-gray-500">Soal yang telah disetujui dari soal yang direview</p>
+                                    <p className="text-[11px] text-gray-500">
+                                        {kelompok.status === 'DRAFT'
+                                            ? 'Draf Kelompok — Verifikasi belum dimulai'
+                                            : (progress.reviewedSoal ?? progress.totalSoal ?? 0) === 0
+                                                ? 'Belum ada naskah soal yang masuk verifikasi'
+                                                : 'Soal yang telah disetujui dari soal yang direview'}
+                                    </p>
                                 </div>
                             </div>
                             <span className="text-xl font-black text-gray-900">{progress.verification}%</span>
@@ -611,7 +600,13 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1">
-                            <span>{progress.approvedSoal} dari {progress.reviewedSoal ?? progress.totalSoal} soal disetujui</span>
+                            <span>
+                                {kelompok.status === 'DRAFT'
+                                    ? 'Kelompok belum diaktifkan'
+                                    : (progress.reviewedSoal ?? progress.totalSoal ?? 0) === 0
+                                        ? 'Belum ada soal diverifikasi'
+                                        : `${progress.approvedSoal} dari ${progress.reviewedSoal ?? progress.totalSoal} soal disetujui`}
+                            </span>
                             <span className="font-bold text-emerald-700">{progress.approvedSoal} Selesai</span>
                         </div>
                     </div>
@@ -621,7 +616,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden space-y-3">
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                            <BookOpen className="w-5 h-5 text-[#801720]" />
+                            <BookOpen className="w-5 h-5 text-[#9E1B28]" />
                             <div>
                                 <h2 className="text-sm font-extrabold text-gray-900">Mata Kuliah dalam Kelompok</h2>
                                 <p className="text-[11px] text-gray-500">Status unggah dan progres verifikasi per mata kuliah</p>
@@ -866,7 +861,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                         {recentActivities && recentActivities.length > 0 ? (
                             recentActivities.map((act) => (
                                 <div key={act.id} className="flex items-start gap-3 text-xs text-gray-700">
-                                    <div className="w-2 h-2 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
+                                    <div className="w-2 h-2 rounded-full bg-[#9E1B28] mt-1.5 flex-shrink-0" />
                                     <div className="flex-1">
                                         <p className="font-medium text-gray-800 leading-snug">
                                             {act.description || act.action}

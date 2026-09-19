@@ -93,7 +93,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('soal_id');
             $table->uuid('verifikator_id');
-            $table->string('action', 20); // APPROVED, REVISION, REJECTED
+            $table->string('action', 20); // APPROVED, REVISION
             $table->text('catatan')->nullable();
             $table->timestamp('created_at')->useCurrent();
 

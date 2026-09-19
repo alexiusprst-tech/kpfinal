@@ -1,20 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @source "../../../backend/resources/views";
 
 @theme {
-    --font-sans: 'Plus Jakarta Sans', sans-serif;
-    --color-sidebar: #801720;
-    --color-primary-dark: #9B1724;
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --color-brand:       #9E1B28;
+    --color-brand-dark:  #801720;
+    --color-brand-light: #FDF2F3;
+    --color-bg:          #F4F6FA;
+    --color-card:        #FFFFFF;
+    --color-border:      #E2E8F0;
+    --color-border-subtle: #F1F5F9;
+    --color-text-heading: #0F172A;
+    --color-text-body:   #334155;
+    --color-text-muted:  #64748B;
+    --color-ok:          #1A6B42;
+    --color-warn:        #92490A;
+    --color-error:       #991B1B;
+    /* Legacy compat */
+    --color-sidebar: #FFFFFF;
+    --color-primary-dark: #801720;
     --color-telkom-red: #CD202E;
     --color-telkom-pink: #DD586F;
 }
 
 body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: #F0F3F8;
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #F4F6FA;
+    color: #334155;
 }
 
-/* Custom scrollbars and ambient shadows */
+/* Custom scrollbars and ambient styling */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -23,17 +39,17 @@ body {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 9999px;
+    background: #CBD5E1;
+    border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: #94A3B8;
 }
 
 /* SweetAlert2 Modern & Compact Theme Styling */
 .swal2-container {
     z-index: 99999 !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
 }
 
 .swal2-container:not(.swal2-top-end):not(.swal2-top-start):not(.swal2-bottom-end):not(.swal2-bottom-start) {
@@ -163,11 +179,12 @@ body {
    2. MODAL DIALOG STYLING (Alert & Confirmation Popups)
    ========================================================================== */
 .swal2-popup:not(.swal2-toast) {
-    border-radius: 1.25rem !important;
+    border-radius: 0.75rem !important;
     padding: 1.5rem 1.25rem 1.25rem 1.25rem !important;
-    box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
     max-width: 23rem !important;
     width: 90% !important;
+    border: 1px solid #E2E8F0 !important;
 }
 
 .swal2-popup:not(.swal2-toast) .swal2-icon {
@@ -204,8 +221,8 @@ body {
 
 .swal2-popup:not(.swal2-toast) .swal2-title {
     font-size: 1.05rem !important;
-    font-weight: 800 !important;
-    color: #0f172a !important;
+    font-weight: 700 !important;
+    color: #0F172A !important;
     padding: 0 !important;
     margin: 0 0 0.4rem 0 !important;
     line-height: 1.35 !important;
@@ -213,7 +230,7 @@ body {
 
 .swal2-popup:not(.swal2-toast) .swal2-html-container {
     font-size: 0.8125rem !important;
-    color: #64748b !important;
+    color: #64748B !important;
     line-height: 1.45 !important;
     margin: 0 0 1rem 0 !important;
     padding: 0 0.5rem !important;
@@ -229,8 +246,8 @@ body {
 
 .swal2-custom-confirm-btn,
 .swal2-custom-cancel-btn {
-    border-radius: 0.75rem !important;
-    font-weight: 700 !important;
+    border-radius: 0.375rem !important;
+    font-weight: 600 !important;
     padding: 0.55rem 1.1rem !important;
     font-size: 0.8125rem !important;
     margin: 0 !important;
@@ -268,3 +285,4 @@ body {
     border: 1px border #e2e8f0 !important;
     color: #1e293b !important;
 }
+

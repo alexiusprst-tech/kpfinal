@@ -15,6 +15,7 @@ class MataKuliahSeeder extends Seeder
     {
         $courses = [
             // Semester 1
+            [1, 'UAKX00B2', 'Agama', 'Religion', 2],
             [1, 'UAKXACB2', 'Agama Islam', 'Islamic Religion', 2],
             [1, 'UAKXCCB2', 'Agama Katolik', 'Catholic Religion', 2],
             [1, 'UAKXBCB2', 'Agama Kristen', 'Christian Religion', 2],

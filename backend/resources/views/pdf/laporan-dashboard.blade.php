@@ -20,7 +20,7 @@
         left: 0px; 
         right: 0px; 
         height: 80px; 
-        border-bottom: 2px solid #801720;
+        border-bottom: 2px solid #9E1B28;
         padding-bottom: 8px;
     }
     
@@ -54,7 +54,7 @@
     .head-table .title-main { 
         font-size: 14px; 
         font-weight: bold; 
-        color: #801720;
+        color: #9E1B28;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
@@ -122,7 +122,6 @@
     .status-approved { background-color: #dcfce7; color: #166534; }
     .status-pending  { background-color: #ffedd5; color: #9a3412; }
     .status-revision { background-color: #fef3c7; color: #854d0e; }
-    .status-rejected { background-color: #fee2e2; color: #991b1b; }
 
     /* Data Table */
     .data-table {
@@ -157,7 +156,6 @@
     .badge-approved { background-color: #dcfce7; color: #15803d; }
     .badge-submitted, .badge-in_review, .badge-resubmitted { background-color: #ffedd5; color: #ea580c; }
     .badge-revision { background-color: #fef3c7; color: #b45309; }
-    .badge-rejected { background-color: #fee2e2; color: #dc2626; }
 
     .sign-table {
         margin-top: 25px;
@@ -252,28 +250,22 @@
 <!-- STATUS BREAKDOWN -->
 <table class="status-summary-table">
     <tr>
-        <td style="width: 25%; padding: 3px;">
+        <td style="width: 33.33%; padding: 3px;">
             <div class="status-box status-approved">
                 <div style="font-size: 13px; font-weight: bold;">{{ $totalApproved }}</div>
                 <div style="font-size: 8px; font-weight: bold; text-transform: uppercase;">Disetujui (Approved)</div>
             </div>
         </td>
-        <td style="width: 25%; padding: 3px;">
+        <td style="width: 33.33%; padding: 3px;">
             <div class="status-box status-pending">
                 <div style="font-size: 13px; font-weight: bold;">{{ $totalPending }}</div>
                 <div style="font-size: 8px; font-weight: bold; text-transform: uppercase;">Menunggu Verifikasi</div>
             </div>
         </td>
-        <td style="width: 25%; padding: 3px;">
+        <td style="width: 33.33%; padding: 3px;">
             <div class="status-box status-revision">
                 <div style="font-size: 13px; font-weight: bold;">{{ $totalRevision }}</div>
                 <div style="font-size: 8px; font-weight: bold; text-transform: uppercase;">Perlu Revisi</div>
-            </div>
-        </td>
-        <td style="width: 25%; padding: 3px;">
-            <div class="status-box status-rejected">
-                <div style="font-size: 13px; font-weight: bold;">{{ $totalRejected }}</div>
-                <div style="font-size: 8px; font-weight: bold; text-transform: uppercase;">Ditolak</div>
             </div>
         </td>
     </tr>

@@ -34,12 +34,11 @@ class DashboardController extends Controller
         $approvedPeriod  = $activePeriod ? Soal::where('periode_id', $activePeriod->id)->where('status', 'APPROVED')->count() : 0;
         $progressPct     = $totalSoalPeriod > 0 ? round(($approvedPeriod / $totalSoalPeriod) * 100) : 0;
 
-        // 4 Status Cards
+        // 3 Status Cards
         $statusCounts = [
             'SUBMITTED' => Soal::whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count(),
             'REVISION'  => Soal::where('status', 'REVISION')->count(),
             'APPROVED'  => Soal::where('status', 'APPROVED')->count(),
-            'REJECTED'  => Soal::where('status', 'REJECTED')->count(),
         ];
 
         // Recent Audit Logs / Activities with human-readable description
@@ -101,11 +100,6 @@ class DashboardController extends Controller
                             $statusLabel = 'Perlu Revisi';
                             $keterangan = 'Soal memerlukan revisi dari koordinator';
                             $priority = 1;
-                        } elseif ($soals->contains('status', 'REJECTED')) {
-                            $status = 'REJECTED';
-                            $statusLabel = 'Ditolak';
-                            $keterangan = 'Soal ditolak verifikator';
-                            $priority = 2;
                         } elseif ($soals->contains(fn ($s) => in_array($s->status, ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED']))) {
                             $status = 'IN_REVIEW';
                             $statusLabel = 'Menunggu Verifikasi';
@@ -157,7 +151,7 @@ class DashboardController extends Controller
             ->pluck('total', 'log_date');
 
         $verifAgg = \App\Models\Verifikasi::where('created_at', '>=', $startDate)
-            ->whereIn('action', ['APPROVED', 'REJECTED'])
+            ->whereIn('action', ['APPROVED', 'REVISION'])
             ->selectRaw("DATE(created_at) as log_date, action, count(*) as total")
             ->groupBy('log_date', 'action')
             ->get()
@@ -166,7 +160,7 @@ class DashboardController extends Controller
         $dates = [];
         $menungguData = [];
         $disetujuiData = [];
-        $ditolakData = [];
+        $revisiData = [];
 
         for ($i = 6; $i >= 0; $i--) {
             $dt = now()->subDays($i);
@@ -184,11 +178,11 @@ class DashboardController extends Controller
             
             $dayVerif = $verifAgg->get($dateStr, collect());
             $disetujuiCount = (int) ($dayVerif->where('action', 'APPROVED')->first()->total ?? 0);
-            $ditolakCount   = (int) ($dayVerif->where('action', 'REJECTED')->first()->total ?? 0);
+            $revisiCount    = (int) ($dayVerif->where('action', 'REVISION')->first()->total ?? 0);
 
             $menungguData[] = $menungguCount;
             $disetujuiData[] = $disetujuiCount;
-            $ditolakData[] = $ditolakCount;
+            $revisiData[]    = $revisiCount;
         }
 
         // Active Period Summary metrics
@@ -466,7 +460,7 @@ class DashboardController extends Controller
                 'labels'    => $dates,
                 'menunggu'  => $menungguData,
                 'disetujui' => $disetujuiData,
-                'ditolak'   => $ditolakData,
+                'revisi'    => $revisiData,
             ],
         ]);
     }
@@ -497,7 +491,6 @@ class DashboardController extends Controller
         $totalSoal     = $soalList->count();
         $totalApproved = $soalList->where('status', 'APPROVED')->count();
         $totalRevision = $soalList->where('status', 'REVISION')->count();
-        $totalRejected = $soalList->where('status', 'REJECTED')->count();
         $totalPending  = $soalList->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED', 'DRAFT'])->count();
         $progressPct   = $totalSoal > 0 ? round(($totalApproved / $totalSoal) * 100) : 0;
 
@@ -520,7 +513,7 @@ class DashboardController extends Controller
                 'Expires'             => '0',
             ];
 
-            $callback = function () use ($soalList, $namaPeriode, $jenisLaporan, $totalSoal, $totalApproved, $totalPending, $totalRevision, $totalRejected) {
+            $callback = function () use ($soalList, $namaPeriode, $jenisLaporan, $totalSoal, $totalApproved, $totalPending, $totalRevision) {
                 $handle = fopen('php://output', 'w');
                 // UTF-8 BOM for Excel
                 fputs($handle, "\xEF\xBB\xBF");
@@ -535,7 +528,6 @@ class DashboardController extends Controller
                     fputcsv($handle, ['Disetujui (Approved)', $totalApproved]);
                     fputcsv($handle, ['Menunggu Verifikasi (Pending)', $totalPending]);
                     fputcsv($handle, ['Perlu Revisi (Revision)', $totalRevision]);
-                    fputcsv($handle, ['Ditolak (Rejected)', $totalRejected]);
                     fputcsv($handle, []);
                 }
 
@@ -583,7 +575,6 @@ class DashboardController extends Controller
             'totalSoal'            => $totalSoal,
             'totalApproved'        => $totalApproved,
             'totalRevision'        => $totalRevision,
-            'totalRejected'        => $totalRejected,
             'totalPending'         => $totalPending,
             'progressPct'          => $progressPct,
             'soalList'             => $soalList,

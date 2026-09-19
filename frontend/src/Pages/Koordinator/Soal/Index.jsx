@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    FileText, Plus, Upload, Trash2, Send, X, AlertTriangle,
-    RefreshCw, CheckCircle2, Eye, Sparkles
+    FileText,
+    Plus,
+    Upload,
+    Trash2,
+    Send,
+    X,
+    AlertTriangle,
+    Eye
 } from 'lucide-react';
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
-
-
+import { showAlert, showConfirm } from '@/Utils/sweetalert';
 
 const STATUS_CONFIG = {
     IN_REVIEW:   { label: 'Sedang Diverifikasi', color: 'bg-purple-100 text-purple-700',  dot: 'bg-purple-500' },
@@ -17,7 +20,6 @@ const STATUS_CONFIG = {
     DRAFT:       { label: 'Draf',            color: 'bg-gray-100 text-gray-700',      dot: 'bg-gray-400' },
     REVISION:    { label: 'Revisi',          color: 'bg-amber-100 text-amber-700',    dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui',       color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REJECTED:    { label: 'Ditolak',         color: 'bg-red-100 text-red-600',        dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }) {
@@ -29,7 +31,6 @@ function StatusBadge({ status }) {
         </span>
     );
 }
-
 
 function Modal({ open, onClose, title, children }) {
     if (!open) return null;
@@ -120,7 +121,6 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
         }
     };
 
-
     const handleRevisi = (e) => {
         e.preventDefault();
         if (!revisiFile) return;
@@ -142,13 +142,11 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
         { key: 'IN_REVIEW', label: 'Sedang Diverifikasi' },
         { key: 'REVISION', label: 'Revisi' },
         { key: 'APPROVED', label: 'Disetujui' },
-        { key: 'REJECTED', label: 'Ditolak' },
     ];
 
     return (
         <AuthenticatedLayout title="Kelola Soal">
             <Head title="Kelola Soal Saya" />
-            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
 
@@ -156,7 +154,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
-                            <FileText className="w-6 h-6 text-[#801720]" /> Kelola Soal Saya
+                            <FileText className="w-6 h-6 text-[#9E1B28]" /> Kelola Soal Saya
                         </h1>
                         <p className="text-sm text-gray-500 mt-0.5">Unggah, kirim, dan pantau status soal Anda</p>
                     </div>
@@ -170,7 +168,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                             </span>
                         ) : (
                             <Link href="/koordinator/soal/create"
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-bold hover:bg-[#6a1219] transition-all shadow-sm cursor-pointer select-none">
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#9E1B28] text-white rounded-xl text-xs font-bold hover:bg-[#801720] transition-all shadow-sm cursor-pointer select-none">
                                 <Plus className="w-3.5 h-3.5" /> Unggah Soal Baru
                             </Link>
                         )}
@@ -185,7 +183,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                             onClick={() => handleFilterStatus(tab.key)}
                             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                                 (statusFilter === tab.key) || (!statusFilter && tab.key === '')
-                                    ? 'bg-[#801720] text-white border-[#801720] shadow-xs'
+                                    ? 'bg-[#9E1B28] text-white border-[#9E1B28] shadow-xs'
                                     : 'border-gray-200 text-gray-600 bg-white hover:bg-gray-50'
                             }`}
                         >
@@ -249,7 +247,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                                                 {/* Tinjau */}
                                                 <Link
                                                     href={`/koordinator/soal/${soal.id}`}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#9E1B28] hover:bg-[#801720] text-white text-xs font-bold shadow-xs transition-all cursor-pointer whitespace-nowrap"
                                                 >
                                                     <Eye className="w-3.5 h-3.5 text-white" />
                                                     <span>Tinjau</span>
@@ -280,7 +278,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                                 {soalList.links?.map((link, i) => (
                                     <button key={i} disabled={!link.url}
                                         onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
-                                        className={`px-2.5 py-1 rounded-lg font-semibold ${link.active ? 'bg-[#801720] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}
+                                        className={`px-2.5 py-1 rounded-lg font-semibold ${link.active ? 'bg-[#9E1B28] text-white' : 'hover:bg-gray-100 text-gray-600 disabled:opacity-40'}`}
                                         dangerouslySetInnerHTML={{ __html: link.label }} />
                                 ))}
                             </div>
@@ -289,7 +287,6 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                 </div>
             </div>
 
-
             {/* Submit Confirm */}
             <Modal open={!!submitItem} onClose={() => setSubmitItem(null)} title="Kirim Soal untuk Verifikasi">
                 <div className="flex items-start gap-3 mb-5">
@@ -297,7 +294,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                         <Send className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-gray-800">Kirim "<span className="text-[#801720]">{submitItem?.judul}</span>"?</p>
+                        <p className="text-sm font-semibold text-gray-800">Kirim "<span className="text-[#9E1B28]">{submitItem?.judul}</span>"?</p>
                         <p className="text-xs text-gray-500 mt-1">Soal akan dikirim ke verifikator. Setelah dikirim, file tidak bisa diubah sampai mendapat masukan.</p>
                     </div>
                 </div>
@@ -320,7 +317,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                 <form onSubmit={handleRevisi} className="space-y-4">
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">File Revisi <span className="text-red-500">*</span></label>
-                        <div className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${revisiFile ? 'border-emerald-400 bg-emerald-50' : 'border-gray-300 hover:border-[#801720]/40'}`}
+                        <div className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${revisiFile ? 'border-emerald-400 bg-emerald-50' : 'border-gray-300 hover:border-[#9E1B28]/40'}`}
                             onClick={() => document.getElementById('revisi-file').click()}>
                             <input id="revisi-file" type="file" accept=".pdf,.doc,.docx" className="hidden"
                                 onChange={e => setRevisiFile(e.target.files[0])} />
@@ -334,7 +331,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Catatan Revisi</label>
                         <textarea rows={2} value={revisiCatatan} onChange={e => setRevisiCatatan(e.target.value)}
-                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm resize-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none"
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm resize-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none"
                             placeholder="Apa yang diubah dari versi sebelumnya..." />
                     </div>
                     <div className="flex justify-end pt-2">
@@ -351,7 +348,7 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
                 <div className="flex items-start gap-3 mb-5">
                     <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0"><AlertTriangle className="w-5 h-5 text-red-500" /></div>
                     <div>
-                        <p className="text-sm font-semibold text-gray-800">Hapus soal "<span className="text-[#801720]">{deleteItem?.judul}</span>"?</p>
+                        <p className="text-sm font-semibold text-gray-800">Hapus soal "<span className="text-[#9E1B28]">{deleteItem?.judul}</span>"?</p>
                         <p className="text-xs text-gray-500 mt-1">File akan dihapus permanen dari server.</p>
                     </div>
                 </div>

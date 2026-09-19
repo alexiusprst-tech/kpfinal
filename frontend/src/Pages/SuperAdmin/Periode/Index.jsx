@@ -1,17 +1,32 @@
 import React, { useState, useEffect } from 'react';
+
 import { Head, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    Plus, Pencil, Trash2, X, CheckCircle2, Play, Lock,
-    Calendar, Search, Eye, ChevronLeft, ChevronRight,
-    Users, FileCheck, BookOpen, ListChecks, History, CalendarClock, Flag,
-    CheckCircle, Clock,
+    Plus,
+    Pencil,
+    X,
+    CheckCircle2,
+    Play,
+    Lock,
+    Calendar,
+    Search,
+    Eye,
+    ChevronLeft,
+    ChevronRight,
+    Users,
+    FileCheck,
+    BookOpen,
+    ListChecks,
+    History,
+    CalendarClock,
+    Flag,
+    CheckCircle,
+    Clock
 } from 'lucide-react';
 
-import FlashAlert from '@/Components/FlashAlert';
 import { showConfirm } from '@/Utils/sweetalert';
 import { formatDate as fmt, formatDateTime as fmtDT } from '@/Utils/date';
-
 
 // ─── Stat Card Widget (Kotak-kotak) ─────────────────────────────────────────
 function StatCard({ label, value, icon: Icon, badgeBg = 'bg-slate-800' }) {
@@ -78,7 +93,7 @@ const relTime = (dateStr) => {
     return `${Math.floor(h / 24)} hari lalu`;
 };
 
-const inputCls = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720]/50 outline-none bg-white';
+const inputCls = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28]/50 outline-none bg-white';
 
 function Field({ label, required, children }) {
     return (
@@ -137,7 +152,7 @@ function PeriodeForm({ form, setForm, onSubmit, processing, isEdit }) {
 
             <div className="flex justify-end pt-1">
                 <button type="submit" disabled={processing}
-                    className="px-5 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-60 cursor-pointer">
+                    className="px-5 py-2.5 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] disabled:opacity-60 cursor-pointer">
                     {processing ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Tambah Periode'}
                 </button>
             </div>
@@ -178,6 +193,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
         }, 300);
         return () => clearTimeout(t);
     }, [search]);
+
 
     // Periode form
     const today = new Date().toISOString().substring(0, 10);
@@ -222,20 +238,6 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
         });
     };
 
-    const handleDelete = async (item) => {
-        if (!item) return;
-        const r = await showConfirm({
-            title: 'Hapus Periode?',
-            text: `Apakah Anda yakin ingin menghapus "${item.nama}"? Tindakan ini permanen.`,
-            icon: 'warning', confirmButtonText: 'Ya, Hapus', confirmButtonColor: '#CD202E',
-        });
-        if (r.isConfirmed) {
-            router.delete(`/superadmin/periode/${item.id}`, {
-                onFinish: () => { if (viewItem?.periode?.id === item.id) setViewItem(null); },
-            });
-        }
-    };
-
     const activate = async (item) => {
         const r = await showConfirm({
             title: 'Aktifkan Periode?',
@@ -257,7 +259,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
         const r = await showConfirm({
             title: 'Nonaktifkan Periode?',
             text: `Nonaktifkan "${item.nama}"? Verifikasi soal tidak dapat diubah lagi.`,
-            icon: 'warning', confirmButtonText: 'Ya, Nonaktifkan', confirmButtonColor: '#801720',
+            icon: 'warning', confirmButtonText: 'Ya, Nonaktifkan', confirmButtonColor: '#9E1B28',
         });
         if (r.isConfirmed) {
             router.post(`/superadmin/periode/${item.id}/close`, {}, {
@@ -280,7 +282,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                 selesai_lewat:  new Date() >= new Date(item.tanggal_selesai),
             },
             penugasan: { koordinator: item.koordinator_count ?? 0, verifikator: item.verifikator_count ?? 0, mata_kuliah: 0 },
-            statistik: { total: item.soal_count ?? 0, draft: 0, pending: 0, revisi: 0, approved: 0, rejected: 0, progress: 0 },
+            statistik: { total: item.soal_count ?? 0, draft: 0, pending: 0, revisi: 0, approved: 0, progress: 0 },
             riwayat: [],
         });
         router.get(`/superadmin/periode/${item.id}`, {}, {
@@ -298,22 +300,29 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
     return (
         <AuthenticatedLayout title="Periode Verifikasi">
             <Head title="Periode Verifikasi" />
-            <FlashAlert flash={flash} />
 
             <div className="space-y-4">
 
-                {/* ─── Header ─────────────────────────────────────────────── */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-800">Periode Verifikasi</h1>
-                        <p className="text-xs text-gray-400 mt-0.5">Kelola periode verifikasi soal pada setiap semester dan tahun ajaran.</p>
+                {/* ─── Header Banner ───────────────────────────────────────── */}
+                <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Periode Verifikasi</span>
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Periode Verifikasi</h1>
+                            <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                                Kelola periode verifikasi soal pada setiap semester dan tahun ajaran.
+                            </p>
+                        </div>
+                        <button
+                            onClick={openAddModal}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-white text-[#9E1B28] rounded-xl text-xs font-bold hover:bg-rose-50 transition-colors cursor-pointer flex-shrink-0 self-start sm:self-auto shadow-sm"
+                        >
+                            <Plus className="w-3.5 h-3.5" /> Tambah Periode
+                        </button>
                     </div>
-                    <button
-                        onClick={openAddModal}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] transition-colors cursor-pointer flex-shrink-0 self-start sm:self-auto"
-                    >
-                        <Plus className="w-3.5 h-3.5" /> Tambah Periode
-                    </button>
                 </div>
 
                 {/* ─── 4 Stat Cards (Kotak-kotak) ─────────────────────────── */}
@@ -332,13 +341,13 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             placeholder="Cari periode verifikasi..."
-                            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/10 focus:border-[#801720]/30 text-gray-700 placeholder-gray-300"
+                            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/10 focus:border-[#9E1B28]/30 text-gray-700 placeholder-gray-300"
                         />
                     </div>
                     <select
                         value={filters?.status || ''}
                         onChange={e => applyFilters({ status: e.target.value })}
-                        className="text-sm border border-gray-200 bg-white rounded-xl px-3 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#801720]/10"
+                        className="text-sm border border-gray-200 bg-white rounded-xl px-3 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/10"
                     >
                         <option value="">Semua Status</option>
                         <option value="DRAFT">Akan Datang</option>
@@ -382,32 +391,33 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                         <td className="px-5 py-3.5 text-sm font-semibold text-red-600">
                                             {fmt(item.deadline_upload)}
                                         </td>
-                                        <td className="px-5 py-3.5">
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                <button type="button" onClick={() => openDetail(item)}
-                                                    className="p-2 rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer" title="Detail">
+                                        <td className="px-5 py-3.5 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openDetail(item)}
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
+                                                    title="Lihat Detail"
+                                                >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
-                                                <button type="button" onClick={() => openEdit(item)}
-                                                    className="p-2 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer" title="Ubah">
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                {item.status !== 'ACTIVE' && (
-                                                    <button type="button" onClick={() => activate(item)}
-                                                        className="p-2 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer" title="Aktifkan">
+                                                {item.status !== 'ACTIVE' ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => activate(item)}
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                                                        title="Aktifkan Periode"
+                                                    >
                                                         <Play className="w-4 h-4" />
                                                     </button>
-                                                )}
-                                                {item.status === 'ACTIVE' && (
-                                                    <button type="button" onClick={() => closePeriode(item)}
-                                                        className="p-2 rounded-xl text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors cursor-pointer" title="Nonaktifkan">
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => closePeriode(item)}
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-orange-500 hover:text-orange-600 hover:bg-orange-50 transition-colors cursor-pointer"
+                                                        title="Nonaktifkan Periode"
+                                                    >
                                                         <Lock className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                                {item.status !== 'ACTIVE' && (
-                                                    <button type="button" onClick={() => handleDelete(item)}
-                                                        className="p-2 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 transition-colors cursor-pointer" title="Hapus">
-                                                        <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 )}
                                             </div>
@@ -425,7 +435,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                     <button key={i} disabled={!link.url}
                                         onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
                                         className={`min-w-[28px] h-7 px-1.5 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors ${
-                                            link.active ? 'bg-[#801720] text-white' : 'text-gray-400 hover:bg-gray-100 disabled:opacity-30'
+                                            link.active ? 'bg-[#9E1B28] text-white' : 'text-gray-400 hover:bg-gray-100 disabled:opacity-30'
                                         }`}>
                                         {link.label.includes('Previous') ? <ChevronLeft className="w-3.5 h-3.5" /> : link.label.includes('Next') ? <ChevronRight className="w-3.5 h-3.5" /> : link.label}
                                     </button>
@@ -484,7 +494,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                     return (
                                         <button key={t.key} onClick={() => setDetailTab(t.key)}
                                             className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors cursor-pointer ${
-                                                active ? 'border-[#801720] text-[#801720] bg-white' : 'border-transparent text-gray-400 hover:text-gray-600'
+                                                active ? 'border-[#9E1B28] text-[#9E1B28] bg-white' : 'border-transparent text-gray-400 hover:text-gray-600'
                                             }`}>
                                             <Icon className="w-3.5 h-3.5" /> {t.label}
                                         </button>
@@ -530,7 +540,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                                 ['Mata Kuliah',  viewItem.penugasan.mata_kuliah  ?? 0, BookOpen],
                                             ].map(([label, value, Icon]) => (
                                                 <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                                                    <Icon className="w-4 h-4 text-[#801720] flex-shrink-0" />
+                                                    <Icon className="w-4 h-4 text-[#9E1B28] flex-shrink-0" />
                                                     <div>
                                                         <p className="text-[10px] text-gray-400 font-semibold">{label}</p>
                                                         <p className="text-base font-extrabold text-gray-800">{value}</p>
@@ -540,7 +550,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                         </div>
                                         <div className="grid md:grid-cols-2 gap-3">
                                             {[
-                                                { title: 'Koordinator MK', list: viewItem.penugasan.koordinator_list, colorText: 'text-[#801720]', colorBg: 'bg-red-50',     Icon: Users },
+                                                { title: 'Koordinator MK', list: viewItem.penugasan.koordinator_list, colorText: 'text-[#9E1B28]', colorBg: 'bg-red-50',     Icon: Users },
                                                 { title: 'Verifikator MK', list: viewItem.penugasan.verifikator_list, colorText: 'text-emerald-700', colorBg: 'bg-emerald-50', Icon: FileCheck },
                                             ].map(({ title, list: dList, colorText, colorBg, Icon }) => (
                                                 <div key={title} className="border border-gray-100 rounded-xl p-3 space-y-2">
@@ -582,20 +592,19 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                         <div>
                                             <div className="flex items-center justify-between mb-1.5">
                                                 <span className="text-xs font-semibold text-gray-600">Progress Verifikasi</span>
-                                                <span className="text-xs font-bold text-[#801720]">{viewItem.statistik.progress ?? 0}%</span>
+                                                <span className="text-xs font-bold text-[#9E1B28]">{viewItem.statistik.progress ?? 0}%</span>
                                             </div>
                                             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                                                 <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${viewItem.statistik.progress ?? 0}%` }} />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
                                             {[
                                                 ['Total',    viewItem.statistik.total    ?? 0, 'text-gray-700'],
                                                 ['Draf',     viewItem.statistik.draft    ?? 0, 'text-gray-500'],
                                                 ['Menunggu', viewItem.statistik.pending  ?? 0, 'text-blue-600'],
                                                 ['Revisi',   viewItem.statistik.revisi   ?? 0, 'text-amber-600'],
                                                 ['Disetujui',viewItem.statistik.approved ?? 0, 'text-emerald-600'],
-                                                ['Ditolak',  viewItem.statistik.rejected ?? 0, 'text-red-500'],
                                             ].map(([label, value, color]) => (
                                                 <div key={label} className="bg-gray-50 rounded-xl p-2 border border-gray-100">
                                                     <p className={`text-base font-extrabold ${color}`}>{value}</p>
@@ -614,7 +623,7 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                         <div className="space-y-3">
                                             {viewItem.riwayat.map(log => (
                                                 <div key={log.id} className="flex items-start gap-2.5">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-[#9E1B28] mt-1.5 flex-shrink-0" />
                                                     <div>
                                                         <p className="text-xs font-semibold text-gray-700">{log.description}</p>
                                                         <p className="text-[10px] text-gray-400">{log.user} · {relTime(log.created_at)}</p>
@@ -649,13 +658,15 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                                 )}
                             </div>
                             <button type="button" onClick={closeDetail}
-                                className="px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-semibold cursor-pointer transition-colors">
+                                className="px-4 py-2 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-semibold cursor-pointer transition-colors">
                                 Tutup
                             </button>
                         </div>
                     </div>
                 )}
             </Modal>
+
+
         </AuthenticatedLayout>
     );
 }

@@ -203,6 +203,6 @@ class SoalGeneratorTest extends TestCase
             ->post(route('koordinator.soal.generator.export-docx'), $payload);
 
         $response->assertOk();
-        $response->assertHeader('Content-Type', 'application/vnd.ms-word');
+        $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     }
 }

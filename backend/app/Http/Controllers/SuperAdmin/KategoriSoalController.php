@@ -30,7 +30,7 @@ class KategoriSoalController extends Controller
         $query = KategoriSoal::withCount('soal');
 
         if ($search = $request->string('search')->trim()->value()) {
-            $query->where('nama', 'ilike', "%{$search}%");
+            $query->whereRaw('LOWER(nama) LIKE ?', ['%' . strtolower($search) . '%']);
         }
         if ($status = $request->input('status')) {
             $query->where('status', $status);
@@ -88,7 +88,6 @@ class KategoriSoalController extends Controller
                 'approved'      => (int) ($soalByStatus['APPROVED'] ?? 0),
                 'dalam_review'  => (int) ($soalByStatus['SUBMITTED'] ?? 0) + (int) ($soalByStatus['IN_REVIEW'] ?? 0) + (int) ($soalByStatus['RESUBMITTED'] ?? 0),
                 'revisi'        => (int) ($soalByStatus['REVISION'] ?? 0),
-                'ditolak'       => (int) ($soalByStatus['REJECTED'] ?? 0),
                 'draft'         => (int) ($soalByStatus['DRAFT'] ?? 0),
             ],
             'riwayat' => $history,

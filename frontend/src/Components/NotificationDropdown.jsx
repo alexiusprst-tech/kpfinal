@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { usePage, router } from '@inertiajs/react';
-import { Bell, Check, CheckCheck, Inbox, Clock, Sparkles, X, ChevronRight, Mail } from 'lucide-react';
+import { Bell, Inbox, Mail } from 'lucide-react';
 
 function timeAgo(dateString) {
     if (!dateString) return '';
@@ -103,7 +103,7 @@ export default function NotificationDropdown({ align = 'right', className = '' }
             >
                 <Bell className="w-5 h-5 text-slate-700" />
                 {notifCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[#801720] text-white rounded-full text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow-xs">
+                    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[#9E1B28] text-white rounded-full text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow-xs">
                         {notifCount > 99 ? '99+' : notifCount}
                     </span>
                 )}
@@ -133,7 +133,7 @@ export default function NotificationDropdown({ align = 'right', className = '' }
                                     Notifikasi
                                 </h2>
                                 {unreadList.length > 0 && (
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#801720] text-white">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#9E1B28] text-white">
                                         {unreadList.length} baru
                                     </span>
                                 )}
@@ -142,7 +142,7 @@ export default function NotificationDropdown({ align = 'right', className = '' }
                                 <button
                                     type="button"
                                     onClick={handleReadAll}
-                                    className="text-xs font-semibold text-slate-500 hover:text-[#801720] transition-colors cursor-pointer"
+                                    className="text-xs font-semibold text-slate-500 hover:text-[#9E1B28] transition-colors cursor-pointer"
                                 >
                                     Tandai semua dibaca
                                 </button>

@@ -1,7 +1,13 @@
-import React, { useRef, useState } from 'react';
+﻿import React, { useRef, useState } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { ArrowLeft, UploadCloud, FileText, X, AlertTriangle } from 'lucide-react';
+import {
+    ArrowLeft,
+    UploadCloud,
+    FileText,
+    X,
+    AlertTriangle
+} from 'lucide-react';
 
 const ALLOWED_EXT = ['pdf', 'doc', 'docx'];
 const MAX_SIZE_MB = 20;
@@ -11,10 +17,6 @@ function formatSize(bytes) {
     const mb = bytes / (1024 * 1024);
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
-
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert } from '@/Utils/sweetalert';
-
 
 
 export default function SoalEdit({ soal, kategoriAll }) {
@@ -53,13 +55,17 @@ export default function SoalEdit({ soal, kategoriAll }) {
     return (
         <AuthenticatedLayout title="Ubah Soal">
             <Head title="Ubah Soal" />
-            <FlashAlert flash={flash} />
 
             <div className="max-w-2xl mx-auto space-y-6">
-                <Link href={`/koordinator/soal/${soal.id}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720]">
-                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali
-                </Link>
+                <div>
+                    <Link
+                        href={`/koordinator/soal/${soal.id}`}
+                        className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer inline-flex items-center shrink-0"
+                        title="Kembali"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                </div>
 
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                     <h1 className="text-xl font-extrabold text-gray-800">Ubah Soal</h1>
@@ -71,7 +77,7 @@ export default function SoalEdit({ soal, kategoriAll }) {
                             <select
                                 value={data.kategori_id}
                                 onChange={e => setData('kategori_id', e.target.value)}
-                                className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20"
                             >
                                 {kategoriAll.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
                             </select>
@@ -84,7 +90,7 @@ export default function SoalEdit({ soal, kategoriAll }) {
                                 type="text"
                                 value={data.judul}
                                 onChange={e => setData('judul', e.target.value)}
-                                className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                className="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20"
                             />
                             {errors.judul && <p className="text-xs text-red-600 mt-1">{errors.judul}</p>}
                         </div>
@@ -97,14 +103,14 @@ export default function SoalEdit({ soal, kategoriAll }) {
                                 onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files?.[0]); }}
                                 onClick={() => fileInputRef.current?.click()}
                                 className={`mt-1 border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${
-                                    dragOver ? 'border-[#801720] bg-[#801720]/5' : 'border-gray-200 hover:border-gray-300'
+                                    dragOver ? 'border-[#9E1B28] bg-[#9E1B28]/5' : 'border-gray-200 hover:border-gray-300'
                                 }`}
                             >
                                 <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden"
                                     onChange={e => handleFile(e.target.files?.[0])} />
                                 {data.file ? (
                                     <div className="flex items-center justify-center gap-3">
-                                        <FileText className="w-6 h-6 text-[#801720]" />
+                                        <FileText className="w-6 h-6 text-[#9E1B28]" />
                                         <div className="text-left">
                                             <p className="text-sm font-semibold text-gray-800">{data.file.name}</p>
                                             <p className="text-xs text-gray-400">{formatSize(data.file.size)}</p>
@@ -141,7 +147,7 @@ export default function SoalEdit({ soal, kategoriAll }) {
                                 Batal
                             </Link>
                             <button type="submit" disabled={processing}
-                                className="flex-1 px-4 py-2.5 rounded-xl bg-[#801720] text-white text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-50">
+                                className="flex-1 px-4 py-2.5 rounded-xl bg-[#9E1B28] text-white text-sm font-semibold hover:bg-[#801720] disabled:opacity-50">
                                 {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
                             </button>
                         </div>

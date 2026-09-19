@@ -19,15 +19,9 @@ import {
     Hash,
     BookOpen,
     Shield,
-    KeyRound,
-    Calendar,
-    Layers,
-    CheckCheck,
-    FileCheck,
-    Camera,
+    Camera
 } from "lucide-react";
 import { showToast, showConfirm } from "@/Utils/sweetalert";
-import FlashAlert from "@/Components/FlashAlert";
 
 function FieldLabel({ children }) {
     return (
@@ -49,7 +43,7 @@ function InputField({ icon: Icon, ...props }) {
                 {...props}
                 className={[
                     "w-full rounded-xl border border-slate-200 bg-slate-50/70 text-sm font-semibold text-slate-800",
-                    "focus:outline-none focus:ring-2 focus:ring-[#801720]/25 focus:border-[#801720] focus:bg-white transition-all",
+                    "focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/25 focus:border-[#9E1B28] focus:bg-white transition-all",
                     "py-2.5 pr-4",
                     Icon ? "pl-10" : "px-4",
                     props.disabled ? "opacity-60 cursor-not-allowed bg-slate-100" : "",
@@ -72,7 +66,7 @@ function SelectField({ icon: Icon, children, ...props }) {
                 {...props}
                 className={[
                     "w-full rounded-xl border border-slate-200 bg-slate-50/70 text-sm font-semibold text-slate-800",
-                    "focus:outline-none focus:ring-2 focus:ring-[#801720]/25 focus:border-[#801720] focus:bg-white transition-all appearance-none",
+                    "focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/25 focus:border-[#9E1B28] focus:bg-white transition-all appearance-none",
                     "py-2.5 pr-4",
                     Icon ? "pl-10" : "px-4",
                     props.disabled ? "opacity-60 cursor-not-allowed bg-slate-100" : "",
@@ -159,7 +153,7 @@ function SectionFotoProfil({ user }) {
             icon: "warning",
             confirmButtonText: "Ya, Hapus",
             cancelButtonText: "Batal",
-            confirmButtonColor: "#801720",
+            confirmButtonColor: "#9E1B28",
         });
         if (!result.isConfirmed) return;
 
@@ -182,7 +176,7 @@ function SectionFotoProfil({ user }) {
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-7 space-y-5">
             <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#801720]/10 text-[#801720] flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#9E1B28]/10 text-[#9E1B28] flex items-center justify-center flex-shrink-0">
                         <Camera className="w-5 h-5" />
                     </div>
                     <div>
@@ -234,10 +228,10 @@ function SectionFotoProfil({ user }) {
                         onClick={() => fileInputRef.current?.click()}
                         className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 ${
                             dragOver
-                                ? "border-[#801720] bg-[#801720]/5 scale-[1.01]"
+                                ? "border-[#9E1B28] bg-[#9E1B28]/5 scale-[1.01]"
                                 : preview
                                 ? "border-emerald-400 bg-emerald-50/40"
-                                : "border-slate-200 hover:border-[#801720]/40 hover:bg-slate-50/70"
+                                : "border-slate-200 hover:border-[#9E1B28]/40 hover:bg-slate-50/70"
                         }`}
                     >
                         <input
@@ -269,7 +263,7 @@ function SectionFotoProfil({ user }) {
                                 type="button"
                                 onClick={handleUpload}
                                 disabled={uploading}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-60 transition-all shadow-sm cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#9E1B28] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-60 transition-all shadow-sm cursor-pointer"
                             >
                                 <Upload className="w-3.5 h-3.5" />
                                 {uploading ? "Menyimpan..." : "Simpan Foto Profil"}
@@ -290,6 +284,7 @@ function SectionDataDiri({ user, dosen }) {
     const { data, setData, put, processing, errors } = useForm({
         name:           user?.name || "",
         kode_dosen:     dosen?.kode_dosen || "",
+        nip:            dosen?.nip || "",
         email_dosen:    dosen?.email || "",
         kategori_dosen: dosen?.kategori_dosen || "",
     });
@@ -306,7 +301,7 @@ function SectionDataDiri({ user, dosen }) {
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-7">
             <div className="flex items-center justify-between gap-3 pb-5 mb-5 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#801720]/10 text-[#801720] flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#9E1B28]/10 text-[#9E1B28] flex items-center justify-center flex-shrink-0">
                         <User className="w-5 h-5" />
                     </div>
                     <div>
@@ -359,6 +354,17 @@ function SectionDataDiri({ user, dosen }) {
                                 <ErrorMsg message={errors.kode_dosen} />
                             </div>
                             <div>
+                                <FieldLabel>NIP (Nomor Induk Pegawai)</FieldLabel>
+                                <InputField
+                                    icon={Hash}
+                                    type="text"
+                                    value={data.nip}
+                                    onChange={e => setData("nip", e.target.value)}
+                                    placeholder="Contoh: 25930036"
+                                />
+                                <ErrorMsg message={errors.nip} />
+                            </div>
+                            <div>
                                 <FieldLabel>Email Dosen (Institusi)</FieldLabel>
                                 <InputField
                                     icon={Mail}
@@ -390,7 +396,7 @@ function SectionDataDiri({ user, dosen }) {
                     <button
                         type="submit"
                         disabled={processing}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#801720] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-60 transition-all shadow-sm shadow-[#801720]/20 cursor-pointer"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#9E1B28] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-60 transition-all shadow-sm shadow-[#9E1B28]/20 cursor-pointer"
                     >
                         <Save className="w-4 h-4" />
                         {processing ? "Menyimpan..." : "Simpan Data Diri"}
@@ -467,23 +473,25 @@ function SectionPassword({ mustChange }) {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <FieldLabel>Kata Sandi Saat Ini <span className="text-red-500">*</span></FieldLabel>
-                        <div className="relative">
-                            <InputField
-                                icon={Lock}
-                                type={show.current ? "text" : "password"}
-                                value={data.current_password}
-                                onChange={e => setData("current_password", e.target.value)}
-                                placeholder="Kata sandi saat ini"
-                                className="pr-10"
-                                required
-                            />
-                            <ToggleBtn field="current" />
+                <div className={`grid grid-cols-1 ${mustChange ? "sm:grid-cols-2" : "sm:grid-cols-3"} gap-4`}>
+                    {!mustChange && (
+                        <div>
+                            <FieldLabel>Kata Sandi Saat Ini <span className="text-red-500">*</span></FieldLabel>
+                            <div className="relative">
+                                <InputField
+                                    icon={Lock}
+                                    type={show.current ? "text" : "password"}
+                                    value={data.current_password}
+                                    onChange={e => setData("current_password", e.target.value)}
+                                    placeholder="Kata sandi saat ini"
+                                    className="pr-10"
+                                    required
+                                />
+                                <ToggleBtn field="current" />
+                            </div>
+                            <ErrorMsg message={errors.current_password} />
                         </div>
-                        <ErrorMsg message={errors.current_password} />
-                    </div>
+                    )}
 
                     <div>
                         <FieldLabel>Kata Sandi Baru <span className="text-red-500">*</span></FieldLabel>
@@ -628,7 +636,7 @@ function SectionTandaTangan({ dosen, isSuperAdmin, kaprodi, user }) {
             icon: "warning",
             confirmButtonText: "Ya, Hapus",
             cancelButtonText: "Batal",
-            confirmButtonColor: "#801720",
+            confirmButtonColor: "#9E1B28",
         });
         if (!result.isConfirmed) return;
         setDeleting(true);
@@ -743,10 +751,10 @@ function SectionTandaTangan({ dosen, isSuperAdmin, kaprodi, user }) {
                                 "relative rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200 p-6",
                                 "flex flex-col items-center justify-center gap-2.5 text-center",
                                 dragOver
-                                    ? "border-[#801720] bg-[#801720]/5 scale-[1.01]"
+                                    ? "border-[#9E1B28] bg-[#9E1B28]/5 scale-[1.01]"
                                     : preview
                                         ? "border-emerald-400 bg-emerald-50/50"
-                                        : "border-slate-300 bg-slate-50/60 hover:border-[#801720]/50 hover:bg-[#801720]/5",
+                                        : "border-slate-300 bg-slate-50/60 hover:border-[#9E1B28]/50 hover:bg-[#9E1B28]/5",
                             ].join(" ")}
                         >
                             <input
@@ -799,7 +807,7 @@ function SectionTandaTangan({ dosen, isSuperAdmin, kaprodi, user }) {
                                 type="button"
                                 onClick={handleUpload}
                                 disabled={uploading}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-60 transition-all shadow-sm cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#9E1B28] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-60 transition-all shadow-sm cursor-pointer"
                             >
                                 <Upload className="w-3.5 h-3.5" />
                                 {uploading ? "Mengunggah..." : (isSuperAdmin ? "Simpan TTD Ka. Prodi" : "Simpan Tanda Tangan")}
@@ -820,10 +828,10 @@ function SectionHakAkses({ user, isDosen }) {
         <div className="bg-slate-50 rounded-2xl border border-slate-200/80 p-5 space-y-4 text-xs">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-slate-800 font-bold">
-                    <Shield className="w-4 h-4 text-[#801720]" />
+                    <Shield className="w-4 h-4 text-[#9E1B28]" />
                     <span>Hak Akses & Otoritas Sistem</span>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#801720]/10 text-[#801720]">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#9E1B28]/10 text-[#9E1B28]">
                     {user?.role || "Pengguna"}
                 </span>
             </div>
@@ -835,15 +843,15 @@ function SectionHakAkses({ user, isDosen }) {
                     </p>
                     <ul className="space-y-1.5 pl-1">
                         <li className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#801720]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#9E1B28]" />
                             <span>Tahun Ajaran, Periode & Kelompok Verifikasi</span>
                         </li>
                         <li className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#801720]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#9E1B28]" />
                             <span>Master Data (Dosen, Mata Kuliah, CLO, PLO)</span>
                         </li>
                         <li className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#801720]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#9E1B28]" />
                             <span>Pengesahan Berita Acara & TTD Ka. Prodi</span>
                         </li>
                     </ul>
@@ -870,7 +878,6 @@ export default function ProfileIndex({ user, dosen, kaprodi }) {
     return (
         <AuthenticatedLayout title="Profil Saya">
             <Head title="Profil Saya" />
-            <FlashAlert type="toast" flash={flash} />
 
             <div className="max-w-6xl mx-auto space-y-6">
                 {mustChange && (
@@ -897,7 +904,7 @@ export default function ProfileIndex({ user, dosen, kaprodi }) {
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <div className="w-full h-full bg-[#801720] text-white flex items-center justify-center">
+                                    <div className="w-full h-full bg-[#9E1B28] text-white flex items-center justify-center">
                                         <span className="text-2xl sm:text-3xl font-black tracking-wider">
                                             {user?.name
                                                 ? user.name
@@ -918,7 +925,7 @@ export default function ProfileIndex({ user, dosen, kaprodi }) {
                                     <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-tight">
                                         {user?.name}
                                     </h1>
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[#801720]/10 text-[#801720] border border-[#801720]/20">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[#9E1B28]/10 text-[#9E1B28] border border-[#9E1B28]/20">
                                         <BadgeCheck className="w-3.5 h-3.5" /> {isSuperAdmin ? "SUPER ADMIN" : user?.role || "DOSEN"}
                                     </span>
                                     {isDosen && (

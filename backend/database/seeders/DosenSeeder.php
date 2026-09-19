@@ -82,8 +82,9 @@ class DosenSeeder extends Seeder
 
             if (isset($item['nip'])) {
                 $user->update([
-                    'password' => \Illuminate\Support\Facades\Hash::make($item['nip']),
-                    'name'     => $item['nama_lengkap'],
+                    'password'             => \Illuminate\Support\Facades\Hash::make($item['nip']),
+                    'name'                 => $item['nama_lengkap'],
+                    'must_change_password' => true,
                 ]);
             }
 
@@ -91,6 +92,7 @@ class DosenSeeder extends Seeder
             if (!$dosen->exists) {
                 $dosen->id = (string) Str::uuid();
             }
+            $dosen->nip            = $item['nip'] ?? null;
             $dosen->nama_lengkap   = $item['nama_lengkap'];
             $dosen->kategori_dosen = $item['kategori_dosen'];
             $dosen->email          = $email;

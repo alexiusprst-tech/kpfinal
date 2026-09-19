@@ -16,20 +16,13 @@ Route::get('/', function () {
 
         $dosen = $user->dosen;
         if ($dosen) {
+            $dosen->syncUserRole();
             $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
             $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
 
             if ($hasActiveKoor) {
-                if ($user->role !== 'KOORDINATOR') {
-                    $user->update(['role' => 'KOORDINATOR']);
-                    $user->role = 'KOORDINATOR';
-                }
                 return redirect()->route('koordinator.dashboard');
             } elseif ($hasActiveVerif) {
-                if ($user->role !== 'VERIFIKATOR') {
-                    $user->update(['role' => 'VERIFIKATOR']);
-                    $user->role = 'VERIFIKATOR';
-                }
                 return redirect()->route('verifikator.dashboard');
             } else {
                 return redirect()->route('koordinator.dashboard');
@@ -56,20 +49,13 @@ Route::get('/dashboard', function () {
 
     $dosen = $user->dosen;
     if ($dosen) {
+        $dosen->syncUserRole();
         $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
         $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
 
         if ($hasActiveKoor) {
-            if ($user->role !== 'KOORDINATOR') {
-                $user->update(['role' => 'KOORDINATOR']);
-                $user->role = 'KOORDINATOR';
-            }
             return redirect()->route('koordinator.dashboard');
         } elseif ($hasActiveVerif) {
-            if ($user->role !== 'VERIFIKATOR') {
-                $user->update(['role' => 'VERIFIKATOR']);
-                $user->role = 'VERIFIKATOR';
-            }
             return redirect()->route('verifikator.dashboard');
         } else {
             return redirect()->route('koordinator.dashboard');
@@ -78,7 +64,7 @@ Route::get('/dashboard', function () {
 
     if ($user->isVerifikator()) return redirect()->route('verifikator.dashboard');
     return redirect()->route('koordinator.dashboard');
-})->middleware('auth');
+})->middleware('auth')->name('dashboard');
 
 // ─── SuperAdmin Routes ────────────────────────────────────────────────────────
 Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN'])
@@ -87,6 +73,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
     ->group(function () {
         Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/export-laporan', [SuperAdminDashboardController::class, 'exportLaporan'])->name('dashboard.export-laporan');
+        Route::get('/aktivitas', [\App\Http\Controllers\SuperAdmin\AktivitasController::class, 'index'])->name('aktivitas.index');
 
         // Dosen
         Route::post('dosen/{dosen}/cabut-penugasan', [\App\Http\Controllers\SuperAdmin\DosenController::class, 'cabutPenugasan'])->name('dosen.cabut-penugasan');
@@ -121,7 +108,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
 
         Route::post('periode/{periode}/activate',  [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'activate'])->name('periode.activate');
         Route::post('periode/{periode}/close',     [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'close'])->name('periode.close');
-        Route::resource('periode', \App\Http\Controllers\SuperAdmin\PeriodeController::class)->except(['create', 'edit', 'show']);
+        Route::resource('periode', \App\Http\Controllers\SuperAdmin\PeriodeController::class)->except(['create', 'edit', 'show', 'destroy']);
         Route::get('periode/{periode}', [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'show'])->name('periode.show');
 
         // Kelompok Verifikasi (Unified Assignment)

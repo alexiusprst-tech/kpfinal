@@ -199,7 +199,6 @@ class SoalController extends Controller
             }
 
             foreach ($staleSoalQuery->get() as $staleSoal) {
-                $staleSoal->update(['status' => Soal::STATUS_REJECTED]);
                 $staleSoal->delete(); // soft-delete
             }
 

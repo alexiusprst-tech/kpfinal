@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
-use Maatwebsite\Excel\HeadingRowImport;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class PloController extends Controller
@@ -90,61 +89,17 @@ class PloController extends Controller
      */
     public function template()
     {
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Template PLO');
+        $filePath = storage_path('app/templates/template-plo.xlsx');
 
-        // Header
-        $sheet->setCellValue('A1', 'KODE PLO');
-        $sheet->setCellValue('B1', 'Program Learning Outcome / Capaian Pembelajaran');
-
-        // Style header
-        $headerStyle = [
-            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
-            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '801720']],
-            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER, 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER],
-            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN, 'color' => ['rgb' => 'CCCCCC']]],
-        ];
-        $sheet->getStyle('A1:B1')->applyFromArray($headerStyle);
-        $sheet->getRowDimension(1)->setRowHeight(22);
-
-        // Contoh data
-        $examples = [
-            ['PLO01', 'Mampu menganalisis permasalahan infokom yang komplek, mendefinisikan, dan memodelkan kebutuhan dalam konteks enterprise atau masyarakat dengan menerapkan ilmu dan pengetahuan dalam bidang komputasi, teknologi informasi dan komunikasi, dan disiplin lain yang relevan.'],
-            ['PLO02', 'Mampu merancang, mengembangkan, mengimplementasikan, dan mengevaluasi solusi berbasis sistem informasi untuk memenuhi kebutuhan organisasi menuju data-driven organization.'],
-            ['PLO03', 'Mampu untuk bekerja secara kolaboratif, proaktif, dan bertanggung jawab dalam tim untuk mencapai tujuan bersama dalam berbagai konteks profesional.'],
-        ];
-
-        $dataStyle = [
-            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN, 'color' => ['rgb' => 'DDDDDD']]],
-            'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP, 'wrapText' => true],
-        ];
-
-        $row = 2;
-        foreach ($examples as $example) {
-            $sheet->setCellValue("A{$row}", $example[0]);
-            $sheet->setCellValue("B{$row}", $example[1]);
-            $sheet->getStyle("A{$row}:B{$row}")->applyFromArray($dataStyle);
-            $row++;
+        if (!file_exists($filePath)) {
+            return redirect()->back()->with('error', 'File template PLO tidak ditemukan.');
         }
 
-
-
-        // Column widths
-        $sheet->getColumnDimension('A')->setWidth(14);
-        $sheet->getColumnDimension('B')->setWidth(70);
-
-        // Freeze header row
-        $sheet->freezePane('A2');
-
-        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
-        $filename = 'template-import-plo.xlsx';
-
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Cache-Control' => 'max-age=0',
+        return response()->download($filePath, 'Template PLO.xlsx', [
+            'Content-Type'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma'        => 'no-cache',
+            'Expires'       => '0',
         ]);
     }
 

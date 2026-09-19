@@ -36,16 +36,16 @@ class KelompokVerifikasiController extends Controller
 
         // Search by group name or course name / code
         if ($request->search) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('nama', 'ilike', "%{$search}%")
-                  ->orWhereHas('mataKuliah.mataKuliah', function ($mkQ) use ($search) {
-                      $mkQ->where('nama_mk', 'ilike', "%{$search}%")
-                          ->orWhere('kode_mk', 'ilike', "%{$search}%");
+            $term = "%{$request->search}%";
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER(nama) LIKE ?', [strtolower($term)])
+                  ->orWhereHas('mataKuliah.mataKuliah', function ($mkQ) use ($term) {
+                      $mkQ->whereRaw('LOWER(nama_mk) LIKE ?', [strtolower($term)])
+                          ->orWhereRaw('LOWER(kode_mk) LIKE ?', [strtolower($term)]);
                   })
-                  ->orWhereHas('koordinator.dosen', function ($dQ) use ($search) {
-                      $dQ->where('nama_lengkap', 'ilike', "%{$search}%")
-                         ->orWhere('kode_dosen', 'ilike', "%{$search}%");
+                  ->orWhereHas('koordinator.dosen', function ($dQ) use ($term) {
+                      $dQ->whereRaw('LOWER(nama_lengkap) LIKE ?', [strtolower($term)])
+                         ->orWhereRaw('LOWER(kode_dosen) LIKE ?', [strtolower($term)]);
                   });
             });
         }
@@ -109,10 +109,23 @@ class KelompokVerifikasiController extends Controller
             ->orderBy('kode_dosen')
             ->get();
 
+        $activeKoordinatorList = PenugasanKoordinator::where('status', 'ACTIVE')
+            ->select('periode_id', 'mata_kuliah_id', 'dosen_id', 'kelompok_id')
+            ->get();
+
+        $activeVerifikatorList = PenugasanVerifikator::where('status', 'ACTIVE')
+            ->select('periode_id', 'mata_kuliah_id', 'dosen_id', 'kelompok_id')
+            ->get();
+
+        $existingPeriodeIds = KelompokVerifikasi::pluck('periode_id')->toArray();
+
         return Inertia::render('SuperAdmin/KelompokVerifikasi/Create', [
-            'periodeList'    => $periodeList,
-            'mataKuliahList' => $mataKuliahList,
-            'dosenList'      => $dosenList,
+            'periodeList'           => $periodeList,
+            'existingPeriodeIds'    => $existingPeriodeIds,
+            'mataKuliahList'        => $mataKuliahList,
+            'dosenList'             => $dosenList,
+            'activeKoordinatorList' => $activeKoordinatorList,
+            'activeVerifikatorList' => $activeVerifikatorList,
         ]);
     }
 
@@ -128,69 +141,92 @@ class KelompokVerifikasiController extends Controller
             return back()->withErrors(['periode_id' => 'Periode yang sudah CLOSED tidak dapat digunakan untuk penugasan baru.'])->withInput();
         }
 
-        if ($violation = $this->validateSeparationOfDuties($validated['mata_kuliah'], $validated['verifikator'] ?? [])) {
+        if (KelompokVerifikasi::where('periode_id', $validated['periode_id'])->exists()) {
+            return back()->withErrors(['periode_id' => 'Kelompok Verifikasi untuk periode ini sudah ada. Dalam satu periode aktif hanya dapat dibuat 1 kelompok verifikasi.'])->withInput();
+        }
+
+        if ($violation = $this->validateSeparationOfDuties(
+            $validated['mata_kuliah'],
+            $validated['verifikator'] ?? [],
+            $validated['periode_id'],
+            null,
+            $validated['status']
+        )) {
             return $violation;
         }
 
-        $kelompok = DB::transaction(function () use ($validated, $request) {
-            $kelompok = KelompokVerifikasi::create([
-                'id'          => (string) Str::uuid(),
-                'nama'        => $validated['nama'],
-                'periode_id'  => $validated['periode_id'],
-                'status'      => $validated['status'],
-                'keterangan'  => $validated['keterangan'] ?? null,
-                'created_by'  => $request->user()->id,
-            ]);
-
-            // Create Kelompok Mata Kuliah, Koordinator mappings, and Verifikator mappings
-            foreach ($validated['mata_kuliah'] as $mkItem) {
-                $kList = $mkItem['koordinator_ids'] ?? (isset($mkItem['koordinator_id']) ? [$mkItem['koordinator_id']] : []);
-                $vList = $mkItem['verifikator_ids'] ?? [];
-
-                KelompokMataKuliah::create([
-                    'id'             => (string) Str::uuid(),
-                    'kelompok_id'    => $kelompok->id,
-                    'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
-                    'koordinator_id' => $kList[0] ?? null,
+        try {
+            $kelompok = DB::transaction(function () use ($validated, $request) {
+                $kelompok = KelompokVerifikasi::create([
+                    'id'          => (string) Str::uuid(),
+                    'nama'        => $validated['nama'],
+                    'periode_id'  => $validated['periode_id'],
+                    'status'      => $validated['status'],
+                    'keterangan'  => $validated['keterangan'] ?? null,
+                    'created_by'  => $request->user()->id,
                 ]);
 
-                // Store per-MK coordinators (up to 3)
-                foreach ($kList as $kDosenId) {
-                    KelompokKoordinator::create([
+                // Create Kelompok Mata Kuliah, Koordinator mappings, and Verifikator mappings
+                foreach ($validated['mata_kuliah'] as $mkItem) {
+                    $kList = $mkItem['koordinator_ids'] ?? (isset($mkItem['koordinator_id']) ? [$mkItem['koordinator_id']] : []);
+                    $vList = $mkItem['verifikator_ids'] ?? [];
+
+                    KelompokMataKuliah::create([
                         'id'             => (string) Str::uuid(),
                         'kelompok_id'    => $kelompok->id,
                         'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
-                        'dosen_id'       => $kDosenId,
+                        'koordinator_id' => $kList[0] ?? null,
                     ]);
+
+                    // Store per-MK coordinators (up to 3)
+                    foreach ($kList as $kDosenId) {
+                        KelompokKoordinator::create([
+                            'id'             => (string) Str::uuid(),
+                            'kelompok_id'    => $kelompok->id,
+                            'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
+                            'dosen_id'       => $kDosenId,
+                        ]);
+                    }
+
+                    // Store per-MK verifikators (up to 5)
+                    foreach ($vList as $vDosenId) {
+                        KelompokVerifikator::create([
+                            'id'             => (string) Str::uuid(),
+                            'kelompok_id'    => $kelompok->id,
+                            'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
+                            'dosen_id'       => $vDosenId,
+                        ]);
+                    }
                 }
 
-                // Store per-MK verifikators (up to 5)
-                foreach ($vList as $vDosenId) {
-                    KelompokVerifikator::create([
-                        'id'             => (string) Str::uuid(),
-                        'kelompok_id'    => $kelompok->id,
-                        'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
-                        'dosen_id'       => $vDosenId,
-                    ]);
+                // If active, synchronize operational assignments
+                if ($kelompok->status === 'ACTIVE') {
+                    $this->syncOperationalAssignments($kelompok, $request->user()->id);
                 }
+
+                AuditLog::record(
+                    $request->user()->id,
+                    'CREATE_KELOMPOK_VERIFIKASI',
+                    'KelompokVerifikasi',
+                    $kelompok->id,
+                    null,
+                    $kelompok->load(['mataKuliah', 'koordinator', 'verifikator'])->toArray()
+                );
+
+                return $kelompok;
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            $errorMessage = $e->getMessage();
+            if (preg_match('/ERROR:\s*(.*?)(?:\s+CONTEXT:|$)/s', $errorMessage, $matches)) {
+                $cleanError = trim($matches[1]);
+            } else {
+                $cleanError = 'Terjadi kesalahan integritas data saat menyimpan kelompok verifikasi.';
             }
 
-            // If active, synchronize operational assignments
-            if ($kelompok->status === 'ACTIVE') {
-                $this->syncOperationalAssignments($kelompok, $request->user()->id);
-            }
-
-            AuditLog::record(
-                $request->user()->id,
-                'CREATE_KELOMPOK_VERIFIKASI',
-                'KelompokVerifikasi',
-                $kelompok->id,
-                null,
-                $kelompok->load(['mataKuliah', 'koordinator', 'verifikator'])->toArray()
-            );
-
-            return $kelompok;
-        });
+            return back()->withErrors(['mata_kuliah' => $cleanError])->withInput();
+        } catch (\Throwable $e) {
+            return back()->withErrors(['mata_kuliah' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])->withInput();
+        }
 
         return redirect()->route('superadmin.kelompok-verifikasi.show', $kelompok->id)
             ->with('success', $kelompok->status === 'ACTIVE'
@@ -210,9 +246,11 @@ class KelompokVerifikasiController extends Controller
         ]);
 
         $periodeId = $kelompokVerifikasi->periode_id;
+        $isDraft = $kelompokVerifikasi->isDraft();
+        $createdAt = $kelompokVerifikasi->created_at;
 
         // Progress Calculation per Mata Kuliah
-        $mkListStats = $kelompokVerifikasi->mataKuliah->map(function ($kmk) use ($periodeId, $kelompokVerifikasi) {
+        $mkListStats = $kelompokVerifikasi->mataKuliah->map(function ($kmk) use ($periodeId, $kelompokVerifikasi, $isDraft, $createdAt) {
             $mk = $kmk->mataKuliah;
 
             // Fetch all coordinators for this course in this group
@@ -235,9 +273,42 @@ class KelompokVerifikasiController extends Controller
                 ->map(fn($item) => $item->dosen)
                 ->filter();
 
-            // Total Soal for this MK + Periode
+            if ($isDraft) {
+                return [
+                    'id'               => $kmk->id,
+                    'mata_kuliah_id'   => $kmk->mata_kuliah_id,
+                    'kode_mk'          => $mk->kode_mk ?? '-',
+                    'nama_mk'          => $mk->nama_mk ?? '-',
+                    'sks'              => $mk->sks ?? 0,
+                    'semester'         => $mk->semester ?? null,
+                    'koordinator'      => $koordinators->first(),
+                    'koordinator_list' => $koordinators->values(),
+                    'verifikator_list' => $verifikators->values(),
+                    'soal_count'       => 0,
+                    'draft'            => 0,
+                    'submitted'        => 0,
+                    'in_review'        => 0,
+                    'revision'         => 0,
+                    'approved'         => 0,
+                    'stats'            => [
+                        'total'     => 0,
+                        'draft'     => 0,
+                        'submitted' => 0,
+                        'in_review' => 0,
+                        'revision'  => 0,
+                        'approved'  => 0,
+                    ],
+                    'status_progres'   => 'PENDING',
+                ];
+            }
+
+            // Total Soal for this MK + Periode within this Kelompok's lifecycle
             $soalQuery = Soal::where('mata_kuliah_id', $kmk->mata_kuliah_id)
                 ->where('periode_id', $periodeId);
+
+            if ($createdAt) {
+                $soalQuery->where('created_at', '>=', $createdAt);
+            }
 
             $counts = (clone $soalQuery)
                 ->selectRaw("
@@ -246,8 +317,7 @@ class KelompokVerifikasiController extends Controller
                     SUM(CASE WHEN status = 'SUBMITTED' THEN 1 ELSE 0 END) as submitted,
                     SUM(CASE WHEN status IN ('IN_REVIEW', 'RESUBMITTED') THEN 1 ELSE 0 END) as in_review,
                     SUM(CASE WHEN status = 'REVISION' THEN 1 ELSE 0 END) as revision,
-                    SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved,
-                    SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as rejected
+                    SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved
                 ")->first();
 
             $totalCount = (int) ($counts->total ?? 0);
@@ -255,8 +325,7 @@ class KelompokVerifikasiController extends Controller
             $reviewedCount = (int) ($counts->submitted ?? 0)
                 + (int) ($counts->in_review ?? 0)
                 + (int) ($counts->revision ?? 0)
-                + (int) ($counts->approved ?? 0)
-                + (int) ($counts->rejected ?? 0);
+                + (int) ($counts->approved ?? 0);
 
             return [
                 'id'               => $kmk->id,
@@ -274,7 +343,6 @@ class KelompokVerifikasiController extends Controller
                 'in_review'        => (int) ($counts->in_review ?? 0),
                 'revision'         => (int) ($counts->revision ?? 0),
                 'approved'         => (int) ($counts->approved ?? 0),
-                'rejected'         => (int) ($counts->rejected ?? 0),
                 'stats'            => [
                     'total'     => $totalCount,
                     'draft'     => $draftCount,
@@ -282,7 +350,6 @@ class KelompokVerifikasiController extends Controller
                     'in_review' => (int) ($counts->in_review ?? 0),
                     'revision'  => (int) ($counts->revision ?? 0),
                     'approved'  => (int) ($counts->approved ?? 0),
-                    'rejected'  => (int) ($counts->rejected ?? 0),
                 ],
                 'status_progres'   => ($counts->approved ?? 0) > 0 ? 'COMPLETE' : ($totalCount > 0 ? 'IN_PROGRESS' : 'PENDING'),
             ];
@@ -290,11 +357,11 @@ class KelompokVerifikasiController extends Controller
 
         // Verifikator Statistics - Grouped by distinct Dosen in this Kelompok
         $verifikatorGrouped = KelompokVerifikator::where('kelompok_id', $kelompokVerifikasi->id)
-            ->with(['dosen', 'mataKuliah'])
+            ->with(['dosen.user', 'mataKuliah'])
             ->get()
             ->groupBy('dosen_id');
 
-        $verifikatorListStats = $verifikatorGrouped->map(function ($items, $dosenId) use ($periodeId) {
+        $verifikatorListStats = $verifikatorGrouped->map(function ($items, $dosenId) use ($periodeId, $isDraft, $createdAt) {
             $first = $items->first();
             $dosen = $first ? $first->dosen : null;
             $mkIds = $items->pluck('mata_kuliah_id')->filter()->unique();
@@ -304,18 +371,70 @@ class KelompokVerifikasiController extends Controller
                 'nama_mk' => $it->mataKuliah->nama_mk,
             ] : null)->filter()->unique('id')->values();
 
-            // Total soal for the courses assigned to this verifikator in this period
+            if ($isDraft) {
+                return [
+                    'id'              => $dosenId,
+                    'dosen_id'        => $dosenId,
+                    'kode_dosen'      => $dosen->kode_dosen ?? '-',
+                    'nama_lengkap'    => $dosen->nama_lengkap ?? '-',
+                    'email'           => $dosen->email ?? '-',
+                    'mata_kuliah_list'=> $mkList,
+                    'total_soal'      => 0,
+                    'menunggu'        => 0,
+                    'diverifikasi'    => 0,
+                    'revisi'          => 0,
+                    'status'          => $dosen->status ?? 'ACTIVE',
+                ];
+            }
+
+            // Total soal for the courses assigned to this verifikator in this period within kelompok lifecycle
             $soalQuery = Soal::whereIn('mata_kuliah_id', $mkIds)
                 ->where('periode_id', $periodeId);
 
-            $counts = (clone $soalQuery)
-                ->selectRaw("
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status IN ('SUBMITTED', 'IN_REVIEW', 'RESUBMITTED') THEN 1 ELSE 0 END) as menunggu,
-                    SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as diverifikasi,
-                    SUM(CASE WHEN status = 'REVISION' THEN 1 ELSE 0 END) as revisi,
-                    SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as ditolak
-                ")->first();
+            if ($createdAt) {
+                $soalQuery->where('created_at', '>=', $createdAt);
+            }
+
+            $totalSoal = (clone $soalQuery)->count();
+            $menungguCount = (clone $soalQuery)->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count();
+
+            // Hitung diverifikasi dan revisi berdasarkan tindakan nyata yang dilakukan oleh dosen verifikator ini
+            $diverifikasiCount = 0;
+            $revisiCount = 0;
+
+            if ($dosen && $dosen->user_id) {
+                $diverifikasiQuery = Verifikasi::where('verifikator_id', $dosen->user_id)
+                    ->where('action', 'APPROVED')
+                    ->whereHas('soal', function ($q) use ($mkIds, $periodeId, $createdAt) {
+                        $q->whereIn('mata_kuliah_id', $mkIds)
+                          ->where('periode_id', $periodeId);
+                        if ($createdAt) {
+                            $q->where('created_at', '>=', $createdAt);
+                        }
+                    });
+
+                if ($createdAt) {
+                    $diverifikasiQuery->where('created_at', '>=', $createdAt);
+                }
+
+                $diverifikasiCount = $diverifikasiQuery->count();
+
+                $revisiQuery = Verifikasi::where('verifikator_id', $dosen->user_id)
+                    ->where('action', 'REVISION')
+                    ->whereHas('soal', function ($q) use ($mkIds, $periodeId, $createdAt) {
+                        $q->whereIn('mata_kuliah_id', $mkIds)
+                          ->where('periode_id', $periodeId);
+                        if ($createdAt) {
+                            $q->where('created_at', '>=', $createdAt);
+                        }
+                    });
+
+                if ($createdAt) {
+                    $revisiQuery->where('created_at', '>=', $createdAt);
+                }
+
+                $revisiCount = $revisiQuery->count();
+            }
 
             return [
                 'id'              => $dosenId,
@@ -324,11 +443,10 @@ class KelompokVerifikasiController extends Controller
                 'nama_lengkap'    => $dosen->nama_lengkap ?? '-',
                 'email'           => $dosen->email ?? '-',
                 'mata_kuliah_list'=> $mkList,
-                'total_soal'      => (int) ($counts->total ?? 0),
-                'menunggu'        => (int) ($counts->menunggu ?? 0),
-                'diverifikasi'    => (int) ($counts->diverifikasi ?? 0),
-                'revisi'          => (int) ($counts->revisi ?? 0),
-                'ditolak'         => (int) ($counts->ditolak ?? 0),
+                'total_soal'      => $totalSoal,
+                'menunggu'        => $menungguCount,
+                'diverifikasi'    => $diverifikasiCount,
+                'revisi'          => $revisiCount,
                 'status'          => $dosen->status ?? 'ACTIVE',
             ];
         })->values();
@@ -341,9 +459,9 @@ class KelompokVerifikasiController extends Controller
         $approvedSoal = $mkListStats->sum(fn($m) => $m['stats']['approved']);
         $activeReviewTarget = $approvedSoal + $inReviewSoal;
 
-        $uploadProgress = $totalMk > 0 ? round(($mkWithSoal / $totalMk) * 100) : 0;
-        // Progress verifikasi: Approved dibagi total soal yang aktif direview (Approved + In Review / Submitted), mengecualikan Ditolak dan Draft
-        $verificationProgress = $activeReviewTarget > 0 ? round(($approvedSoal / $activeReviewTarget) * 100) : 0;
+        $uploadProgress = ($totalMk > 0 && !$isDraft) ? round(($mkWithSoal / $totalMk) * 100) : 0;
+        // Progress verifikasi: Approved dibagi total soal yang aktif direview (Approved + In Review / Submitted), mengecualikan Draft
+        $verificationProgress = ($activeReviewTarget > 0 && !$isDraft) ? round(($approvedSoal / $activeReviewTarget) * 100) : 0;
 
         // Recent Audit Logs for this group
         $recentActivities = AuditLog::where('model_type', 'KelompokVerifikasi')
@@ -399,11 +517,23 @@ class KelompokVerifikasiController extends Controller
         $mkAll = MataKuliah::orderBy('kode_mk')->get();
         $dosenAll = Dosen::where('status', 'ACTIVE')->orderBy('kode_dosen')->get();
 
+        $activeKoordinatorList = PenugasanKoordinator::where('status', 'ACTIVE')
+            ->where('kelompok_id', '!=', $kelompokVerifikasi->id)
+            ->select('periode_id', 'mata_kuliah_id', 'dosen_id', 'kelompok_id')
+            ->get();
+
+        $activeVerifikatorList = PenugasanVerifikator::where('status', 'ACTIVE')
+            ->where('kelompok_id', '!=', $kelompokVerifikasi->id)
+            ->select('periode_id', 'mata_kuliah_id', 'dosen_id', 'kelompok_id')
+            ->get();
+
         return Inertia::render('SuperAdmin/KelompokVerifikasi/Edit', [
-            'kelompok'   => $kelompokVerifikasi,
-            'periodeAll' => $periodeAll,
-            'mkAll'      => $mkAll,
-            'dosenAll'   => $dosenAll,
+            'kelompok'              => $kelompokVerifikasi,
+            'periodeAll'            => $periodeAll,
+            'mkAll'                 => $mkAll,
+            'dosenAll'              => $dosenAll,
+            'activeKoordinatorList' => $activeKoordinatorList,
+            'activeVerifikatorList' => $activeVerifikatorList,
         ]);
     }
 
@@ -418,74 +548,101 @@ class KelompokVerifikasiController extends Controller
             $this->kelompokVerifikasiMessages()
         );
 
-        if ($violation = $this->validateSeparationOfDuties($validated['mata_kuliah'], $validated['verifikator'] ?? [])) {
+        if (KelompokVerifikasi::where('periode_id', $validated['periode_id'])
+            ->where('id', '!=', $kelompokVerifikasi->id)
+            ->exists()) {
+            return back()->withErrors([
+                'periode_id' => 'Target periode sudah memiliki kelompok verifikasi. Hanya diperbolehkan 1 kelompok verifikasi per periode.'
+            ])->withInput();
+        }
+
+        if ($violation = $this->validateSeparationOfDuties(
+            $validated['mata_kuliah'],
+            $validated['verifikator'] ?? [],
+            $validated['periode_id'],
+            $kelompokVerifikasi->id,
+            $validated['status']
+        )) {
             return $violation;
         }
 
-        DB::transaction(function () use ($validated, $request, $kelompokVerifikasi) {
-            $oldData = $kelompokVerifikasi->load(['mataKuliah', 'koordinator', 'verifikator'])->toArray();
+        try {
+            DB::transaction(function () use ($validated, $request, $kelompokVerifikasi) {
+                $oldData = $kelompokVerifikasi->load(['mataKuliah', 'koordinator', 'verifikator'])->toArray();
 
-            $kelompokVerifikasi->update([
-                'nama'       => $validated['nama'],
-                'periode_id' => $validated['periode_id'],
-                'status'     => $validated['status'],
-                'keterangan' => $validated['keterangan'] ?? null,
-            ]);
-
-            // Rebuild MK mappings, Koordinator mappings, & Verifikator mappings per MK
-            KelompokMataKuliah::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-            KelompokKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-            KelompokVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-
-            foreach ($validated['mata_kuliah'] as $mkItem) {
-                $kList = $mkItem['koordinator_ids'] ?? (isset($mkItem['koordinator_id']) ? [$mkItem['koordinator_id']] : []);
-                $vList = $mkItem['verifikator_ids'] ?? [];
-
-                KelompokMataKuliah::create([
-                    'id'             => (string) Str::uuid(),
-                    'kelompok_id'    => $kelompokVerifikasi->id,
-                    'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
-                    'koordinator_id' => $kList[0] ?? null,
+                $kelompokVerifikasi->update([
+                    'nama'       => $validated['nama'],
+                    'periode_id' => $validated['periode_id'],
+                    'status'     => $validated['status'],
+                    'keterangan' => $validated['keterangan'] ?? null,
                 ]);
 
-                foreach ($kList as $kDosenId) {
-                    KelompokKoordinator::create([
+                // Rebuild MK mappings, Koordinator mappings, & Verifikator mappings per MK
+                KelompokMataKuliah::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+                KelompokKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+                KelompokVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+
+                foreach ($validated['mata_kuliah'] as $mkItem) {
+                    $kList = $mkItem['koordinator_ids'] ?? (isset($mkItem['koordinator_id']) ? [$mkItem['koordinator_id']] : []);
+                    $vList = $mkItem['verifikator_ids'] ?? [];
+
+                    KelompokMataKuliah::create([
                         'id'             => (string) Str::uuid(),
                         'kelompok_id'    => $kelompokVerifikasi->id,
                         'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
-                        'dosen_id'       => $kDosenId,
+                        'koordinator_id' => $kList[0] ?? null,
                     ]);
+
+                    foreach ($kList as $kDosenId) {
+                        KelompokKoordinator::create([
+                            'id'             => (string) Str::uuid(),
+                            'kelompok_id'    => $kelompokVerifikasi->id,
+                            'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
+                            'dosen_id'       => $kDosenId,
+                        ]);
+                    }
+
+                    foreach ($vList as $vDosenId) {
+                        KelompokVerifikator::create([
+                            'id'             => (string) Str::uuid(),
+                            'kelompok_id'    => $kelompokVerifikasi->id,
+                            'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
+                            'dosen_id'       => $vDosenId,
+                        ]);
+                    }
                 }
 
-                foreach ($vList as $vDosenId) {
-                    KelompokVerifikator::create([
-                        'id'             => (string) Str::uuid(),
-                        'kelompok_id'    => $kelompokVerifikasi->id,
-                        'mata_kuliah_id' => $mkItem['mata_kuliah_id'],
-                        'dosen_id'       => $vDosenId,
-                    ]);
+                if ($kelompokVerifikasi->status === 'ACTIVE') {
+                    $this->syncOperationalAssignments($kelompokVerifikasi, $request->user()->id);
+                } else {
+                    // Delete active assignments tied to this group (avoids UNIQUE constraint on status)
+                    PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+                    PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+                    $this->syncAffectedDosenRoles();
+                    $this->syncAffectedMataKuliahStatus();
                 }
-            }
 
-            if ($kelompokVerifikasi->status === 'ACTIVE') {
-                $this->syncOperationalAssignments($kelompokVerifikasi, $request->user()->id);
+                AuditLog::record(
+                    $request->user()->id,
+                    'UPDATE_KELOMPOK_VERIFIKASI',
+                    'KelompokVerifikasi',
+                    $kelompokVerifikasi->id,
+                    $oldData,
+                    $kelompokVerifikasi->load(['mataKuliah', 'koordinator', 'verifikator'])->toArray()
+                );
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            $errorMessage = $e->getMessage();
+            if (preg_match('/ERROR:\s*(.*?)(?:\s+CONTEXT:|$)/s', $errorMessage, $matches)) {
+                $cleanError = trim($matches[1]);
             } else {
-                // Delete active assignments tied to this group (avoids UNIQUE constraint on status)
-                PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-                PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-                $this->syncAffectedDosenRoles();
-                $this->syncAffectedMataKuliahStatus();
+                $cleanError = 'Terjadi kesalahan integritas data saat memperbarui kelompok verifikasi.';
             }
 
-            AuditLog::record(
-                $request->user()->id,
-                'UPDATE_KELOMPOK_VERIFIKASI',
-                'KelompokVerifikasi',
-                $kelompokVerifikasi->id,
-                $oldData,
-                $kelompokVerifikasi->load(['mataKuliah', 'koordinator', 'verifikator'])->toArray()
-            );
-        });
+            return back()->withErrors(['mata_kuliah' => $cleanError])->withInput();
+        } catch (\Throwable $e) {
+            return back()->withErrors(['mata_kuliah' => 'Terjadi kesalahan sistem: ' . $e->getMessage()])->withInput();
+        }
 
         return redirect()->route('superadmin.kelompok-verifikasi.show', $kelompokVerifikasi->id)
             ->with('success', 'Kelompok Verifikasi berhasil diperbarui.');
@@ -497,19 +654,89 @@ class KelompokVerifikasiController extends Controller
             return back()->with('error', 'Kelompok yang sudah CLOSED tidak dapat diaktifkan.');
         }
 
-        DB::transaction(function () use ($kelompokVerifikasi, $request) {
-            $kelompokVerifikasi->update(['status' => 'ACTIVE']);
-            $this->syncOperationalAssignments($kelompokVerifikasi, $request->user()->id);
+        // Validate separation of duties and active role conflict before activating
+        $periodeId = $kelompokVerifikasi->periode_id;
+        $mataKuliahList = KelompokMataKuliah::where('kelompok_id', $kelompokVerifikasi->id)->get();
+        foreach ($mataKuliahList as $kmk) {
+            $mkId = $kmk->mata_kuliah_id;
+            $kList = KelompokKoordinator::where('kelompok_id', $kelompokVerifikasi->id)
+                ->where('mata_kuliah_id', $mkId)
+                ->pluck('dosen_id')
+                ->toArray();
+            if (empty($kList) && $kmk->koordinator_id) {
+                $kList = [$kmk->koordinator_id];
+            }
+            $vList = KelompokVerifikator::where('kelompok_id', $kelompokVerifikasi->id)
+                ->where('mata_kuliah_id', $mkId)
+                ->pluck('dosen_id')
+                ->toArray();
 
-            AuditLog::record(
-                $request->user()->id,
-                'ACTIVATE_KELOMPOK_VERIFIKASI',
-                'KelompokVerifikasi',
-                $kelompokVerifikasi->id,
-                ['status' => 'DRAFT'],
-                ['status' => 'ACTIVE']
-            );
-        });
+            $mkObj = MataKuliah::find($mkId);
+            $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
+
+            // Check self overlap within this kelompok
+            $overlap = array_intersect($kList, $vList);
+            if (!empty($overlap)) {
+                $dosenObj = Dosen::find(reset($overlap));
+                $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
+                return back()->with('error', "Dosen {$dosenName} tidak dapat menjadi Koordinator sekaligus Verifikator pada mata kuliah {$mkName}.");
+            }
+
+            // Check cross-group conflict with active assignments
+            foreach ($vList as $vDosenId) {
+                $existingKoor = PenugasanKoordinator::where('dosen_id', $vDosenId)
+                    ->where('mata_kuliah_id', $mkId)
+                    ->where('periode_id', $periodeId)
+                    ->where('status', 'ACTIVE')
+                    ->where('kelompok_id', '!=', $kelompokVerifikasi->id)
+                    ->first();
+                if ($existingKoor) {
+                    $dosenObj = Dosen::find($vDosenId);
+                    $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
+                    return back()->with('error', "Dosen {$dosenName} sudah menjadi Koordinator aktif untuk mata kuliah {$mkName} pada periode ini. Dosen tidak dapat ditugaskan sebagai Verifikator.");
+                }
+            }
+
+            foreach ($kList as $kDosenId) {
+                $existingVerif = PenugasanVerifikator::where('dosen_id', $kDosenId)
+                    ->where('mata_kuliah_id', $mkId)
+                    ->where('periode_id', $periodeId)
+                    ->where('status', 'ACTIVE')
+                    ->where('kelompok_id', '!=', $kelompokVerifikasi->id)
+                    ->first();
+                if ($existingVerif) {
+                    $dosenObj = Dosen::find($kDosenId);
+                    $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
+                    return back()->with('error', "Dosen {$dosenName} sudah menjadi Verifikator aktif untuk mata kuliah {$mkName} pada periode ini. Dosen tidak dapat ditugaskan sebagai Koordinator.");
+                }
+            }
+        }
+
+        try {
+            DB::transaction(function () use ($kelompokVerifikasi, $request) {
+                $kelompokVerifikasi->update(['status' => 'ACTIVE']);
+                $this->syncOperationalAssignments($kelompokVerifikasi, $request->user()->id);
+
+                AuditLog::record(
+                    $request->user()->id,
+                    'ACTIVATE_KELOMPOK_VERIFIKASI',
+                    'KelompokVerifikasi',
+                    $kelompokVerifikasi->id,
+                    ['status' => 'DRAFT'],
+                    ['status' => 'ACTIVE']
+                );
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            $errorMessage = $e->getMessage();
+            if (preg_match('/ERROR:\s*(.*?)(?:\s+CONTEXT:|$)/s', $errorMessage, $matches)) {
+                $cleanError = trim($matches[1]);
+            } else {
+                $cleanError = 'Terjadi konflik integritas basis data saat mengaktifkan kelompok verifikasi.';
+            }
+            return back()->with('error', $cleanError);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', 'Kelompok Verifikasi berhasil diaktifkan.');
     }
@@ -570,30 +797,7 @@ class KelompokVerifikasiController extends Controller
 
     public function destroy(Request $request, KelompokVerifikasi $kelompokVerifikasi)
     {
-        DB::transaction(function () use ($kelompokVerifikasi, $request) {
-            $oldData = $kelompokVerifikasi->toArray();
-
-            // Remove any assignments (avoids UNIQUE constraint on status)
-            PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-            PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-            $this->syncAffectedDosenRoles();
-            $this->syncAffectedMataKuliahStatus();
-
-            $kelompokVerifikasi->delete();
-
-            AuditLog::record(
-                $request->user()->id,
-                'DELETE_KELOMPOK_VERIFIKASI',
-                'KelompokVerifikasi',
-                $oldData['id'],
-                $oldData,
-                null
-            );
-        });
-
-
-        return redirect()->route('superadmin.kelompok-verifikasi.index')
-            ->with('success', 'Kelompok Verifikasi berhasil dihapus.');
+        return back()->with('error', 'Kelompok verifikasi tidak dapat dihapus. Anda dapat mengubah data atau susunan penugasan pada kelompok ini.');
     }
 
     /**
@@ -820,34 +1024,13 @@ class KelompokVerifikasiController extends Controller
     }
 
     /**
-     * Recalculate and synchronize roles for all dosen based on active assignments
+     * Recalculate and synchronize roles for all dosen based on active assignments.
+     * Delegates to Dosen::syncAllUserRoles() (the single source of truth for
+     * role synchronization) so every call site in the app is consistent.
      */
     public static function syncAffectedDosenRoles(): void
     {
-        $dosens = Dosen::with('user')->get();
-        foreach ($dosens as $dosen) {
-            if (!$dosen->user || $dosen->user->role === 'SUPER_ADMIN') {
-                continue;
-            }
-
-            $hasActiveKoor = PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
-            $hasActiveVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
-
-            if ($hasActiveKoor) {
-                if ($dosen->user->role !== 'KOORDINATOR') {
-                    $dosen->user->update(['role' => 'KOORDINATOR']);
-                }
-            } elseif ($hasActiveVerif) {
-                if ($dosen->user->role !== 'VERIFIKATOR') {
-                    $dosen->user->update(['role' => 'VERIFIKATOR']);
-                }
-            } else {
-                // Tidak ada penugasan aktif — kembalikan ke DOSEN (kolom role NOT NULL)
-                if ($dosen->user->role !== 'DOSEN') {
-                    $dosen->user->update(['role' => 'DOSEN']);
-                }
-            }
-        }
+        Dosen::syncAllUserRoles();
     }
 
     /**
@@ -930,8 +1113,13 @@ class KelompokVerifikasiController extends Controller
      * first validation-failure redirect response, or null if all mata
      * kuliah entries pass.
      */
-    private function validateSeparationOfDuties(array $mataKuliahItems, array $groupVerifikators = [])
-    {
+    private function validateSeparationOfDuties(
+        array $mataKuliahItems,
+        array $groupVerifikators = [],
+        ?string $periodeId = null,
+        ?string $currentKelompokId = null,
+        ?string $targetStatus = null
+    ) {
         // Validasi Verifikator grup (legacy) harus Dosen Tetap
         foreach ($groupVerifikators as $vDosenId) {
             $vDosen = Dosen::find($vDosenId);
@@ -943,6 +1131,10 @@ class KelompokVerifikasiController extends Controller
         }
 
         foreach ($mataKuliahItems as $mk) {
+            $mkId = $mk['mata_kuliah_id'];
+            $mkObj = MataKuliah::find($mkId);
+            $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
+
             $kList = $mk['koordinator_ids'] ?? (isset($mk['koordinator_id']) ? [$mk['koordinator_id']] : []);
             $vList = $mk['verifikator_ids'] ?? [];
 
@@ -951,8 +1143,6 @@ class KelompokVerifikasiController extends Controller
             }
 
             if (empty($vList)) {
-                $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
-                $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
                 return back()->withErrors(['mata_kuliah' => "Setiap mata kuliah wajib memiliki minimal 1 verifikator. MK {$mkName} belum memiliki verifikator."])->withInput();
             }
 
@@ -968,9 +1158,7 @@ class KelompokVerifikasiController extends Controller
             $courseOverlap = array_intersect($kList, $vList);
             if (!empty($courseOverlap)) {
                 $dosenObj = Dosen::find(reset($courseOverlap));
-                $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
                 $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
-                $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
                 return back()->withErrors([
                     'mata_kuliah' => "Dosen {$dosenName} tidak dapat dipilih sebagai Koordinator sekaligus Verifikator pada mata kuliah {$mkName}."
                 ])->withInput();
@@ -980,11 +1168,48 @@ class KelompokVerifikasiController extends Controller
             foreach ($vList as $vDosenId) {
                 $vDosen = Dosen::find($vDosenId);
                 if ($vDosen && !$vDosen->isDosenTetap()) {
-                    $mkObj = MataKuliah::find($mk['mata_kuliah_id']);
-                    $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
                     return back()->withErrors([
                         'mata_kuliah' => "Dosen {$vDosen->nama_lengkap} ({$vDosen->kode_dosen}) berstatus Luar Biasa (LB). Verifikator Soal hanya dapat ditentukan dari Dosen Tetap pada mata kuliah {$mkName}."
                     ])->withInput();
+                }
+            }
+
+            // Cross-group active assignment checks (mirrors Postgres triggers)
+            if ($periodeId) {
+                // Check if any verifikator is ALREADY an ACTIVE koordinator for this course in this period
+                foreach ($vList as $vDosenId) {
+                    $existingKoor = PenugasanKoordinator::where('dosen_id', $vDosenId)
+                        ->where('mata_kuliah_id', $mkId)
+                        ->where('periode_id', $periodeId)
+                        ->where('status', 'ACTIVE')
+                        ->when($currentKelompokId, fn($q) => $q->where('kelompok_id', '!=', $currentKelompokId))
+                        ->first();
+
+                    if ($existingKoor) {
+                        $dosenObj = Dosen::find($vDosenId);
+                        $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
+                        return back()->withErrors([
+                            'mata_kuliah' => "Dosen {$dosenName} sudah menjadi Koordinator aktif untuk mata kuliah {$mkName} pada periode ini. Dosen tidak dapat ditugaskan sebagai Verifikator untuk mata kuliah yang sama."
+                        ])->withInput();
+                    }
+                }
+
+                // Check if any koordinator is ALREADY an ACTIVE verifikator for this course in this period
+                foreach ($kList as $kDosenId) {
+                    $existingVerif = PenugasanVerifikator::where('dosen_id', $kDosenId)
+                        ->where('mata_kuliah_id', $mkId)
+                        ->where('periode_id', $periodeId)
+                        ->where('status', 'ACTIVE')
+                        ->when($currentKelompokId, fn($q) => $q->where('kelompok_id', '!=', $currentKelompokId))
+                        ->first();
+
+                    if ($existingVerif) {
+                        $dosenObj = Dosen::find($kDosenId);
+                        $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
+                        return back()->withErrors([
+                            'mata_kuliah' => "Dosen {$dosenName} sudah menjadi Verifikator aktif untuk mata kuliah {$mkName} pada periode ini. Dosen tidak dapat ditugaskan sebagai Koordinator untuk mata kuliah yang sama."
+                        ])->withInput();
+                    }
                 }
             }
         }

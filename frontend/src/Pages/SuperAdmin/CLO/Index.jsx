@@ -1,15 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showAlert } from '@/Utils/sweetalert';
 import axios from 'axios';
 
 import {
-    Plus, Pencil, Trash2, Search, Download, Upload,
-    AlertTriangle, X, Activity, FileSpreadsheet, Eye,
-    ArrowRight, Check, CloudUpload, FileText, Save,
-    RotateCcw, AlertCircle, CheckCircle2, ChevronDown,
-    ChevronRight, BookOpen, Layers, Filter
+    Plus,
+    Pencil,
+    Trash2,
+    Search,
+    Download,
+    Upload,
+    AlertTriangle,
+    X,
+    Activity,
+    FileSpreadsheet,
+    Eye,
+    ArrowRight,
+    Check,
+    CloudUpload,
+    FileText,
+    Save,
+    RotateCcw,
+    AlertCircle,
+    CheckCircle2,
+    ChevronRight,
+    ChevronDown,
+    BookOpen,
+    Layers,
+    Filter
 } from 'lucide-react';
 
 // ─── Bloom options ────────────────────────────────────────────────────────────
@@ -30,13 +49,13 @@ function Stepper({ steps, activeStep }) {
                         <div className="flex flex-col items-center gap-1 flex-shrink-0">
                             <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
                                 done ? 'bg-emerald-500 border-emerald-500 text-white' :
-                                active ? 'bg-[#801720] border-[#801720] text-white shadow-lg shadow-red-200' :
+                                active ? 'bg-[#9E1B28] border-[#9E1B28] text-white shadow-lg shadow-red-200' :
                                 'bg-white border-gray-200 text-gray-400'
                             }`}>
                                 {done ? <Check className="w-4 h-4" /> : step.number}
                             </div>
                             <span className={`text-[10px] font-semibold text-center leading-tight max-w-[72px] ${
-                                active ? 'text-[#801720]' : done ? 'text-emerald-600' : 'text-gray-400'
+                                active ? 'text-[#9E1B28]' : done ? 'text-emerald-600' : 'text-gray-400'
                             }`}>{step.label}</span>
                         </div>
                         {idx < steps.length - 1 && (
@@ -49,7 +68,6 @@ function Stepper({ steps, activeStep }) {
     );
 }
 
-import FlashAlert from '@/Components/FlashAlert';
 
 // ─── Toast ─────────────────────────────────────────────────────────────────────
 
@@ -87,7 +105,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                         const val = e.target.value;
                         setForm(f => ({ ...f, plo_ids: val ? [val] : [] }));
                     }}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none bg-white transition-all font-medium text-gray-800"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none bg-white transition-all font-medium text-gray-800"
                     required
                 >
                     <option value="">-- Pilih PLO --</option>
@@ -109,7 +127,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                     type="text"
                     value={form.kode_clo || ''}
                     onChange={e => setForm(f => ({ ...f, kode_clo: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none transition-all"
                     placeholder="Contoh: PLO02-CLO01"
                     required
                 />
@@ -125,7 +143,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                     rows={3}
                     value={form.deskripsi || ''}
                     onChange={e => setForm(f => ({ ...f, deskripsi: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none resize-none transition-all"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none resize-none transition-all"
                     placeholder="Tuliskan deskripsi capaian pembelajaran mata kuliah (CLO)..."
                     required
                 />
@@ -139,7 +157,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                 <select
                     value={form.bloom || ''}
                     onChange={e => setForm(f => ({ ...f, bloom: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none bg-white transition-all"
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none bg-white transition-all"
                     required
                 >
                     <option value="">Pilih Level Bloom Taxonomy...</option>
@@ -155,7 +173,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                     <label className="text-xs font-bold text-gray-700">
                         5. Mapping Mata Kuliah
                     </label>
-                    <span className="text-[11px] font-semibold text-[#801720]">
+                    <span className="text-[11px] font-semibold text-[#9E1B28]">
                         {(form.mk_ids || []).length} MK Dipilih
                     </span>
                 </div>
@@ -168,7 +186,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                                 value={mkSearch}
                                 onChange={e => setMkSearch(e.target.value)}
                                 placeholder="Cari kode atau nama mata kuliah..."
-                                className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl outline-none focus:border-[#801720] focus:ring-1 focus:ring-[#801720]/20"
+                                className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl outline-none focus:border-[#9E1B28] focus:ring-1 focus:ring-[#9E1B28]/20"
                             />
                         </div>
                     </div>
@@ -180,7 +198,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                                     key={mk.id}
                                     className={`flex items-center justify-between p-2 rounded-xl border transition-all cursor-pointer ${
                                         isChecked
-                                            ? 'bg-red-50/50 border-[#801720]/30 text-gray-900 font-semibold'
+                                            ? 'bg-red-50/50 border-[#9E1B28]/30 text-gray-900 font-semibold'
                                             : 'bg-white border-gray-100 text-gray-700 hover:bg-slate-100/60'
                                     }`}
                                 >
@@ -189,7 +207,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                                             type="checkbox"
                                             checked={isChecked}
                                             onChange={() => toggleMk(mk.id)}
-                                            className="w-4 h-4 rounded text-[#801720] focus:ring-[#801720] accent-[#801720] cursor-pointer"
+                                            className="w-4 h-4 rounded text-[#9E1B28] focus:ring-[#9E1B28] accent-[#9E1B28] cursor-pointer"
                                         />
                                         <span className="text-xs truncate">{mk.nama_mk}</span>
                                     </div>
@@ -210,7 +228,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                 <button
                     type="submit"
                     disabled={processing}
-                    className="px-5 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-50 transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                    className="px-5 py-2.5 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] disabled:opacity-50 transition-all shadow-xs flex items-center gap-2 cursor-pointer"
                 >
                     {processing ? (
                         <>
@@ -308,7 +326,26 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
     const [previewStats, setPreviewStats] = useState(null);
     const [editingRow, setEditingRow] = useState(null);
     const [isConfirming, setIsConfirming] = useState(false);
+    const [expandedPlos, setExpandedPlos] = useState({});
+    const [treeFilterPlo, setTreeFilterPlo] = useState('');
     const fileInputRef = useRef(null);
+
+    const togglePloAccordion = (ploKey) => {
+        setExpandedPlos(prev => ({
+            ...prev,
+            [ploKey]: !prev[ploKey]
+        }));
+    };
+
+    const expandAllPlos = (tree) => {
+        const allOpen = {};
+        Object.keys(tree).forEach(k => { allOpen[k] = true; });
+        setExpandedPlos(allOpen);
+    };
+
+    const collapseAllPlos = () => {
+        setExpandedPlos({});
+    };
 
     const steps = [
         { number: 1, label: 'Unduh Template' },
@@ -406,6 +443,8 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                 setPreviewRows(data.rows);
                 setPreviewErrors(data.errors || []);
                 setPreviewStats({ total: data.totalRows, valid: data.validRows, error: data.errorRows });
+                setTreeFilterPlo('');
+                setExpandedPlos({});
                 setActiveStep(3);
             } else {
                 showAlert({
@@ -458,7 +497,6 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
         });
     };
 
-
     // ─── Grouped preview for mapping tree ─────────────────────────────────────
     const getMappingTree = () => {
         const tree = {};
@@ -481,46 +519,59 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
 
     const bloomColor = (bloom) => {
         const level = parseInt(bloom?.[0] || '0');
-        const colors = ['', 'bg-gray-100 text-gray-600', 'bg-blue-100 text-blue-700', 'bg-green-100 text-green-700', 'bg-yellow-100 text-yellow-700', 'bg-orange-100 text-orange-700', 'bg-red-100 text-red-700'];
-        return colors[level] || 'bg-gray-100 text-gray-600';
+        const colors = [
+            '',
+            'bg-slate-100 text-slate-700 border border-slate-200/80',
+            'bg-blue-50 text-blue-700 border border-blue-200/80',
+            'bg-emerald-50 text-emerald-700 border border-emerald-200/80',
+            'bg-amber-50 text-amber-800 border border-amber-200/80',
+            'bg-orange-50 text-orange-800 border border-orange-200/80',
+            'bg-purple-50 text-purple-700 border border-purple-200/80'
+        ];
+        return colors[level] || 'bg-slate-100 text-slate-700 border border-slate-200/80';
     };
 
     return (
         <AuthenticatedLayout title="Master CLO">
             <Head title="Master CLO" />
-            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
-                            <Activity className="w-6 h-6 text-[#801720]" /> Master CLO
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Kelola Course Learning Outcomes (CLO), Bloom Taxonomy, dan mapping ke PLO & Mata Kuliah</p>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                        <a href="/superadmin/clo/template" className="flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-all">
-                            <Download className="w-3.5 h-3.5" /> Template
-                        </a>
-                        <button onClick={openImportWizard} className="flex items-center gap-1.5 px-3 py-2 border border-[#801720] text-[#801720] rounded-xl text-xs font-semibold cursor-pointer hover:bg-red-50 transition-all">
-                            <Upload className="w-3.5 h-3.5" /> Impor
-                        </button>
-                        <a href="/superadmin/clo/export" className="flex items-center gap-1.5 px-3 py-2 bg-gray-700 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-all">
-                            <Download className="w-3.5 h-3.5" /> Ekspor
-                        </a>
-                        <button onClick={() => { setForm({ kode_clo: '', deskripsi: '', bloom: '', plo_ids: [], mk_ids: [] }); setShowAddModal(true); }}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] transition-all shadow-sm">
-                            <Plus className="w-3.5 h-3.5" /> Tambah CLO
-                        </button>
+                {/* Header Banner */}
+                <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                                <Activity className="w-3.5 h-3.5" />
+                                <span>Course Learning Outcomes</span>
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Master CLO</h1>
+                            <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                                Kelola Course Learning Outcomes (CLO), Bloom Taxonomy, dan mapping ke PLO &amp; Mata Kuliah.
+                            </p>
+                        </div>
+                        <div className="flex gap-2 flex-wrap shrink-0">
+                            <a href="/superadmin/clo/template?v=4" className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white hover:bg-white/20 transition-all">
+                                <Download className="w-3.5 h-3.5" /> Template
+                            </a>
+                            <button onClick={openImportWizard} className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white cursor-pointer hover:bg-white/20 transition-all">
+                                <Upload className="w-3.5 h-3.5" /> Impor
+                            </button>
+                            <a href="/superadmin/clo/export" className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white hover:bg-white/20 transition-all">
+                                <Download className="w-3.5 h-3.5" /> Ekspor
+                            </a>
+                            <button onClick={() => { setForm({ kode_clo: '', deskripsi: '', bloom: '', plo_ids: [], mk_ids: [] }); setShowAddModal(true); }}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-white text-[#9E1B28] rounded-xl text-xs font-bold hover:bg-rose-50 transition-all shadow-sm">
+                                <Plus className="w-3.5 h-3.5" /> Tambah CLO
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Stats Overview */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-xl bg-[#801720]/10 flex items-center justify-center flex-shrink-0">
-                            <Activity className="w-5 h-5 text-[#801720]" />
+                        <div className="w-11 h-11 rounded-xl bg-[#9E1B28]/10 flex items-center justify-center flex-shrink-0">
+                            <Activity className="w-5 h-5 text-[#9E1B28]" />
                         </div>
                         <div>
                             <p className="text-xs font-semibold text-slate-500">Master CLO</p>
@@ -556,7 +607,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             placeholder="Cari kode CLO, deskripsi, atau kata kunci..."
-                            className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] focus:bg-white outline-none transition-all"
+                            className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] focus:bg-white outline-none transition-all"
                         />
                         {search && (
                             <button
@@ -572,14 +623,14 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                     {/* Quick-Filter Horizontal Pills for PLO */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-100 scrollbar-thin">
                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1 flex-shrink-0">
-                            <Layers className="w-3.5 h-3.5 text-[#801720]" /> Filter PLO:
+                            <Layers className="w-3.5 h-3.5 text-[#9E1B28]" /> Filter PLO:
                         </span>
                         <button
                             type="button"
                             onClick={() => handlePloSelect('')}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                                 !selectedPlo
-                                    ? 'bg-[#801720] text-white shadow-sm shadow-red-900/20'
+                                    ? 'bg-[#9E1B28] text-white shadow-sm shadow-red-900/20'
                                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                         >
@@ -594,7 +645,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                     onClick={() => handlePloSelect(plo.kode_plo)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
                                         isActive
-                                            ? 'bg-[#801720] text-white shadow-sm shadow-red-900/20'
+                                            ? 'bg-[#9E1B28] text-white shadow-sm shadow-red-900/20'
                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                                 >
@@ -614,9 +665,9 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                     <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">No</th>
                                     <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Kode CLO</th>
                                     <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Deskripsi</th>
-                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Bloom</th>
-                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">PLO</th>
-                                    <th className="text-right px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Bloom</th>
+                                    <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">PLO</th>
+                                    <th className="text-right px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -624,14 +675,16 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                     <tr><td colSpan={6} className="text-center py-12 text-gray-400 text-sm">Tidak ada data CLO</td></tr>
                                 ) : cloList.data?.map((item, idx) => (
                                     <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-5 py-4 text-gray-500 text-xs">{(cloList.current_page - 1) * cloList.per_page + idx + 1}</td>
-                                        <td className="px-5 py-4 font-bold text-[#801720]">{item.kode_clo}</td>
+                                        <td className="px-5 py-4 text-gray-500 text-xs whitespace-nowrap">{(cloList.current_page - 1) * cloList.per_page + idx + 1}</td>
+                                        <td className="px-5 py-4 font-bold text-[#9E1B28] whitespace-nowrap">{item.kode_clo}</td>
                                         <td className="px-5 py-4 text-gray-700 max-w-xs">
                                             <p className="line-clamp-2 text-xs">{item.deskripsi}</p>
                                         </td>
-                                        <td className="px-5 py-4">
+                                        <td className="px-5 py-4 whitespace-nowrap">
                                             {item.bloom ? (
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${bloomColor(item.bloom)}`}>{item.bloom}</span>
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${bloomColor(item.bloom)}`}>
+                                                    {item.bloom}
+                                                </span>
                                             ) : <span className="text-xs text-gray-400">—</span>}
                                         </td>
                                         <td className="px-5 py-4">
@@ -687,7 +740,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                         disabled={!link.url}
                                         onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
-                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${link.active ? 'bg-[#801720] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed'}`}
+                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${link.active ? 'bg-[#9E1B28] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed'}`}
                                     />
                                 ))}
                             </div>
@@ -701,10 +754,10 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                 <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
                         {/* Modal Header */}
-                        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-[#801720]/5 to-white">
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-[#9E1B28]/5 to-white">
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-[#801720]/10 flex items-center justify-center">
-                                    <FileSpreadsheet className="w-5 h-5 text-[#801720]" />
+                                <div className="w-9 h-9 rounded-xl bg-[#9E1B28]/10 flex items-center justify-center">
+                                    <FileSpreadsheet className="w-5 h-5 text-[#9E1B28]" />
                                 </div>
                                 <div>
                                     <h2 className="text-base font-extrabold text-slate-800">Impor Data CLO & Mapping</h2>
@@ -734,7 +787,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                         <p className="text-xs text-blue-600 mb-3">Satu CLO dapat dipetakan ke satu atau banyak Mata Kuliah. Beberapa Mata Kuliah pada baris yang sama dapat dipisahkan dengan simbol titik koma (;).</p>
                                         <div className="bg-white rounded-xl border border-blue-200 overflow-hidden">
                                             <table className="w-full text-xs">
-                                                <thead className="bg-[#801720] text-white">
+                                                <thead className="bg-[#9E1B28] text-white">
                                                     <tr>
                                                         {['PLO', 'Kode CLO', 'CLO', 'Bloom', 'MK'].map(h => (
                                                             <th key={h} className="p-2.5 text-left font-bold">{h}</th>
@@ -743,8 +796,8 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                                 </thead>
                                                 <tbody>
                                                     {[
-                                                        ['PLO02', 'PLO02-CLO01', 'Mampu menganalisis kebutuhan sistem...', '4 - Analyze', 'Analisis Sistem; Basis Data'],
-                                                        ['PLO02', 'PLO02-CLO02', 'Mampu mengembangkan solusi...', '6 - Create', 'Pemrograman Web; Proyek Perangkat Lunak'],
+                                                        ['PLO01', 'PLO01-CLO01', 'Mampu memahami prinsip-prinsip infokom...', '2 - Understand', 'Matematika untuk Sistem Informasi; Matematika Diskrit; ...'],
+                                                        ['PLO04', 'PLO04-CLO01', 'Mampu memahami pemikiran logis, kritis...', '2 - Understand', 'Agama; Agama Katolik; Agama Islam; Agama Hindu; Agama Buddha; Agama Kristen; ...'],
                                                     ].map((row, i) => (
                                                         <tr key={i} className="border-t border-blue-100">
                                                             {row.map((cell, j) => <td key={j} className="p-2.5 text-gray-600">{cell}</td>)}
@@ -755,13 +808,13 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                         </div>
                                     </div>
                                     <div className="flex flex-col sm:flex-row gap-3">
-                                        <a href="/superadmin/clo/template"
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#801720]/40 rounded-xl text-sm font-semibold text-[#801720] hover:bg-red-50 transition-all"
+                                        <a href="/superadmin/clo/template?v=4"
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#9E1B28]/40 rounded-xl text-sm font-semibold text-[#9E1B28] hover:bg-red-50 transition-all"
                                         >
                                             <Download className="w-4 h-4" /> Unduh Template Excel
                                         </a>
                                         <button onClick={() => setActiveStep(2)}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] transition-all">
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] transition-all">
                                             Lanjut ke Impor <ArrowRight className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -774,8 +827,8 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                     <div
                                         className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
                                             isDragging
-                                                ? 'border-[#801720] bg-red-50/60 scale-[1.01]'
-                                                : 'border-gray-300 hover:border-[#801720]/50 hover:bg-red-50/30'
+                                                ? 'border-[#9E1B28] bg-red-50/60 scale-[1.01]'
+                                                : 'border-gray-300 hover:border-[#9E1B28]/50 hover:bg-red-50/30'
                                         }`}
                                         onClick={() => fileInputRef.current?.click()}
                                         onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
@@ -789,8 +842,8 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                             handleFileDrop(file);
                                         }}
                                     >
-                                        <CloudUpload className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragging ? 'text-[#801720]' : 'text-gray-300'}`} />
-                                        <p className={`text-sm font-semibold transition-colors ${isDragging ? 'text-[#801720]' : 'text-gray-600'}`}>
+                                        <CloudUpload className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragging ? 'text-[#9E1B28]' : 'text-gray-300'}`} />
+                                        <p className={`text-sm font-semibold transition-colors ${isDragging ? 'text-[#9E1B28]' : 'text-gray-600'}`}>
                                             {isDragging ? 'Lepaskan file di sini!' : 'Klik atau seret file Excel ke sini'}
                                         </p>
                                         <p className="text-xs text-gray-400 mt-1">Format: .xlsx, .xls, .csv (Maks. 5MB)</p>
@@ -811,7 +864,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                         <button
                                             onClick={handlePreview}
                                             disabled={!selectedFile || isPreviewing}
-                                            className="flex-1 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                            className="flex-1 py-2.5 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                                         >
                                             {isPreviewing ? (<><span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span> Memvalidasi...</>) : (<><Eye className="w-4 h-4" /> Validasi & Pratinjau</>)}
                                         </button>
@@ -847,64 +900,197 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                     )}
 
                                     {/* Mapping Tree (valid rows only) */}
-                                    {previewStats.valid > 0 && (
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> Pratinjau Pemetaan PLO → CLO → Mata Kuliah:</p>
-                                            <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-3 space-y-2 max-h-52 overflow-y-auto">
-                                                {Object.entries(getMappingTree()).map(([ploKey, clos]) => (
-                                                    <div key={ploKey}>
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold">{ploKey}</span>
+                                    {previewStats.valid > 0 && (() => {
+                                        const mappingTree = getMappingTree();
+                                        const allPloKeys = Object.keys(mappingTree);
+                                        const displayedPloKeys = treeFilterPlo
+                                            ? allPloKeys.filter(k => k === treeFilterPlo)
+                                            : allPloKeys;
+
+                                        return (
+                                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3">
+                                                {/* Header with Dropdown Filter & Accordion Controls */}
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-200/80">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-7 h-7 rounded-lg bg-red-100 text-[#9E1B28] flex items-center justify-center flex-shrink-0">
+                                                            <Layers className="w-4 h-4" />
                                                         </div>
-                                                        {Object.entries(clos).map(([cloKey, cloData]) => (
-                                                            <div key={cloKey} className="ml-4 mb-1.5">
-                                                                <div className="flex items-start gap-2 flex-wrap">
-                                                                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
-                                                                    <span className="px-1.5 py-0.5 bg-[#801720]/10 text-[#801720] rounded text-[10px] font-bold">{cloKey}</span>
-                                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${bloomColor(cloData.bloom)}`}>{cloData.bloom}</span>
-                                                                    <span className="text-xs text-slate-600 flex-1 min-w-0 truncate">{cloData.deskripsi}</span>
-                                                                </div>
-                                                                <div className="ml-8 flex flex-wrap gap-1 mt-1">
-                                                                    {cloData.mks.map(mk => (
-                                                                        <span key={mk} className="px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded text-[10px] font-semibold">📚 {mk}</span>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        ))}
+                                                        <div>
+                                                            <h4 className="text-xs font-bold text-slate-800">Pratinjau Pemetaan Hierarkis</h4>
+                                                            <p className="text-[11px] text-slate-500">PLO → CLO (Bloom) → Mata Kuliah</p>
+                                                        </div>
                                                     </div>
-                                                ))}
+
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        {/* PLO Select Dropdown */}
+                                                        <div className="relative">
+                                                            <select
+                                                                value={treeFilterPlo}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    setTreeFilterPlo(val);
+                                                                    if (val) {
+                                                                        setExpandedPlos(prev => ({ ...prev, [val]: true }));
+                                                                    }
+                                                                }}
+                                                                className="text-xs font-bold bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 pr-7 text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 cursor-pointer appearance-none shadow-xs"
+                                                            >
+                                                                <option value="">Semua PLO ({allPloKeys.length})</option>
+                                                                {allPloKeys.map(ploKey => {
+                                                                    const clos = mappingTree[ploKey];
+                                                                    const cloCount = Object.keys(clos).length;
+                                                                    const totalMk = Object.values(clos).reduce((acc, c) => acc + c.mks.length, 0);
+                                                                    return (
+                                                                        <option key={ploKey} value={ploKey}>
+                                                                            {ploKey} ({cloCount} CLO · {totalMk} MK)
+                                                                        </option>
+                                                                    );
+                                                                })}
+                                                            </select>
+                                                            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                        </div>
+
+                                                        {/* Quick Expand / Collapse */}
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => expandAllPlos(mappingTree)}
+                                                                className="px-2 py-1 text-[10px] font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer"
+                                                            >
+                                                                Buka Semua
+                                                            </button>
+                                                            <span className="text-slate-300 text-xs">|</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={collapseAllPlos}
+                                                                className="px-2 py-1 text-[10px] font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer"
+                                                            >
+                                                                Tutup Semua
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Accordion / Dropdown List */}
+                                                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                                    {displayedPloKeys.map(ploKey => {
+                                                        const clos = mappingTree[ploKey];
+                                                        const cloCount = Object.keys(clos).length;
+                                                        const totalMk = Object.values(clos).reduce((acc, c) => acc + c.mks.length, 0);
+                                                        const isOpen = expandedPlos[ploKey] ?? (displayedPloKeys.length === 1);
+
+                                                        return (
+                                                            <div key={ploKey} className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs transition-all">
+                                                                {/* Accordion Header / Dropdown Toggle */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => togglePloAccordion(ploKey)}
+                                                                    className="w-full px-3.5 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/80 transition-colors cursor-pointer"
+                                                                >
+                                                                    <div className="flex items-center gap-2 min-w-0">
+                                                                        <div className="p-0.5 rounded text-slate-400">
+                                                                            {isOpen ? <ChevronDown className="w-4 h-4 text-slate-600" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                                                                        </div>
+                                                                        <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200/80 rounded-lg text-xs font-extrabold whitespace-nowrap">
+                                                                            {ploKey}
+                                                                        </span>
+                                                                        <span className="text-xs text-slate-500 font-medium truncate">
+                                                                            {cloCount} CLO · {totalMk} Mata Kuliah
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                                                                        {isOpen ? 'Sembunyikan' : 'Lihat Detail'}
+                                                                    </span>
+                                                                </button>
+
+                                                                {/* Accordion Content */}
+                                                                {isOpen && (
+                                                                    <div className="p-3 pt-0 border-t border-slate-100 bg-slate-50/40 divide-y divide-slate-100">
+                                                                        {Object.entries(clos).map(([cloKey, cloData]) => (
+                                                                            <div key={cloKey} className="py-2.5 first:pt-2 last:pb-0 space-y-2">
+                                                                                {/* CLO Info Header */}
+                                                                                <div className="flex items-start gap-2 flex-wrap">
+                                                                                    <span className="px-2 py-0.5 bg-[#9E1B28]/10 text-[#9E1B28] border border-[#9E1B28]/20 rounded-md text-[11px] font-bold whitespace-nowrap">
+                                                                                        {cloKey}
+                                                                                    </span>
+                                                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${bloomColor(cloData.bloom)}`}>
+                                                                                        {cloData.bloom}
+                                                                                    </span>
+                                                                                    <p className="text-xs text-slate-700 leading-relaxed font-medium flex-1 min-w-[200px]">
+                                                                                        {cloData.deskripsi}
+                                                                                    </p>
+                                                                                </div>
+
+                                                                                {/* Mata Kuliah Badges */}
+                                                                                {cloData.mks.length > 0 && (
+                                                                                    <div className="bg-white p-2.5 rounded-lg border border-slate-200/70 space-y-1.5">
+                                                                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                                                                            <BookOpen className="w-3 h-3 text-[#9E1B28]" />
+                                                                                            <span>Mata Kuliah Terpetakan ({cloData.mks.length}):</span>
+                                                                                        </div>
+                                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                                            {cloData.mks.map(mk => (
+                                                                                                <span
+                                                                                                    key={mk}
+                                                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-50 text-violet-700 border border-violet-200/70 rounded-md text-[11px] font-semibold whitespace-nowrap"
+                                                                                                >
+                                                                                                    <span>📚</span>
+                                                                                                    <span>{mk}</span>
+                                                                                                </span>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
 
                                     {/* Flat table */}
                                     <div className="border border-slate-200 rounded-xl overflow-hidden">
                                         <table className="w-full text-xs">
                                             <thead className="bg-slate-100">
                                                 <tr>
-                                                    {['No', 'PLO', 'Kode CLO', 'Bloom', 'MK', 'Status'].map(h => (
-                                                        <th key={h} className="p-2.5 text-left font-bold text-slate-600">{h}</th>
-                                                    ))}
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 whitespace-nowrap w-12">No</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 whitespace-nowrap">PLO</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 whitespace-nowrap">Kode CLO</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 whitespace-nowrap min-w-[110px]">Bloom</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600">MK</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 whitespace-nowrap min-w-[100px]">Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
                                                 {previewRows.map((row, idx) => (
                                                     <tr key={idx} className={`${!row.is_valid ? 'bg-red-50/60' : 'hover:bg-slate-50/50'}`}>
-                                                        <td className="p-2.5 text-slate-400">{row.row}</td>
-                                                        <td className="p-2.5 font-bold text-blue-700">{row.plo}</td>
-                                                        <td className="p-2.5 font-bold text-[#801720]">{row.kode_clo}</td>
-                                                        <td className="p-2.5">
-                                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${bloomColor(row.bloom)}`}>{row.bloom}</span>
+                                                        <td className="p-2.5 text-slate-400 whitespace-nowrap">{row.row}</td>
+                                                        <td className="p-2.5 font-bold text-blue-700 whitespace-nowrap">{row.plo}</td>
+                                                        <td className="p-2.5 font-bold text-[#9E1B28] whitespace-nowrap">{row.kode_clo}</td>
+                                                        <td className="p-2.5 whitespace-nowrap">
+                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${bloomColor(row.bloom)}`}>{row.bloom}</span>
                                                         </td>
                                                         <td className="p-2.5 text-slate-600">{row.mk}</td>
-                                                        <td className="p-2.5">
-                                                            {row.is_valid
-                                                                ? <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">✓ Valid</span>
-                                                                : <div>
-                                                                    <span className="px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold">✗ Kesalahan</span>
+                                                        <td className="p-2.5 whitespace-nowrap">
+                                                            {row.is_valid ? (
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold whitespace-nowrap">
+                                                                    <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                                                                    <span>Valid</span>
+                                                                </span>
+                                                            ) : (
+                                                                <div className="space-y-1">
+                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-200 text-[11px] font-bold whitespace-nowrap">
+                                                                        <X className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+                                                                        <span>Kesalahan</span>
+                                                                    </span>
                                                                     {row.errors?.map((e, i) => <p key={i} className="text-red-500 text-[10px] mt-0.5">• {e}</p>)}
-                                                                  </div>
-                                                            }
+                                                                </div>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -917,7 +1103,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                             <RotateCcw className="w-3.5 h-3.5" /> Ganti File
                                         </button>
                                         <button onClick={proceedToEdit} disabled={previewRows.length === 0}
-                                            className="flex-1 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+                                            className="flex-1 py-2.5 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] disabled:opacity-50 transition-all flex items-center justify-center gap-2">
                                             <Pencil className="w-4 h-4" /> Lanjut Edit & Konfirmasi
                                         </button>
                                     </div>
@@ -937,9 +1123,13 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                         <table className="w-full text-xs">
                                             <thead className="bg-slate-100 sticky top-0">
                                                 <tr>
-                                                    {['PLO', 'Kode CLO', 'CLO', 'Bloom', 'MK', 'Status', 'Aksi'].map(h => (
-                                                        <th key={h} className="p-2.5 text-left font-bold text-slate-600">{h}</th>
-                                                    ))}
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 whitespace-nowrap">PLO</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 whitespace-nowrap">Kode CLO</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600">CLO</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 whitespace-nowrap min-w-[110px]">Bloom</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600">MK</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 whitespace-nowrap min-w-[100px]">Status</th>
+                                                    <th className="p-2.5 text-center font-bold text-slate-600 whitespace-nowrap">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
@@ -947,41 +1137,48 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                                     <tr key={idx} className={`${!row.is_valid ? 'bg-red-50/40' : ''}`}>
                                                         <td className="p-2">
                                                             {editingRow === idx
-                                                                ? <input defaultValue={row.plo} onBlur={e => saveEditRow(idx, 'plo', e.target.value)} className="w-20 px-1 py-0.5 border border-[#801720] rounded text-xs font-bold focus:outline-none" />
+                                                                ? <input defaultValue={row.plo} onBlur={e => saveEditRow(idx, 'plo', e.target.value)} className="w-20 px-1 py-0.5 border border-[#9E1B28] rounded text-xs font-bold focus:outline-none" />
                                                                 : <span className="font-bold text-blue-700">{row.plo}</span>
                                                             }
                                                         </td>
                                                         <td className="p-2">
                                                             {editingRow === idx
-                                                                ? <input defaultValue={row.kode_clo} onBlur={e => saveEditRow(idx, 'kode_clo', e.target.value)} className="w-24 px-1 py-0.5 border border-[#801720] rounded text-xs font-bold text-[#801720] focus:outline-none" />
-                                                                : <span className="font-bold text-[#801720]">{row.kode_clo}</span>
+                                                                ? <input defaultValue={row.kode_clo} onBlur={e => saveEditRow(idx, 'kode_clo', e.target.value)} className="w-24 px-1 py-0.5 border border-[#9E1B28] rounded text-xs font-bold text-[#9E1B28] focus:outline-none" />
+                                                                : <span className="font-bold text-[#9E1B28]">{row.kode_clo}</span>
                                                             }
                                                         </td>
                                                         <td className="p-2 max-w-xs">
                                                             {editingRow === idx
-                                                                ? <textarea rows={2} defaultValue={row.deskripsi} onBlur={e => saveEditRow(idx, 'deskripsi', e.target.value)} className="w-full px-1 py-0.5 border border-[#801720] rounded text-xs focus:outline-none resize-none" />
+                                                                ? <textarea rows={2} defaultValue={row.deskripsi} onBlur={e => saveEditRow(idx, 'deskripsi', e.target.value)} className="w-full px-1 py-0.5 border border-[#9E1B28] rounded text-xs focus:outline-none resize-none" />
                                                                 : <span className="line-clamp-2">{row.deskripsi}</span>
                                                             }
                                                         </td>
-                                                        <td className="p-2">
+                                                        <td className="p-2 whitespace-nowrap">
                                                             {editingRow === idx
-                                                                ? <select defaultValue={row.bloom} onBlur={e => saveEditRow(idx, 'bloom', e.target.value)} className="w-28 px-1 py-0.5 border border-[#801720] rounded text-xs focus:outline-none">
+                                                                ? <select defaultValue={row.bloom} onBlur={e => saveEditRow(idx, 'bloom', e.target.value)} className="w-28 px-1 py-0.5 border border-[#9E1B28] rounded text-xs focus:outline-none">
                                                                     {BLOOM_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
                                                                   </select>
-                                                                : <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${bloomColor(row.bloom)}`}>{row.bloom}</span>
+                                                                : <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${bloomColor(row.bloom)}`}>{row.bloom}</span>
                                                             }
                                                         </td>
                                                         <td className="p-2">
                                                             {editingRow === idx
-                                                                ? <input defaultValue={row.mk} onBlur={e => saveEditRow(idx, 'mk', e.target.value)} className="w-28 px-1 py-0.5 border border-[#801720] rounded text-xs focus:outline-none" />
+                                                                ? <input defaultValue={row.mk} onBlur={e => saveEditRow(idx, 'mk', e.target.value)} className="w-28 px-1 py-0.5 border border-[#9E1B28] rounded text-xs focus:outline-none" />
                                                                 : <span className="text-violet-700 font-semibold">{row.mk}</span>
                                                             }
                                                         </td>
-                                                        <td className="p-2">
-                                                            {row.is_valid
-                                                                ? <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">✓ Valid</span>
-                                                                : <span className="px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold">✗ Kesalahan</span>
-                                                            }
+                                                        <td className="p-2 whitespace-nowrap">
+                                                            {row.is_valid ? (
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold whitespace-nowrap">
+                                                                    <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                                                                    <span>Valid</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-200 text-[11px] font-bold whitespace-nowrap">
+                                                                    <X className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+                                                                    <span>Kesalahan</span>
+                                                                </span>
+                                                            )}
                                                         </td>
                                                         <td className="p-2">
                                                             <div className="flex items-center gap-1">
@@ -1008,7 +1205,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                         <button
                                             onClick={handleConfirmImport}
                                             disabled={isConfirming || previewRows.filter(r => r.is_valid).length === 0}
-                                            className="flex-1 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                            className="flex-1 py-2.5 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                                         >
                                             {isConfirming
                                                 ? <><span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span> Menyimpan...</>
@@ -1030,9 +1227,9 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                     <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                                <span className="text-base font-extrabold text-[#801720]">{viewItem?.kode_clo}</span>
+                                <span className="text-base font-extrabold text-[#9E1B28]">{viewItem?.kode_clo}</span>
                                 {viewItem?.bloom && (
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${bloomColor(viewItem.bloom)}`}>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${bloomColor(viewItem.bloom)}`}>
                                         {viewItem.bloom}
                                     </span>
                                 )}
@@ -1061,7 +1258,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                     <div>
                         <div className="flex items-center justify-between mb-2.5">
                             <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
-                                <BookOpen className="w-4 h-4 text-[#801720]" />
+                                <BookOpen className="w-4 h-4 text-[#9E1B28]" />
                                 <span>Mata Kuliah Terkait ({viewItem?.mataKuliah?.length || 0})</span>
                             </h3>
                             <span className="text-[11px] text-gray-500 font-medium">
@@ -1083,7 +1280,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                                     {viewItem.mataKuliah.map((mk, i) => (
                                         <div key={mk.id || i} className="p-3 bg-white hover:bg-slate-50/80 transition-colors flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-3 min-w-0">
-                                                <span className="w-6 h-6 rounded-lg bg-red-50 text-[#801720] text-xs font-bold flex items-center justify-center flex-shrink-0">
+                                                <span className="w-6 h-6 rounded-lg bg-red-50 text-[#9E1B28] text-xs font-bold flex items-center justify-center flex-shrink-0">
                                                     {i + 1}
                                                 </span>
                                                 <div className="min-w-0">
@@ -1122,7 +1319,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                         <button
                             type="button"
                             onClick={() => setViewItem(null)}
-                            className="px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                            className="px-4 py-2 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
                         >
                             Tutup
                         </button>
@@ -1147,7 +1344,7 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                         <AlertTriangle className="w-5 h-5 text-red-500" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-gray-800">Hapus <span className="text-[#801720]">{deleteItem?.kode_clo}</span>?</p>
+                        <p className="text-sm font-semibold text-gray-800">Hapus <span className="text-[#9E1B28]">{deleteItem?.kode_clo}</span>?</p>
                         <p className="text-xs text-gray-500 mt-1">Data CLO ini beserta seluruh mapping PLO dan Mata Kuliah akan dihapus permanen.</p>
                     </div>
                 </div>

@@ -2,16 +2,24 @@ import React from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    ArrowLeft, FileText, CheckCircle2, Clock, Download, BookOpen,
-    User, Calendar, Award, AlertCircle, RotateCcw, XCircle, Printer, ShieldCheck, Filter
+    ArrowLeft,
+    FileText,
+    CheckCircle2,
+    Clock,
+    Download,
+    BookOpen,
+    User,
+    Calendar,
+    Award,
+    AlertCircle,
+    RotateCcw,
+    ShieldCheck,
+    Filter
 } from 'lucide-react';
-import FlashAlert from '@/Components/FlashAlert';
-
 
 const STATUS_BADGE = {
     APPROVED:    { label: 'Disetujui',   cls: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
     REVISION:    { label: 'Revisi',      cls: 'bg-amber-100 text-amber-700 border-amber-200',       icon: RotateCcw },
-    REJECTED:    { label: 'Ditolak',     cls: 'bg-red-100 text-red-600 border-red-200',             icon: XCircle },
     SUBMITTED:   { label: 'Menunggu',    cls: 'bg-blue-100 text-blue-700 border-blue-200',          icon: Clock },
     IN_REVIEW:   { label: 'Ditinjau',    cls: 'bg-purple-100 text-purple-700 border-purple-200',    icon: Clock },
     RESUBMITTED: { label: 'Menunggu',    cls: 'bg-blue-100 text-blue-700 border-blue-200',          icon: Clock },
@@ -75,16 +83,16 @@ export default function BeritaAcaraShow({
     return (
         <AuthenticatedLayout title={`Berita Acara — ${mataKuliah.nama_mk}`}>
             <Head title={`Berita Acara ${mataKuliah.nama_mk}`} />
-            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 {/* Back + Title */}
                 <div className="flex items-center justify-between">
                     <Link
                         href={`/verifikator/berita-acara?periode_id=${selectedPeriodeId || 'ALL'}&kategori=${selectedKategori || 'ALL'}`}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors"
+                        className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer inline-flex items-center shrink-0"
+                        title="Kembali ke Berita Acara"
                     >
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Berita Acara
+                        <ArrowLeft className="w-5 h-5" />
                     </Link>
 
                     {/* Download All Button */}
@@ -106,13 +114,13 @@ export default function BeritaAcaraShow({
                         {/* Select Periode */}
                         <div className="flex-1 space-y-1.5">
                             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
-                                <Calendar className="w-3.5 h-3.5 text-[#801720]" />
+                                <Calendar className="w-3.5 h-3.5 text-[#9E1B28]" />
                                 <span>Periode Verifikasi</span>
                             </label>
                             <select
                                 value={selectedPeriodeId || 'ALL'}
                                 onChange={(e) => handleFilterChange(e.target.value, undefined)}
-                                className="w-full px-3.5 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all cursor-pointer"
+                                className="w-full px-3.5 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] transition-all cursor-pointer"
                             >
                                 {allPeriods.map((p) => (
                                     <option key={p.id} value={p.id}>
@@ -125,7 +133,7 @@ export default function BeritaAcaraShow({
                         {/* Filter Jenis Ujian (UTS / UAS / ALL) */}
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
-                                <Filter className="w-3.5 h-3.5 text-[#801720]" />
+                                <Filter className="w-3.5 h-3.5 text-[#9E1B28]" />
                                 <span>Jenis Ujian</span>
                             </label>
                             <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
@@ -134,7 +142,7 @@ export default function BeritaAcaraShow({
                                     onClick={() => handleFilterChange(undefined, 'ALL')}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                         selectedKategori === 'ALL'
-                                            ? 'bg-white text-[#801720] shadow-xs'
+                                            ? 'bg-white text-[#9E1B28] shadow-xs'
                                             : 'text-slate-500 hover:text-slate-800'
                                     }`}
                                 >
@@ -145,7 +153,7 @@ export default function BeritaAcaraShow({
                                     onClick={() => handleFilterChange(undefined, 'UTS')}
                                     className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                         selectedKategori === 'UTS'
-                                            ? 'bg-white text-[#801720] shadow-xs'
+                                            ? 'bg-white text-[#9E1B28] shadow-xs'
                                             : 'text-slate-500 hover:text-slate-800'
                                     }`}
                                 >
@@ -156,7 +164,7 @@ export default function BeritaAcaraShow({
                                     onClick={() => handleFilterChange(undefined, 'UAS')}
                                     className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                         selectedKategori === 'UAS'
-                                            ? 'bg-white text-[#801720] shadow-xs'
+                                            ? 'bg-white text-[#9E1B28] shadow-xs'
                                             : 'text-slate-500 hover:text-slate-800'
                                     }`}
                                 >
@@ -169,51 +177,41 @@ export default function BeritaAcaraShow({
 
                 {/* Header Card */}
                 <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div>
-                            <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-[#801720]/10 text-[#801720] text-xs font-bold border border-[#801720]/25">
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                <span>Berita Acara Verifikasi</span>
-                            </div>
-                            <h1 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                                <BookOpen className="w-5 h-5 text-[#801720]" />
-                                {mataKuliah.nama_mk}
-                            </h1>
-                            <p className="text-sm text-slate-500 mt-1">
-                                {mataKuliah.kode_mk} · Semester {mataKuliah.semester} · {mataKuliah.sks} SKS
+                    <div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-[#9E1B28]/10 text-[#9E1B28] text-xs font-bold border border-[#9E1B28]/25">
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>Berita Acara Verifikasi</span>
+                        </div>
+                        <h1 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                            <BookOpen className="w-5 h-5 text-[#9E1B28]" />
+                            {mataKuliah.nama_mk}
+                        </h1>
+                        <p className="text-sm text-slate-500 mt-1">
+                            {mataKuliah.kode_mk} · Semester {mataKuliah.semester} · {mataKuliah.sks} SKS
+                        </p>
+                        {koordinator && (
+                            <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-slate-400" />
+                                Koordinator MK: <strong className="text-slate-700">{koordinator.nama}</strong>
+                                {koordinator.kode_dosen && <span className="text-slate-400">({koordinator.kode_dosen})</span>}
                             </p>
-                            {koordinator && (
-                                <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
-                                    <User className="w-3.5 h-3.5 text-slate-400" />
-                                    Koordinator MK: <strong className="text-slate-700">{koordinator.nama}</strong>
-                                    {koordinator.kode_dosen && <span className="text-slate-400">({koordinator.kode_dosen})</span>}
-                                </p>
-                            )}
-                            {activePeriod && (
-                                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-                                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                                    Periode: <strong className="text-slate-700">{activePeriod.nama}</strong>
-                                    {activePeriod.tahun_ajaran && <span className="text-slate-400">· {activePeriod.tahun_ajaran.nama}</span>}
-                                    {activePeriod.tanggal_mulai && activePeriod.tanggal_selesai && (
-                                        <span className="text-slate-500">({formatDate(activePeriod.tanggal_mulai)} s.d. {formatDate(activePeriod.tanggal_selesai)})</span>
-                                    )}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Stats - Hanya Total Soal Disetujui */}
-                        <div className="flex-shrink-0 self-start md:self-center">
-                            <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl px-5 py-3.5 text-center min-w-[110px]">
-                                <p className="text-2xl font-black text-emerald-600 leading-tight">{stats.approved}</p>
-                                <p className="text-[11px] text-emerald-800 font-bold mt-0.5">Soal Disetujui</p>
-                            </div>
-                        </div>
+                        )}
+                        {activePeriod && (
+                            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                Periode: <strong className="text-slate-700">{activePeriod.nama}</strong>
+                                {activePeriod.tahun_ajaran?.nama && activePeriod.tahun_ajaran.nama !== '-' && <span className="text-slate-400">{activePeriod.tahun_ajaran.nama}</span>}
+                                {activePeriod.tanggal_mulai && activePeriod.tanggal_selesai && (
+                                    <span className="text-slate-500">({formatDate(activePeriod.tanggal_mulai)} s.d. {formatDate(activePeriod.tanggal_selesai)})</span>
+                                )}
+                            </p>
+                        )}
                     </div>
 
                     {/* Existing BA info */}
                     {existingBA && (
                         <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-3 text-xs text-slate-500">
-                            <FileText className="w-4 h-4 text-[#801720]" />
+                            <FileText className="w-4 h-4 text-[#9E1B28]" />
                             <span>
                                 BAP terakhir dicetak:&nbsp;
                                 <strong className="text-slate-700">{existingBA.nomor}</strong>
@@ -299,7 +297,7 @@ export default function BeritaAcaraShow({
                                         )}
                                         <a
                                             href={`/verifikator/soal/${soal.id}/berita-acara`}
-                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold rounded-xl shadow-xs transition-all duration-150 hover:shadow-sm"
+                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#9E1B28] hover:bg-[#801720] text-white text-xs font-bold rounded-xl shadow-xs transition-all duration-150 hover:shadow-sm"
                                             title={`Unduh BAP untuk ${soal.judul}`}
                                         >
                                             <Download className="w-3.5 h-3.5" />

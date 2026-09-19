@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SweetAlert2 utility with dynamic imports to reduce initial bundle size.
  * SweetAlert2 is loaded on-demand (only when a toast/alert is triggered).
  */
@@ -101,7 +101,7 @@ export const showAlert = async ({
         icon,
         width: '23rem',
         confirmButtonText,
-        confirmButtonColor: '#801720',
+        confirmButtonColor: '#9E1B28',
         customClass: {
             popup: 'swal2-custom-popup',
             title: 'swal2-custom-title',
@@ -122,7 +122,7 @@ export const showConfirm = async ({
     icon = 'warning',
     confirmButtonText = 'Ya, Lanjutkan',
     cancelButtonText = 'Batal',
-    confirmButtonColor = '#801720',
+    confirmButtonColor = '#9E1B28',
     cancelButtonColor = '#64748B',
 } = {}) => {
     const Swal = await getSwal();

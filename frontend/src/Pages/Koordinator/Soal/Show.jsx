@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    ArrowLeft, FileText, Download, Pencil, Send, AlertTriangle, CheckCircle2,
-    XCircle, Clock, History, User, Eye, Layers, MessageSquare
+    ArrowLeft,
+    FileText,
+    Download,
+    Pencil,
+    Send,
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
+    History,
+    Eye,
+    Layers,
+    MessageSquare
 } from 'lucide-react';
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showConfirm } from '@/Utils/sweetalert';
 import DocumentPreviewModal from '@/Components/DocumentPreviewModal';
-
 
 const STATUS_CONFIG = {
     IN_REVIEW:   { label: 'Sedang Diverifikasi', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
@@ -17,13 +25,11 @@ const STATUS_CONFIG = {
     DRAFT:       { label: 'Draf',            color: 'bg-gray-100 text-gray-700',       dot: 'bg-gray-400' },
     REVISION:    { label: 'Revisi',          color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui',       color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REJECTED:    { label: 'Ditolak',         color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
 };
 
 const ACTION_CONFIG = {
     APPROVED: { label: 'Disetujui',     icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200', badge: 'bg-emerald-100 text-emerald-700' },
     REVISION: { label: 'Perlu Revisi',  icon: AlertTriangle, color: 'text-amber-600',   bg: 'bg-amber-50 border-amber-200',     badge: 'bg-amber-100 text-amber-700' },
-    REJECTED: { label: 'Ditolak',       icon: XCircle,      color: 'text-red-600',     bg: 'bg-red-50 border-red-200',         badge: 'bg-red-100 text-red-600' },
 };
 
 function StatusBadge({ status }) {
@@ -94,16 +100,16 @@ export default function SoalShow({ soal }) {
         <>
         <AuthenticatedLayout title="Detail Soal">
             <Head title={`Detail Soal: ${soal.judul}`} />
-            <FlashAlert flash={flash} />
 
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Back button */}
                 <div className="flex items-center justify-between">
                     <Link
                         href={soal.mata_kuliah_id ? `/koordinator/mata-kuliah/${soal.mata_kuliah_id}` : (soal.mata_kuliah?.id ? `/koordinator/mata-kuliah/${soal.mata_kuliah.id}` : '/koordinator/dashboard')}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors"
+                        className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer inline-flex items-center shrink-0"
+                        title="Kembali"
                     >
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali
+                        <ArrowLeft className="w-5 h-5" />
                     </Link>
                 </div>
 
@@ -112,7 +118,7 @@ export default function SoalShow({ soal }) {
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-[#801720] bg-red-50 px-2.5 py-0.5 rounded-full">
+                                <span className="text-xs font-bold text-[#9E1B28] bg-red-50 px-2.5 py-0.5 rounded-full">
                                     {soal.mata_kuliah?.nama_mk} ({soal.mata_kuliah?.kode_mk})
                                 </span>
                                 <span className="text-xs text-gray-400">·</span>
@@ -129,7 +135,7 @@ export default function SoalShow({ soal }) {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
-                                <FileText className="w-5 h-5 text-[#801720]" />
+                                <FileText className="w-5 h-5 text-[#9E1B28]" />
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-gray-800">{soal.nama_file}</p>
@@ -152,7 +158,7 @@ export default function SoalShow({ soal }) {
                             <a
                                 href={`/koordinator/soal/download/${soal.id}`}
                                 download={soal.nama_file}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#801720]/25 transition-all hover:scale-[1.02] active:scale-95"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#9E1B28]/25 transition-all hover:scale-[1.02] active:scale-95"
                                 title="Unduh berkas naskah soal"
                             >
                                 <Download className="w-3.5 h-3.5" /> Unduh
@@ -167,7 +173,7 @@ export default function SoalShow({ soal }) {
                                 <Pencil className="w-4 h-4" /> Ubah
                             </Link>
                             <button onClick={handleSubmit} disabled={submitting}
-                                className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#801720] text-white text-sm font-semibold hover:bg-[#6a1219] cursor-pointer">
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#9E1B28] text-white text-sm font-semibold hover:bg-[#801720] cursor-pointer">
                                 <Send className="w-4 h-4" /> {submitting ? 'Mengirim...' : 'Kirim untuk Verifikasi'}
                             </button>
                         </div>
@@ -175,7 +181,7 @@ export default function SoalShow({ soal }) {
 
                     {soal.status === 'REVISION' && (
                         <Link href={`/koordinator/soal/${soal.id}/edit`}
-                            className="mt-5 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#801720] text-white text-sm font-semibold hover:bg-[#6a1219]">
+                            className="mt-5 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#9E1B28] text-white text-sm font-semibold hover:bg-[#801720]">
                             <Pencil className="w-4 h-4" /> Unggah Berkas Revisi
                         </Link>
                     )}
@@ -219,14 +225,14 @@ export default function SoalShow({ soal }) {
                 {ploList.length > 0 && (
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
                         <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-[#801720]" /> Pemetaan PLO &amp; CLO Soal
+                            <Layers className="w-4 h-4 text-[#9E1B28]" /> Pemetaan PLO &amp; CLO Soal
                         </h2>
 
                         <div className="space-y-3">
                             {ploList.map((plo, pIdx) => (
                                 <div key={pIdx} className="p-3.5 rounded-xl border border-gray-200 bg-gray-50/50 space-y-2.5">
                                     <div className="flex items-center gap-2">
-                                        <span className="px-2 py-0.5 rounded-md bg-[#801720] text-white text-[10px] font-extrabold whitespace-nowrap flex-shrink-0">
+                                        <span className="px-2 py-0.5 rounded-md bg-[#9E1B28] text-white text-[10px] font-extrabold whitespace-nowrap flex-shrink-0">
                                             {plo.kode}
                                         </span>
                                         <span className="text-xs font-bold text-gray-800">{plo.deskripsi}</span>
@@ -240,7 +246,7 @@ export default function SoalShow({ soal }) {
                                                 <div key={cIdx} className="p-2.5 rounded-lg bg-white border border-gray-200/80 text-xs space-y-1.5">
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="flex items-center gap-2 min-w-0">
-                                                            <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px] whitespace-nowrap flex-shrink-0">
+                                                            <span className="px-2 py-0.5 rounded bg-red-100 text-[#9E1B28] font-extrabold text-[10px] whitespace-nowrap flex-shrink-0">
                                                                 {clo.kode}
                                                             </span>
                                                             <span className="text-gray-700 truncate">{clo.deskripsi}</span>
@@ -293,7 +299,7 @@ export default function SoalShow({ soal }) {
                 {/* Verifikasi History */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                     <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-[#801720]" /> Riwayat Verifikasi
+                        <Clock className="w-4 h-4 text-[#9E1B28]" /> Riwayat Verifikasi
                     </h2>
                     {(!soal.verifikasi || soal.verifikasi.length === 0) ? (
                         <p className="text-sm text-gray-400 text-center py-6">Belum ada riwayat verifikasi.</p>
@@ -333,7 +339,7 @@ export default function SoalShow({ soal }) {
                                                         return (
                                                             <div key={idx} className="flex flex-col gap-0.5 text-gray-700 bg-gray-50/70 p-2 rounded-lg border border-gray-100">
                                                                 <div className="flex items-center gap-1.5">
-                                                                    <span className="px-1.5 py-0.5 rounded bg-red-100 text-[#801720] font-bold text-[10px] whitespace-nowrap flex-shrink-0">
+                                                                    <span className="px-1.5 py-0.5 rounded bg-red-100 text-[#9E1B28] font-bold text-[10px] whitespace-nowrap flex-shrink-0">
                                                                         {kode}
                                                                     </span>
                                                                     {resolved.no_soal && (
@@ -363,7 +369,7 @@ export default function SoalShow({ soal }) {
                 {soal.revisi && soal.revisi.length > 0 && (
                     <div id="revisi" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                         <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <History className="w-4 h-4 text-[#801720]" /> Riwayat File Revisi
+                            <History className="w-4 h-4 text-[#9E1B28]" /> Riwayat File Revisi
                         </h2>
                         <div className="space-y-2">
                             {soal.revisi.map(r => (

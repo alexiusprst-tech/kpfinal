@@ -2,12 +2,21 @@ import React, { useMemo, useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    FileText, CheckCircle2, AlertTriangle, Eye, FilePlus2,
-    LayoutDashboard, ArrowRight, BookOpen, Upload, Search, ChevronLeft, ChevronRight,
-    Users, Target, Activity as ActivityIcon, CalendarClock, Bell, ShieldCheck, Calendar,
-    Clock, XCircle, Sparkles, Check, FileCheck, Layers, FileSpreadsheet
+    FileText,
+    CheckCircle2,
+    AlertTriangle,
+    Eye,
+    FilePlus2,
+    BookOpen,
+    Upload,
+    Search,
+    ChevronLeft,
+    ChevronRight,
+    Activity as ActivityIcon,
+    ShieldCheck,
+    Calendar,
+    Clock
 } from 'lucide-react';
-import ProfileDropdown from '@/Components/ProfileDropdown';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import StatCard from '@/Components/StatCard';
 
@@ -19,7 +28,6 @@ const STATUS_CONFIG = {
     DRAFT:        { label: 'Sedang Diverifikasi',    color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
     REVISION:     { label: 'Revisi',       color: 'bg-amber-50 text-amber-700 border-amber-200',   dot: 'bg-amber-500' },
     APPROVED:     { label: 'Disetujui',    color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
-    REJECTED:     { label: 'Ditolak',      color: 'bg-red-50 text-red-700 border-red-200',         dot: 'bg-red-500' },
 };
 
 function StatusBadge({ status }) {
@@ -102,7 +110,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                             <div className="flex items-center p-1 bg-white rounded-2xl border border-slate-200/90 shadow-xs">
                                 <Link
                                     href="/koordinator/dashboard"
-                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-[#801720] text-white shadow-xs cursor-pointer"
+                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-[#9E1B28] text-white shadow-xs cursor-pointer"
                                 >
                                     <BookOpen className="w-3.5 h-3.5" />
                                     <span>Koordinator MK</span>
@@ -117,23 +125,22 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                             </div>
                         )}
                         <NotificationDropdown align="right" />
-                        <ProfileDropdown align="right" />
                     </div>
                 </div>
 
                 {/* Banner Hero */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-[#801720] via-[#941A25] to-[#6E121A] text-white rounded-3xl p-6 lg:p-8 shadow-xl shadow-[#801720]/15">
+                <div className="relative overflow-hidden bg-gradient-to-r from-[#9E1B28] via-[#941A25] to-[#801720] text-white rounded-3xl p-6 lg:p-8 shadow-xl shadow-[#9E1B28]/15">
                     <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 pointer-events-none flex items-center justify-end pr-8">
                         <img src="/images/logo-telkom.png" alt="Telkom University" className="w-48 h-48 object-contain filter brightness-0 invert" />
                     </div>
 
-                    <div className="relative z-10 max-w-3xl space-y-3">
+                    <div className="relative z-10 max-w-4xl space-y-3">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white/90 text-xs font-bold">
                             <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
                             <span>Dosen Koordinator Mata Kuliah</span>
                         </div>
 
-                        <h2 className="text-2xl lg:text-3xl font-black tracking-tight text-white leading-tight">
+                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white leading-tight">
                             Selamat Datang, {userName}
                         </h2>
 
@@ -174,22 +181,21 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                     </div>
                 </div>
 
-                {/* Summary Cards (6 Cards Grid - Status & Progress Only) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <StatCard label="Mata Kuliah Saya" value={stats.total_mk || 0}     icon={BookOpen}      color="bg-slate-700" />
+                {/* Summary Cards (5 Cards Grid - Status & Progress Only) */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <StatCard label="Mata Kuliah Saya" value={stats.total_mk || 0}     icon={BookOpen}      color="bg-blue-600" />
                     <StatCard label="Belum Diupload"   value={stats.belum_upload || 0} icon={FilePlus2}     color="bg-slate-500" />
-                    <StatCard label="Sedang Diverifikasi" value={stats.in_review || 0}    icon={Clock}         color="bg-purple-600" />
+                    <StatCard label="Sedang Diverifikasi" value={stats.in_review || 0}    icon={Clock}         color="bg-sky-500" />
                     <StatCard label="Perlu Revisi"     value={stats.revisi || 0}       icon={AlertTriangle} color="bg-amber-500" />
                     <StatCard label="Disetujui"        value={stats.approved || 0}     icon={CheckCircle2}  color="bg-emerald-600" />
-                    <StatCard label="Ditolak"          value={stats.rejected || 0}     icon={XCircle}       color="bg-red-500" />
                 </div>
 
                 {/* Mata Kuliah Saya (Primary Card / Workspace) */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-5">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 pb-4 border-b border-slate-100">
                         <div>
                             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <BookOpen className="w-5 h-5 text-[#801720]" /> Mata Kuliah Saya
+                                <BookOpen className="w-5 h-5 text-[#9E1B28]" /> Mata Kuliah Saya
                             </h2>
                             <p className="text-xs text-slate-500 font-medium mt-0.5">
                                 Daftar mata kuliah yang ditugaskan pada periode aktif untuk penyusunan dan pengunggahan naskah soal
@@ -197,20 +203,20 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                         </div>
 
                         {/* Search & Filters */}
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+                        <div className="flex items-center gap-2.5 flex-nowrap shrink-0 overflow-x-auto pb-1 sm:pb-0">
+                            <div className="relative w-48 sm:w-56 shrink-0">
                                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     value={search}
                                     onChange={e => { setSearch(e.target.value); setPage(1); }}
                                     placeholder="Cari kode / nama MK..."
-                                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 placeholder-slate-400"
+                                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 placeholder-slate-400"
                                 />
                             </div>
                             <select
                                 value={semesterFilter}
                                 onChange={e => { setSemesterFilter(e.target.value); setPage(1); }}
-                                className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 bg-white text-slate-700 font-medium"
+                                className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 bg-white text-slate-700 font-medium shrink-0"
                             >
                                 <option value="">Semua Semester</option>
                                 {semesterOptions.map(s => <option key={s} value={s}>Semester {s}</option>)}
@@ -218,14 +224,13 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                             <select
                                 value={statusFilter}
                                 onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-                                className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 bg-white text-slate-700 font-medium"
+                                className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 bg-white text-slate-700 font-medium shrink-0"
                             >
                                 <option value="">Semua Status</option>
                                 <option value="BELUM_UPLOAD">Belum Diunggah</option>
                                 <option value="IN_REVIEW">Sedang Diverifikasi</option>
                                 <option value="REVISION">Perlu Revisi</option>
                                 <option value="APPROVED">Disetujui</option>
-                                <option value="REJECTED">Ditolak</option>
                             </select>
                         </div>
                     </div>
@@ -248,7 +253,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                             <button
                                 type="button"
                                 onClick={() => { setSearch(''); setSemesterFilter(''); setStatusFilter(''); setPage(1); }}
-                                className="mt-3 text-xs font-bold text-[#801720] hover:underline"
+                                className="mt-3 text-xs font-bold text-[#9E1B28] hover:underline"
                             >
                                 Atur Ulang Filter
                             </button>
@@ -260,7 +265,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                     <div
                                         key={mk.id}
                                         onClick={() => router.visit(`/koordinator/mata-kuliah/${mk.id}`)}
-                                        className="bg-white border border-slate-150 rounded-2xl p-5 shadow-xs hover:border-[#801720]/40 hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between gap-4 group cursor-pointer"
+                                        className="bg-white border border-slate-150 rounded-2xl p-5 shadow-xs hover:border-[#9E1B28]/40 hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between gap-4 group cursor-pointer"
                                     >
                                         <div className="space-y-3">
                                             {/* Card Top Meta */}
@@ -281,7 +286,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
 
                                             {/* MK Title */}
                                             <div>
-                                                <h3 className="text-base font-bold text-slate-800 group-hover:text-[#801720] transition-colors leading-snug line-clamp-2" title={mk.nama_mk}>
+                                                <h3 className="text-base font-bold text-slate-800 group-hover:text-[#9E1B28] transition-colors leading-snug line-clamp-2" title={mk.nama_mk}>
                                                     {mk.nama_mk}
                                                 </h3>
                                             </div>
@@ -339,7 +344,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                                         <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                                             <Link
                                                 href={`/koordinator/soal/create?mata_kuliah_id=${mk.id}`}
-                                                className="py-2 px-3 rounded-xl bg-[#801720] text-white text-xs font-bold hover:bg-[#9B1B26] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                                                className="py-2 px-3 rounded-xl bg-[#9E1B28] text-white text-xs font-bold hover:bg-[#9B1B26] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                                             >
                                                 <Upload className="w-3.5 h-3.5" />
                                                 <span>Unggah Soal</span>
@@ -387,7 +392,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div>
                             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                <ActivityIcon className="w-5 h-5 text-[#801720]" /> Aktivitas Terbaru
+                                <ActivityIcon className="w-5 h-5 text-[#9E1B28]" /> Aktivitas Terbaru
                             </h2>
                             <p className="text-xs text-slate-500 font-medium mt-0.5">
                                 Riwayat aktivitas sistem verifikasi terkini Anda
@@ -408,7 +413,7 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                         <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
                             {activity.map(item => (
                                 <div key={item.id} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100 hover:bg-slate-100/70 transition-colors">
-                                    <div className="w-2 h-2 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
+                                    <div className="w-2 h-2 rounded-full bg-[#9E1B28] mt-1.5 flex-shrink-0" />
                                     <div className="min-w-0 flex-1">
                                         <p className="text-xs text-slate-700 leading-snug">{item.description}</p>
                                         <p className="text-[10px] text-slate-400 mt-1 font-semibold">{relativeTime(item.created_at)}</p>

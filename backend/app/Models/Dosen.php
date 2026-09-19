@@ -17,6 +17,7 @@ class Dosen extends Model
 
     protected $fillable = [
         'kode_dosen',
+        'nip',
         'nama_lengkap',
         'email',
         'kategori_dosen',
@@ -89,5 +90,39 @@ class Dosen extends Model
     public function kelompokVerifikator()
     {
         return $this->hasMany(KelompokVerifikator::class, 'dosen_id');
+    }
+
+    // ─── Role Synchronization (single source of truth) ────────────────────────
+
+    /**
+     * Recalculate and persist this dosen's user role based on their current
+     * ACTIVE assignments. A dosen with no active assignment gets role = null
+     * (the users.role column is nullable — see migration
+     * 2026_08_23_000002_sync_dosen_roles_based_on_active_assignments).
+     */
+    public function syncUserRole(): void
+    {
+        if (!$this->user || $this->user->role === 'SUPER_ADMIN') {
+            return;
+        }
+
+        $hasActiveKoor = PenugasanKoordinator::where('dosen_id', $this->id)->where('status', 'ACTIVE')->exists();
+        $hasActiveVerif = PenugasanVerifikator::where('dosen_id', $this->id)->where('status', 'ACTIVE')->exists();
+
+        $newRole = $hasActiveKoor ? 'KOORDINATOR' : ($hasActiveVerif ? 'VERIFIKATOR' : null);
+
+        if ($this->user->role !== $newRole) {
+            $this->user->update(['role' => $newRole]);
+        }
+    }
+
+    /**
+     * Recalculate and persist user role for every dosen. Used whenever an
+     * operational assignment changes in bulk (kelompok verifikasi
+     * create/update/activate/deactivate/close, penugasan revocation).
+     */
+    public static function syncAllUserRoles(): void
+    {
+        static::with('user')->get()->each(fn (Dosen $dosen) => $dosen->syncUserRole());
     }
 }

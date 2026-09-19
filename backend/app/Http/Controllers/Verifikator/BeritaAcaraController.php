@@ -82,7 +82,6 @@ class BeritaAcaraController extends Controller
                 'pending'        => $mkSoal->whereIn('status', ['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count(),
                 'approved'       => $approvedCount,
                 'revision'       => $mkSoal->where('status', 'REVISION')->count(),
-                'rejected'       => $mkSoal->where('status', 'REJECTED')->count(),
                 'has_approved'   => $approvedCount > 0,
             ];
         });
@@ -180,7 +179,6 @@ class BeritaAcaraController extends Controller
                 'approved' => $soalApproved->count(),
                 'pending'  => $allSoal->whereIn('status', ['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count(),
                 'revision' => $allSoal->where('status', 'REVISION')->count(),
-                'rejected' => $allSoal->where('status', 'REJECTED')->count(),
             ],
             'koordinator'      => $koordinatorDosen ? [
                 'nama'       => $koordinatorDosen->nama_lengkap,
@@ -246,7 +244,6 @@ class BeritaAcaraController extends Controller
 
         $jumlahApproved = $soalApproved->count();
         $jumlahRevision = $soalList->where('status', 'REVISION')->count();
-        $jumlahRejected = $soalList->where('status', 'REJECTED')->count();
 
         $koordinatorDosen = PenugasanKoordinator::with('dosen')
             ->where('mata_kuliah_id', $mataKuliah->id)
@@ -259,7 +256,7 @@ class BeritaAcaraController extends Controller
 
         $clos = $mataKuliah->clo()->with('plo')->get();
 
-        return DB::transaction(function () use ($user, $dosen, $selectedPeriod, $mataKuliah, $soalList, $soalApproved, $clos, $koordinatorDosen, $jumlahApproved, $jumlahRevision, $jumlahRejected) {
+        return DB::transaction(function () use ($user, $dosen, $selectedPeriod, $mataKuliah, $soalList, $soalApproved, $clos, $koordinatorDosen, $jumlahApproved, $jumlahRevision) {
             // Lock period to prevent race condition during serial number generation
             $lockedPeriod = PeriodeVerifikasi::with('tahunAjaran')->where('id', $selectedPeriod->id)->lockForUpdate()->first();
 
@@ -288,7 +285,6 @@ class BeritaAcaraController extends Controller
                 'jumlahSoal'               => 1,
                 'jumlahApproved'           => 1,
                 'jumlahRevision'           => $jumlahRevision,
-                'jumlahRejected'           => $jumlahRejected,
                 'logo_base64'              => $logoBase64,
                 'tanda_tangan_evaluator'   => $this->imageToBase64($dosen?->tanda_tangan ? storage_path('app/public/' . $dosen->tanda_tangan) : null),
                 'tanda_tangan_koordinator' => $this->imageToBase64($koordinatorDosen?->tanda_tangan ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan) : null),
@@ -318,7 +314,6 @@ class BeritaAcaraController extends Controller
                         'jumlah_soal'      => 1,
                         'jumlah_approved'  => 1,
                         'jumlah_revision'  => $jumlahRevision,
-                        'jumlah_rejected'  => $jumlahRejected,
                         'file_path'        => $relativePath,
                         'tanggal'          => $tanggal,
                     ]
@@ -375,7 +370,6 @@ class BeritaAcaraController extends Controller
                     'jumlah_soal'      => $soalApproved->count(),
                     'jumlah_approved'  => $jumlahApproved,
                     'jumlah_revision'  => $jumlahRevision,
-                    'jumlah_rejected'  => $jumlahRejected,
                     'file_path'        => null,
                     'tanggal'          => $tanggal,
                 ]
@@ -423,10 +417,13 @@ class BeritaAcaraController extends Controller
             ->where('mata_kuliah_id', $mataKuliah->id)
             ->where('periode_id', $periode->id)
             ->where('status', 'ACTIVE')
+            ->first()?->dosen ?? PenugasanKoordinator::with('dosen')
+            ->where('mata_kuliah_id', $mataKuliah->id)
+            ->where('periode_id', $periode->id)
             ->first()?->dosen;
 
         if (!$koordinatorDosen) {
-            return redirect()->back()->with('error', 'Mata kuliah ini belum memiliki Dosen Koordinator aktif pada periode ini.');
+            return redirect()->back()->with('error', 'Mata kuliah ini belum memiliki Dosen Koordinator pada periode ini.');
         }
 
         $clos = $mataKuliah->clo()->with('plo')->get();
@@ -463,7 +460,6 @@ class BeritaAcaraController extends Controller
                 'jumlahSoal'               => 1,
                 'jumlahApproved'           => 1,
                 'jumlahRevision'           => 0,
-                'jumlahRejected'           => 0,
                 'logo_base64'              => $logoBase64,
                 'tanda_tangan_evaluator'   => $this->imageToBase64($dosen?->tanda_tangan ? storage_path('app/public/' . $dosen->tanda_tangan) : null),
                 'tanda_tangan_koordinator' => $this->imageToBase64($koordinatorDosen?->tanda_tangan ? storage_path('app/public/' . $koordinatorDosen->tanda_tangan) : null),
@@ -487,7 +483,6 @@ class BeritaAcaraController extends Controller
                     'jumlah_soal'      => 1,
                     'jumlah_approved'  => 1,
                     'jumlah_revision'  => 0,
-                    'jumlah_rejected'  => 0,
                     'file_path'        => $relativePath,
                     'tanggal'          => $tanggal,
                 ]
@@ -720,9 +715,14 @@ PS;
 
     private function generateNomor(PeriodeVerifikasi $periode, MataKuliah $mataKuliah): string
     {
+        $monthYear = now()->format('m/Y');
         $seq = BeritaAcara::where('periode_id', $periode->id)->count() + 1;
 
-        return sprintf('%03d/BAP-Ver/%s/%s', $seq, $mataKuliah->kode_mk, now()->format('m/Y'));
+        while (BeritaAcara::where('nomor', sprintf('%03d/BAP-Ver/%s/%s', $seq, $mataKuliah->kode_mk, $monthYear))->exists()) {
+            $seq++;
+        }
+
+        return sprintf('%03d/BAP-Ver/%s/%s', $seq, $mataKuliah->kode_mk, $monthYear);
     }
 
     private function formatTanggalIndonesia(\Carbon\Carbon $date): string

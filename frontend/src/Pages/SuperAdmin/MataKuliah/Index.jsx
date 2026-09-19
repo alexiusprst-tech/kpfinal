@@ -1,12 +1,28 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
-import { Head, useForm, router, Link, usePage } from '@inertiajs/react';
-import { BookOpen, Plus, Search, Edit2, Trash2, CheckCircle, XCircle, AlertTriangle, Target, Activity, X, Filter, Eye } from 'lucide-react';
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
-
-
-
+import {
+    Head,
+    useForm,
+    router,
+    Link,
+    usePage
+} from '@inertiajs/react';
+import {
+    BookOpen,
+    Plus,
+    Search,
+    Edit2,
+    Trash2,
+    CheckCircle,
+    XCircle,
+    AlertTriangle,
+    Target,
+    Activity,
+    X,
+    Filter,
+    Eye
+} from 'lucide-react';
+import { showConfirm } from '@/Utils/sweetalert';
 
 export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
     const { flash } = usePage().props;
@@ -116,7 +132,6 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
         }
     };
 
-
     const togglePlo = (form, ploId) => {
         const current = form.data.plo_ids || [];
         if (current.includes(ploId)) {
@@ -146,35 +161,39 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
     return (
         <AuthenticatedLayout title="Manajemen Mata Kuliah">
             <Head title="Master Data Mata Kuliah" />
-            <FlashAlert flash={flash} />
 
-            {/* Header Title & Action Button */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-[#1E293B] tracking-tight">Manajemen Mata Kuliah</h1>
-                    <p className="text-xs sm:text-sm text-[#64748B] font-medium">
-                        Kelola data master mata kuliah kurikulum dan pemetaan terhadap PLO serta CLO secara real-time.
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                    <a
-                        href="/docs/buku-kurikulum-2024.pdf"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
-                        title="Buka Buku Kurikulum 2024 (Panduan Pemetaan PLO & CLO)"
-                    >
-                        <BookOpen className="w-4 h-4 text-[#801720]" />
-                        <span>Buku Kurikulum</span>
-                    </a>
-                    <button
-                        onClick={() => setIsCreateOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1724] text-white rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>Tambah Mata Kuliah</span>
-                    </button>
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span>Data Master</span>
+                        </div>
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Manajemen Mata Kuliah</h1>
+                        <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                            Kelola data master mata kuliah kurikulum dan pemetaan terhadap PLO serta CLO secara real-time.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                        <a
+                            href="/docs/buku-kurikulum-2024.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-3.5 py-2.5 bg-white/10 border border-white/20 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                            title="Buka Buku Kurikulum 2024 (Panduan Pemetaan PLO & CLO)"
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            <span>Buku Kurikulum</span>
+                        </a>
+                        <button
+                            onClick={() => setIsCreateOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white text-[#9E1B28] rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer hover:bg-rose-50"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Tambah Mata Kuliah</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -189,7 +208,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Cari kode MK, nama Indonesia, atau Inggris secara real-time..."
-                            className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all font-medium"
+                            className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] transition-all font-medium"
                         />
                         {search && (
                             <button
@@ -205,14 +224,14 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                     {/* Status & Action Filters */}
                     <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                         <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold mr-1">
-                            <Filter className="w-3.5 h-3.5 text-[#801720]" />
+                            <Filter className="w-3.5 h-3.5 text-[#9E1B28]" />
                             <span>Status:</span>
                         </div>
 
                         <div className="inline-flex bg-slate-100 p-1 rounded-xl gap-1">
                             <button
                                 onClick={() => setStatus('')}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${!status ? 'bg-white text-[#801720] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${!status ? 'bg-white text-[#9E1B28] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
                             >
                                 Semua Status
                             </button>
@@ -237,7 +256,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                     <span className="text-xs font-bold text-slate-500 flex-shrink-0">Semester:</span>
                     <button
                         onClick={() => setSemester('')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${!semester ? 'bg-[#801720] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${!semester ? 'bg-[#9E1B28] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                     >
                         Semua
                     </button>
@@ -255,7 +274,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                 {/* Counter Footer */}
                 <div className="flex items-center justify-between text-xs text-slate-500 font-semibold pt-2 border-t border-slate-100">
                     <div>
-                        Menampilkan <strong className="text-[#801720] font-extrabold">{mataKuliahList.from || 0} - {mataKuliahList.to || 0}</strong> dari <strong className="text-slate-800 font-extrabold">{mataKuliahList.total}</strong> mata kuliah kurikulum
+                        Menampilkan <strong className="text-[#9E1B28] font-extrabold">{mataKuliahList.from || 0} - {mataKuliahList.to || 0}</strong> dari <strong className="text-slate-800 font-extrabold">{mataKuliahList.total}</strong> mata kuliah kurikulum
                         {(search || semester || status) && <span className="text-slate-400 font-normal"> (hasil filter)</span>}
                     </div>
                 </div>
@@ -286,13 +305,13 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                                 Semester {mk.semester || 1}
                                             </span>
                                         </td>
-                                        <td className="p-4 font-bold text-[#801720]">
+                                        <td className="p-4 font-bold text-[#9E1B28]">
                                             <Link href={`/superadmin/mata-kuliah/${mk.id}`} className="hover:underline">
                                                 {mk.kode_mk}
                                             </Link>
                                         </td>
                                         <td className="p-4">
-                                            <Link href={`/superadmin/mata-kuliah/${mk.id}`} className="font-bold text-slate-800 hover:underline hover:text-[#801720] block">
+                                            <Link href={`/superadmin/mata-kuliah/${mk.id}`} className="font-bold text-slate-800 hover:underline hover:text-[#9E1B28] block">
                                                 {mk.nama_mk}
                                             </Link>
                                             {mk.nama_mk_en && (
@@ -306,7 +325,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                                     {mk.plo.map((p) => (
                                                         <span
                                                             key={p.id}
-                                                            className="inline-flex px-1.5 py-0.5 rounded bg-[#801720]/5 text-[#801720] border border-[#801720]/10 text-[10px] font-bold"
+                                                            className="inline-flex px-1.5 py-0.5 rounded bg-[#9E1B28]/5 text-[#9E1B28] border border-[#9E1B28]/10 text-[10px] font-bold"
                                                             title={p.deskripsi}
                                                         >
                                                             {p.kode_plo}
@@ -399,7 +418,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     disabled={!link.url}
                                     onClick={() => link.url && router.get(link.url)}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${link.active ? 'bg-[#801720] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${link.active ? 'bg-[#9E1B28] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                                         }`}
                                 />
                             ))}
@@ -431,7 +450,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     <select
                                         value={createForm.data.semester}
                                         onChange={(e) => createForm.setData('semester', parseInt(e.target.value) || 1)}
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                     >
                                         {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
                                             <option key={s} value={s}>Semester {s}</option>
@@ -446,7 +465,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                         onChange={(e) => createForm.setData('kode_mk', e.target.value)}
                                         placeholder="Contoh: BBK1AAB4"
                                         required
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                     />
                                 </div>
                                 <div>
@@ -458,7 +477,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                         value={createForm.data.sks}
                                         onChange={(e) => createForm.setData('sks', parseInt(e.target.value) || 3)}
                                         required
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                     />
                                 </div>
                             </div>
@@ -471,7 +490,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     onChange={(e) => createForm.setData('nama_mk', e.target.value)}
                                     placeholder="Contoh: Algoritma dan Pemrograman"
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                             </div>
 
@@ -482,7 +501,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     value={createForm.data.nama_mk_en}
                                     onChange={(e) => createForm.setData('nama_mk_en', e.target.value)}
                                     placeholder="Contoh: Algorithms and Programming"
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                             </div>
 
@@ -582,7 +601,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 <button
                                     type="submit"
                                     disabled={createForm.processing}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]"
+                                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#9B1724]"
                                 >
                                     Simpan
                                 </button>
@@ -615,7 +634,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     <select
                                         value={editForm.data.semester}
                                         onChange={(e) => editForm.setData('semester', parseInt(e.target.value) || 1)}
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                     >
                                         {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
                                             <option key={s} value={s}>Semester {s}</option>
@@ -629,7 +648,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                         value={editForm.data.kode_mk}
                                         onChange={(e) => editForm.setData('kode_mk', e.target.value)}
                                         required
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                     />
                                 </div>
                                 <div>
@@ -641,7 +660,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                         value={editForm.data.sks}
                                         onChange={(e) => editForm.setData('sks', parseInt(e.target.value) || 3)}
                                         required
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                     />
                                 </div>
                                 <div>
@@ -649,7 +668,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     <select
                                         value={editForm.data.status}
                                         onChange={(e) => editForm.setData('status', e.target.value)}
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                     >
                                         <option value="ACTIVE">Aktif</option>
                                         <option value="INACTIVE">Nonaktif</option>
@@ -664,7 +683,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     value={editForm.data.nama_mk}
                                     onChange={(e) => editForm.setData('nama_mk', e.target.value)}
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                             </div>
 
@@ -674,7 +693,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                     type="text"
                                     value={editForm.data.nama_mk_en}
                                     onChange={(e) => editForm.setData('nama_mk_en', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                             </div>
 
@@ -774,7 +793,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                                 <button
                                     type="submit"
                                     disabled={editForm.processing}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]"
+                                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#9B1724]"
                                 >
                                     Simpan Perubahan
                                 </button>
@@ -811,7 +830,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
                             <button
                                 type="button"
                                 onClick={handleConfirmDelete}
-                                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724] transition-colors shadow-md cursor-pointer"
+                                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#9B1724] transition-colors shadow-md cursor-pointer"
                             >
                                 Ya, Hapus Data
                             </button>

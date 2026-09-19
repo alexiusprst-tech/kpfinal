@@ -53,20 +53,20 @@ class HandleInertiaRequests extends Middleware
                     $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
                     $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
 
+                    // Persist the canonical role via the single source of truth
+                    // (Dosen::syncUserRole — see routes/web.php and LoginController
+                    // for the other call sites). The role column is nullable.
+                    $dosen->syncUserRole();
+                    $user->role = $dosen->user->role;
+
+                    // Dosen with BOTH an active koordinator and verifikator
+                    // assignment ("dual role") see their in-memory role switch
+                    // to match whichever section of the app they're currently
+                    // browsing, without touching the persisted value above.
                     if ($request->is('verifikator*') && $hasActiveVerif) {
                         $user->role = 'VERIFIKATOR';
                     } elseif ($request->is('koordinator*') && $hasActiveKoor) {
                         $user->role = 'KOORDINATOR';
-                    } elseif ($hasActiveVerif && !$hasActiveKoor && $user->role !== 'VERIFIKATOR') {
-                        $user->update(['role' => 'VERIFIKATOR']);
-                        $user->role = 'VERIFIKATOR';
-                    } elseif ($hasActiveKoor && !$hasActiveVerif && $user->role !== 'KOORDINATOR') {
-                        $user->update(['role' => 'KOORDINATOR']);
-                        $user->role = 'KOORDINATOR';
-                    } elseif (!$hasActiveKoor && !$hasActiveVerif) {
-                        // Tidak ada penugasan aktif — jangan update DB (kolom role NOT NULL)
-                        // Cukup set in-memory agar frontend tahu tidak ada role aktif
-                        $user->role = null;
                     }
                 } else {
                     $hasActiveKoor = ($user->role === 'KOORDINATOR');
@@ -94,6 +94,7 @@ class HandleInertiaRequests extends Middleware
                     'dosen' => $user->dosen ? [
                         'id'          => $user->dosen->id,
                         'kode_dosen'  => $user->dosen->kode_dosen,
+                        'nip'         => $user->dosen->nip,
                         'nama_lengkap'=> $user->dosen->nama_lengkap,
                     ] : null,
                 ] : null,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Verifikator;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\PenugasanKoordinator;
 use App\Models\PenugasanVerifikator;
 use App\Models\PeriodeVerifikasi;
@@ -45,8 +46,7 @@ class DashboardController extends Controller
         $pendingCount  = $soalList->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count();
         $approvedCount = $soalList->where('status', 'APPROVED')->count();
         $revisionCount = $soalList->where('status', 'REVISION')->count();
-        $rejectedCount = $soalList->where('status', 'REJECTED')->count();
-        $verifiedCount = $approvedCount + $revisionCount + $rejectedCount;
+        $verifiedCount = $approvedCount + $revisionCount;
 
         $completionRate = $totalCount > 0 ? round(($verifiedCount / $totalCount) * 100) : 0;
 
@@ -55,7 +55,6 @@ class DashboardController extends Controller
             'pending'        => $pendingCount,
             'approved'       => $approvedCount,
             'revision'       => $revisionCount,
-            'rejected'       => $rejectedCount,
             'verified'       => $verifiedCount,
             'completionRate' => $completionRate,
         ];
@@ -71,7 +70,6 @@ class DashboardController extends Controller
                 'pending'     => $mkSoal->whereIn('status', ['SUBMITTED', 'IN_REVIEW', 'RESUBMITTED'])->count(),
                 'approved'    => $mkSoal->where('status', 'APPROVED')->count(),
                 'revision'    => $mkSoal->where('status', 'REVISION')->count(),
-                'rejected'    => $mkSoal->where('status', 'REJECTED')->count(),
             ];
         });
 
@@ -98,13 +96,25 @@ class DashboardController extends Controller
             : null;
 
         return Inertia::render('Verifikator/Dashboard', [
-            'activePeriod'         => $activePeriod,
-            'stats'                => $stats,
-            'pendingSoal'          => $pendingSoal,
-            'assignments'          => $assignmentsWithStats,
-            'recentVerifikasis'    => $recentVerifikasis,
+            'activePeriod'        => $activePeriod,
+            'stats'               => $stats,
+            'pendingSoal'         => $pendingSoal,
+            'assignments'         => $assignmentsWithStats,
+            'recentVerifikasis'   => $recentVerifikasis,
+            'activity'            => $this->buildActivity($user->id),
             'noAssignmentMessage' => $noAssignmentMessage,
         ]);
+    }
+
+    private function buildActivity(string|int $userId): array
+    {
+        $raw = AuditLog::with(['user.dosen'])
+            ->where('user_id', $userId)
+            ->orderByDesc('created_at')
+            ->take(8)
+            ->get();
+
+        return AuditLog::formatLogs($raw)->all();
     }
 }
 

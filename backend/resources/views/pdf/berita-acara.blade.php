@@ -473,7 +473,6 @@
         return match ($soal->status) {
             'APPROVED' => 'Soal sudah sesuai dengan CLO.',
             'REVISION' => 'Soal perlu diperbaiki: ' . ($soal->latestVerifikasi->catatan ?? '-'),
-            'REJECTED' => 'Soal ditolak: ' . ($soal->latestVerifikasi->catatan ?? '-'),
             default => '-',
         };
     };
@@ -608,7 +607,7 @@
 
 <p class="kesimpulan">
     Berdasarkan hasil evaluasi tersebut, maka soal asesmen
-    <strong>{{ ($jumlahRevision + $jumlahRejected) > 0 ? 'perlu diperbaiki sesuai' : 'sudah sesuai*' }}</strong>
+    <strong>{{ $jumlahRevision > 0 ? 'perlu diperbaiki sesuai' : 'sudah sesuai*' }}</strong>
     dengan catatan di atas.
 </p>
 

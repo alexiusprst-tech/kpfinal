@@ -43,6 +43,7 @@ class DosenController extends Controller
                 $term = "%{$request->search}%";
                 $q->whereRaw('LOWER(nama_lengkap) LIKE ?', [strtolower($term)])
                   ->orWhereRaw('LOWER(kode_dosen) LIKE ?', [strtolower($term)])
+                  ->orWhereRaw('LOWER(COALESCE(nip, \'\')) LIKE ?', [strtolower($term)])
                   ->orWhereRaw('LOWER(email) LIKE ?', [strtolower($term)]);
             });
         }
@@ -67,6 +68,7 @@ class DosenController extends Controller
     {
         $validated = $request->validate([
             'kode_dosen'     => ['required', 'string', 'max:50', 'unique:dosen,kode_dosen'],
+            'nip'            => ['nullable', 'string', 'max:50'],
             'nama_lengkap'   => ['required', 'string', 'max:150'],
             'email'          => ['nullable', 'email', 'max:150'],
             'kategori_dosen' => ['nullable', 'string', 'max:50'],
@@ -95,14 +97,14 @@ class DosenController extends Controller
                     $userId = $existingUser->id;
                 }
             } else {
-                $isLB = in_array(strtoupper(trim($validated['kategori_dosen'] ?? '')), ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA']);
+                $initialPassword = !empty($validated['nip']) ? trim($validated['nip']) : 'password';
                 $createdUser = User::create([
                     'name'                 => $validated['nama_lengkap'],
                     'email'                => $validated['email'],
-                    'password'             => Hash::make('password'),
+                    'password'             => Hash::make($initialPassword),
                     'role'                 => null, // Belum ada penugasan, role null
                     'status'               => 'ACTIVE',
-                    'must_change_password' => $isLB,
+                    'must_change_password' => true,
                 ]);
                 $userId = $createdUser->id;
             }
@@ -111,6 +113,7 @@ class DosenController extends Controller
         $dosen = Dosen::create([
             'id'             => (string) Str::uuid(),
             'kode_dosen'     => $validated['kode_dosen'],
+            'nip'            => $validated['nip'] ?? null,
             'nama_lengkap'   => $validated['nama_lengkap'],
             'email'          => $validated['email'] ?? null,
             'kategori_dosen' => $validated['kategori_dosen'] ?? 'Dosen Tetap',
@@ -134,6 +137,7 @@ class DosenController extends Controller
     {
         $validated = $request->validate([
             'kode_dosen'     => ['required', 'string', 'max:50', 'unique:dosen,kode_dosen,' . $dosen->id],
+            'nip'            => ['nullable', 'string', 'max:50'],
             'nama_lengkap'   => ['required', 'string', 'max:150'],
             'email'          => ['nullable', 'email', 'max:150'],
             'kategori_dosen' => ['nullable', 'string', 'max:50'],
@@ -155,6 +159,7 @@ class DosenController extends Controller
         $oldValues = $dosen->toArray();
         $dosenData = [
             'kode_dosen'     => $validated['kode_dosen'],
+            'nip'            => $validated['nip'] ?? null,
             'nama_lengkap'   => $validated['nama_lengkap'],
             'email'          => $validated['email'] ?? null,
             'kategori_dosen' => $validated['kategori_dosen'] ?? 'Dosen Tetap',
@@ -173,14 +178,13 @@ class DosenController extends Controller
             }
             $dosen->user->update($userPayload);
         } elseif (!empty($validated['password']) && !empty($validated['email'])) {
-            $isLB = in_array(strtoupper(trim($validated['kategori_dosen'] ?? '')), ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA']);
             $newUser = User::create([
                 'name'                 => $validated['nama_lengkap'],
                 'email'                => $validated['email'],
                 'password'             => Hash::make($validated['password']),
                 'role'                 => null,
                 'status'               => $validated['status'],
-                'must_change_password' => $isLB,
+                'must_change_password' => true,
             ]);
             $dosen->update(['user_id' => $newUser->id]);
         }
@@ -191,7 +195,7 @@ class DosenController extends Controller
             'Dosen',
             $dosen->id,
             $oldValues,
-            $dosen->toArray()
+            $dosen->fresh()->toArray()
         );
 
         return redirect()->back()->with('success', 'Data Dosen berhasil diperbarui.');
@@ -218,14 +222,13 @@ class DosenController extends Controller
                 ]);
             }
 
-            $isLB = in_array(strtoupper(trim($dosen->kategori_dosen ?? '')), ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA']);
             $user = User::create([
                 'name'                 => $dosen->nama_lengkap,
                 'email'                => $dosen->email,
                 'password'             => Hash::make($validated['password']),
                 'role'                 => null,
                 'status'               => $dosen->status ?? 'ACTIVE',
-                'must_change_password' => $request->boolean('must_change_password', $isLB),
+                'must_change_password' => $request->boolean('must_change_password', true),
             ]);
 
             $dosen->update(['user_id' => $user->id]);
@@ -235,6 +238,8 @@ class DosenController extends Controller
             ];
             if ($request->has('must_change_password')) {
                 $userUpdateData['must_change_password'] = $request->boolean('must_change_password');
+            } else {
+                $userUpdateData['must_change_password'] = true;
             }
             $dosen->user->update($userUpdateData);
         }
@@ -367,16 +372,6 @@ class DosenController extends Controller
 
             $remainingKoor = PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->count();
             $remainingVerif = PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->count();
-
-            if ($dosen->user && $dosen->user->role !== 'SUPER_ADMIN') {
-                if ($remainingKoor > 0) {
-                    $dosen->user->update(['role' => 'KOORDINATOR']);
-                } elseif ($remainingVerif > 0) {
-                    $dosen->user->update(['role' => 'VERIFIKATOR']);
-                } else {
-                    $dosen->user->update(['role' => 'DOSEN']);
-                }
-            }
 
             // Send notification to dosen user if exists
             if ($dosen->user_id) {

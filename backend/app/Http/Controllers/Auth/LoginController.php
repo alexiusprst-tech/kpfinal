@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class LoginController extends Controller
 {
@@ -31,9 +30,10 @@ class LoginController extends Controller
         $input = trim($request->input('email'));
         $password = $request->input('password');
 
-        // Look up by email or kode_dosen (case-insensitive)
+        // Look up by email, kode_dosen, or nip (case-insensitive)
         $dosen = \App\Models\Dosen::whereRaw('LOWER(email) = ?', [strtolower($input)])
             ->orWhereRaw('LOWER(kode_dosen) = ?', [strtolower($input)])
+            ->orWhere('nip', $input)
             ->first();
 
         $emailToAuth = $input;
@@ -53,16 +53,16 @@ class LoginController extends Controller
                     $initialRole = 'VERIFIKATOR';
                 }
 
-                $isLB = in_array(strtoupper(trim($dosen->kategori_dosen ?? '')), ['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA']);
+                $initialPassword = !empty($dosen->nip) ? trim($dosen->nip) : 'password';
                 $user = \App\Models\User::firstOrCreate(
                     ['email' => $emailToAuth],
                     [
                         'id'                   => (string) \Illuminate\Support\Str::uuid(),
                         'name'                 => $dosen->nama_lengkap,
-                        'password'             => \Illuminate\Support\Facades\Hash::make('password'),
+                        'password'             => \Illuminate\Support\Facades\Hash::make($initialPassword),
                         'role'                 => $initialRole,
                         'status'               => 'ACTIVE',
-                        'must_change_password' => $isLB,
+                        'must_change_password' => true,
                     ]
                 );
                 $dosen->update([
@@ -96,7 +96,7 @@ class LoginController extends Controller
         }
 
         return back()->withErrors([
-            'email' => 'Email/Kode Dosen atau password yang Anda masukkan salah.',
+            'email' => 'Email / NIP / Kode Dosen atau password yang Anda masukkan salah.',
         ])->onlyInput('email');
     }
 
@@ -123,31 +123,8 @@ class LoginController extends Controller
             return;
         }
 
-        $activeKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)
-            ->where('status', 'ACTIVE')
-            ->exists();
-
-        $activeVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)
-            ->where('status', 'ACTIVE')
-            ->exists();
-
-        if ($activeKoor) {
-            if ($user->role !== 'KOORDINATOR') {
-                $user->update(['role' => 'KOORDINATOR']);
-                $user->role = 'KOORDINATOR';
-            }
-        } elseif ($activeVerif) {
-            if ($user->role !== 'VERIFIKATOR') {
-                $user->update(['role' => 'VERIFIKATOR']);
-                $user->role = 'VERIFIKATOR';
-            }
-        } else {
-            // Dosen tidak memiliki penugasan aktif apapun -> role null
-            if ($user->role !== null) {
-                $user->update(['role' => null]);
-                $user->role = null;
-            }
-        }
+        $dosen->syncUserRole();
+        $user->role = $dosen->user->role;
     }
 
     /**

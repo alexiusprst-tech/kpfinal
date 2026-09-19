@@ -1,17 +1,41 @@
-import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+﻿import React, { useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showToast, showAlert } from '@/Utils/sweetalert';
 import SearchableSelect from '@/Components/SearchableSelect';
 import { formatDate } from '@/Utils/date';
 
 import {
-    Layers, CheckCircle2, ChevronRight, AlertCircle, ArrowLeft, ArrowRight,
-    Save, Play, BookOpen, UserCheck, Shield, Users, Search, Check, Copy, X,
-    GraduationCap, Calendar, Info, Plus, Trash2
+    Layers,
+    CheckCircle2,
+    AlertCircle,
+    ArrowLeft,
+    ArrowRight,
+    Save,
+    Play,
+    BookOpen,
+    Shield,
+    Search,
+    Check,
+    Copy,
+    X,
+    GraduationCap,
+    Info,
+    Plus,
+    Trash2
 } from 'lucide-react';
 
-export default function Create({ auth, periodeList = [], mataKuliahList = [], dosenList = [] }) {
+export default function Create({
+    auth,
+    periodeList = [],
+    existingPeriodeIds = [],
+    mataKuliahList = [],
+    dosenList = [],
+    activeKoordinatorList = [],
+    activeVerifikatorList = [],
+}) {
+    const { errors, flash } = usePage().props;
+
     // Current Wizard Step: 1 = Periode, 2 = Mata Kuliah, 3 = Koordinator & Verifikator per MK, 4 = Review & Simpan
     const [step, setStep] = useState(1);
 
@@ -39,6 +63,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
 
     // Active Periode Object
     const selectedPeriode = periodeList.find((p) => p.id === periodeId);
+    const allPeriodsHaveGroups = periodeList.length > 0 && periodeList.every((p) => existingPeriodeIds.includes(p.id));
     const mkAll = mataKuliahList;
     const dosenAll = dosenList;
 
@@ -92,6 +117,36 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
     const handleToggleCoordinator = (mkId, dosenId) => {
         if (!dosenId) return;
 
+        const currentKoorList = mkCoordinatorMap[mkId] || [];
+        const isRemoving = currentKoorList.includes(dosenId);
+
+        if (!isRemoving) {
+            // Aturan: Dosen tidak dapat menjadi Verifikator dan Koordinator pada mata kuliah yang sama
+            const thisMkVerifs = mkVerifikatorMap[mkId] || [];
+            if (thisMkVerifs.includes(dosenId)) {
+                const dObj = dosenAll.find((d) => d.id === dosenId);
+                showAlert({
+                    title: 'Konflik Peran Dosen',
+                    text: `Dosen ${dObj?.nama_lengkap || 'tersebut'} sudah ditugaskan sebagai Verifikator pada mata kuliah ini. Dosen tidak dapat menjadi Verifikator dan Koordinator pada mata kuliah yang sama.`,
+                    icon: 'warning',
+                });
+                return;
+            }
+
+            const isDbActiveVerif = activeVerifikatorList.some(
+                (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === dosenId
+            );
+            if (isDbActiveVerif) {
+                const dObj = dosenAll.find((d) => d.id === dosenId);
+                showAlert({
+                    title: 'Konflik Penugasan Aktif',
+                    text: `Dosen ${dObj?.nama_lengkap || 'tersebut'} sudah menjadi Verifikator aktif untuk mata kuliah ini pada periode terpilih.`,
+                    icon: 'warning',
+                });
+                return;
+            }
+        }
+
         setMkCoordinatorMap((prev) => {
             const currentList = prev[mkId] || [];
             if (currentList.includes(dosenId)) {
@@ -124,10 +179,38 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
     const handleToggleVerifikator = (mkId, dosenId) => {
         if (!dosenId) return;
 
-        const dosenObj = dosenAll.find((d) => d.id === dosenId);
-        if (dosenObj && !isDosenTetap(dosenObj)) {
-            showToast('error', 'Verifikator Soal hanya dapat ditentukan dari Dosen Tetap.');
-            return;
+        const currentVerifList = mkVerifikatorMap[mkId] || [];
+        const isRemoving = currentVerifList.includes(dosenId);
+
+        if (!isRemoving) {
+            const dosenObj = dosenAll.find((d) => d.id === dosenId);
+            if (dosenObj && !isDosenTetap(dosenObj)) {
+                showToast('error', 'Verifikator Soal hanya dapat ditentukan dari Dosen Tetap.');
+                return;
+            }
+
+            // Aturan: Dosen tidak dapat menjadi Koordinator dan Verifikator pada mata kuliah yang sama
+            const thisMkCoors = mkCoordinatorMap[mkId] || [];
+            if (thisMkCoors.includes(dosenId)) {
+                showAlert({
+                    title: 'Konflik Peran Dosen',
+                    text: `Dosen ${dosenObj?.nama_lengkap || 'tersebut'} sudah ditugaskan sebagai Koordinator pada mata kuliah ini. Dosen tidak dapat menjadi Verifikator dan Koordinator pada mata kuliah yang sama.`,
+                    icon: 'warning',
+                });
+                return;
+            }
+
+            const isDbActiveKoor = activeKoordinatorList.some(
+                (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === dosenId
+            );
+            if (isDbActiveKoor) {
+                showAlert({
+                    title: 'Konflik Penugasan Aktif',
+                    text: `Dosen ${dosenObj?.nama_lengkap || 'tersebut'} sudah menjadi Koordinator aktif untuk mata kuliah ini pada periode terpilih.`,
+                    icon: 'warning',
+                });
+                return;
+            }
         }
 
         setMkVerifikatorMap((prev) => {
@@ -165,7 +248,14 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
             selectedMkIds.forEach((mkId) => {
                 const koorList = mkCoordinatorMap[mkId] || [];
                 // Exclude this MK's coordinators from the copied verifier list
-                updated[mkId] = sourceList.filter((id) => !koorList.includes(id));
+                // Also exclude active coordinators from other groups on this MK
+                updated[mkId] = sourceList.filter((id) => {
+                    if (koorList.includes(id)) return false;
+                    const isDbActiveKoor = activeKoordinatorList.some(
+                        (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === id
+                    );
+                    return !isDbActiveKoor;
+                });
             });
             return updated;
         });
@@ -184,7 +274,14 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
             selectedMkIds.forEach((mkId) => {
                 const verifList = mkVerifikatorMap[mkId] || [];
                 // Exclude this MK's verifiers from the copied coordinator list
-                updated[mkId] = sourceList.filter((id) => !verifList.includes(id));
+                // Also exclude active verifikators from other groups on this MK
+                updated[mkId] = sourceList.filter((id) => {
+                    if (verifList.includes(id)) return false;
+                    const isDbActiveVerif = activeVerifikatorList.some(
+                        (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === id
+                    );
+                    return !isDbActiveVerif;
+                });
             });
             return updated;
         });
@@ -201,20 +298,16 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
         return dosenAll.map((d) => {
             const isThisMkKoor = thisMkCoors.includes(d.id);
             const isThisMkVerif = thisMkVerifs.includes(d.id);
+            const isDbActiveVerif = activeVerifikatorList.some(
+                (item) => item.periode_id === periodeId && item.mata_kuliah_id === currentMkId && item.dosen_id === d.id
+            );
 
-            const isDisabled = isThisMkKoor || isThisMkVerif;
-            let badge = null;
-            if (isThisMkKoor) {
-                badge = 'Dipilih';
-            } else if (isThisMkVerif) {
-                badge = 'Verifikator MK ini';
-            }
+            const isDisabled = isThisMkKoor || isThisMkVerif || isDbActiveVerif;
 
             return {
                 value: d.id,
                 label: `${d.kode_dosen} – ${d.nama_lengkap}`,
                 disabled: isDisabled,
-                badge: badge,
             };
         });
     };
@@ -230,34 +323,31 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
         return dosenTetapList.map((d) => {
             const isThisMkKoor = thisMkCoors.includes(d.id);
             const isThisMkVerif = thisMkVerifs.includes(d.id);
+            const isDbActiveKoor = activeKoordinatorList.some(
+                (item) => item.periode_id === periodeId && item.mata_kuliah_id === currentMkId && item.dosen_id === d.id
+            );
 
-            const isDisabled = isThisMkVerif || isThisMkKoor;
-            let badge = null;
-            if (isThisMkVerif) {
-                badge = 'Dipilih';
-            } else if (isThisMkKoor) {
-                badge = 'Koor MK ini';
-            }
+            const isDisabled = isThisMkVerif || isThisMkKoor || isDbActiveKoor;
 
             return {
                 value: d.id,
                 label: `${d.kode_dosen} – ${d.nama_lengkap}`,
                 disabled: isDisabled,
-                badge: badge,
             };
         });
     };
 
     // Validate current step before advancing
     const canAdvance = () => {
-        if (step === 1) return Boolean(periodeId);
+        if (step === 1) return Boolean(periodeId) && !existingPeriodeIds.includes(periodeId);
         if (step === 2) return selectedMkIds.length > 0;
         if (step === 3) {
-            // Every selected MK must have 1-3 coordinators and 1-5 verifikators
+            // Every selected MK must have 1-3 coordinators, 1-5 verifikators, and no overlap between them
             return selectedMkIds.length > 0 && selectedMkIds.every((id) => {
                 const koors = mkCoordinatorMap[id] || [];
                 const verifs = mkVerifikatorMap[id] || [];
-                return koors.length >= 1 && koors.length <= 3 && verifs.length >= 1 && verifs.length <= 5;
+                const hasOverlap = koors.some((kId) => verifs.includes(kId));
+                return koors.length >= 1 && koors.length <= 3 && verifs.length >= 1 && verifs.length <= 5 && !hasOverlap;
             });
         }
         if (step === 4) return namaKelompok.trim().length > 0;
@@ -326,6 +416,18 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                 return;
             }
 
+            // Validasi Dosen tidak bisa menjadi verifikator dan koordinator pada mata kuliah yang sama
+            const overlap = koors.filter((id) => verifs.includes(id));
+            if (overlap.length > 0) {
+                const conflictingDosen = dosenAll.find((d) => d.id === overlap[0]);
+                showAlert({
+                    title: 'Konflik Peran Dosen',
+                    text: `Dosen ${conflictingDosen?.nama_lengkap || 'terpilih'} tidak dapat menjadi Koordinator sekaligus Verifikator pada mata kuliah ${mk?.nama_mk || mk?.kode_mk}.`,
+                    icon: 'error',
+                });
+                return;
+            }
+
             // Validasi Verifikator wajib Dosen Tetap
             for (const vId of verifs) {
                 const vObj = dosenAll.find((d) => d.id === vId);
@@ -339,7 +441,6 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                 }
             }
         }
-
 
         const payload = {
             nama: namaKelompok,
@@ -356,6 +457,16 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
         setLoading(true);
         router.post('/superadmin/kelompok-verifikasi', payload, {
             onFinish: () => setLoading(false),
+            onError: (errs) => {
+                const firstErr = Object.values(errs)[0];
+                if (firstErr) {
+                    showAlert({
+                        title: 'Gagal Menyimpan Kelompok',
+                        text: firstErr,
+                        icon: 'error',
+                    });
+                }
+            },
         });
     };
 
@@ -363,17 +474,41 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
         <AuthenticatedLayout auth={auth}>
             <Head title="Buat Kelompok Verifikasi" />
 
+
             <div className="space-y-6 w-full pb-16">
+                {errors && Object.keys(errors).length > 0 && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start gap-3 animate-in fade-in duration-200">
+                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="font-bold text-sm">Gagal Menyimpan Kelompok Verifikasi:</p>
+                            <ul className="text-xs list-disc list-inside mt-1 space-y-0.5 font-medium">
+                                {Object.values(errors).map((err, idx) => (
+                                    <li key={idx}>{err}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header Title */}
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2.5">
-                            <Layers className="w-6 h-6 text-[#801720]" />
-                            Buat Kelompok Verifikasi Baru
-                        </h1>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Integrasikan Periode, Mata Kuliah, Koordinator MK (Maks 3), dan Tim Verifikator (Maks 5) dalam satu alur terpadu.
-                        </p>
+                    <div className="flex items-center gap-3">
+                        <Link
+                            href="/superadmin/kelompok-verifikasi"
+                            className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer shrink-0"
+                            title="Kembali ke Daftar Kelompok"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </Link>
+                        <div>
+                            <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2.5">
+                                <Layers className="w-6 h-6 text-[#9E1B28]" />
+                                Buat Kelompok Verifikasi Baru
+                            </h1>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Integrasikan Periode, Mata Kuliah, Koordinator MK (Maks 3), dan Tim Verifikator (Maks 5) dalam satu alur terpadu.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -405,7 +540,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                 isDone
                                                     ? 'bg-emerald-600 text-white shadow-emerald-600/20'
                                                     : isCurrent
-                                                    ? 'bg-[#801720] text-white ring-4 ring-[#801720]/15 shadow-md shadow-[#801720]/30'
+                                                    ? 'bg-[#9E1B28] text-white ring-4 ring-[#9E1B28]/15 shadow-md shadow-[#9E1B28]/30'
                                                     : 'bg-white border-2 border-gray-200 text-gray-400'
                                             }`}
                                         >
@@ -417,7 +552,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                             <p
                                                 className={`text-xs font-bold transition-colors leading-tight ${
                                                     isCurrent
-                                                        ? 'text-[#801720]'
+                                                        ? 'text-[#9E1B28]'
                                                         : isDone
                                                         ? 'text-gray-800'
                                                         : 'text-gray-400'
@@ -428,7 +563,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                             <p
                                                 className={`text-[10px] font-medium mt-0.5 transition-colors hidden sm:block ${
                                                     isCurrent
-                                                        ? 'text-[#801720]/75 font-semibold'
+                                                        ? 'text-[#9E1B28]/75 font-semibold'
                                                         : isDone
                                                         ? 'text-gray-500'
                                                         : 'text-gray-400'
@@ -468,17 +603,30 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                 </p>
                             </div>
 
+                            {allPeriodsHaveGroups && (
+                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-start gap-3">
+                                    <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="font-bold">Semua Periode Aktif Sudah Memiliki Kelompok Verifikasi</p>
+                                        <p className="mt-0.5 text-amber-700">Dalam satu periode aktif hanya dapat dibuat 1 kelompok verifikasi. Anda dapat mengubah data atau penugasan pada kelompok yang sudah ada di halaman daftar kelompok verifikasi.</p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
                                 {periodeList.map((periode) => {
+                                    const hasGroup = existingPeriodeIds.includes(periode.id);
                                     const isSelected = periode.id === periodeId;
                                     return (
                                         <div
                                             key={periode.id}
-                                            onClick={() => setPeriodeId(periode.id)}
-                                            className={`p-4 rounded-2xl border transition-all cursor-pointer text-left flex flex-col justify-between ${
-                                                isSelected
-                                                    ? 'border-[#801720] bg-[#801720]/5 ring-2 ring-[#801720]/20 shadow-sm'
-                                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/70 bg-white'
+                                            onClick={() => !hasGroup && setPeriodeId(periode.id)}
+                                            className={`p-4 rounded-2xl border transition-all text-left flex flex-col justify-between ${
+                                                hasGroup
+                                                    ? 'border-gray-200 bg-gray-50/80 opacity-60 cursor-not-allowed'
+                                                    : isSelected
+                                                        ? 'border-[#9E1B28] bg-[#9E1B28]/5 ring-2 ring-[#9E1B28]/20 shadow-sm cursor-pointer'
+                                                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/70 bg-white cursor-pointer'
                                             }`}
                                         >
                                             <div className="space-y-2">
@@ -486,11 +634,18 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                     <span className="text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-0.5 rounded-md bg-white border border-gray-200 text-gray-700">
                                                         {periode.jenis}
                                                     </span>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                        periode.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                                    }`}>
-                                                        {periode.status}
-                                                    </span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        {hasGroup && (
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200">
+                                                                Sudah Ada Kelompok
+                                                            </span>
+                                                        )}
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                            periode.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                                        }`}>
+                                                            {periode.status}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <div className="font-black text-sm text-gray-900 leading-snug">
                                                     {periode.nama}
@@ -505,7 +660,11 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                     {formatDate(periode.tanggal_mulai)} s/d {formatDate(periode.tanggal_selesai)}
                                                 </span>
                                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                                                    isSelected ? 'bg-[#801720] text-white shadow-xs' : 'border-2 border-gray-300 bg-white'
+                                                    hasGroup
+                                                        ? 'border border-gray-300 bg-gray-100 text-gray-400'
+                                                        : isSelected
+                                                            ? 'bg-[#9E1B28] text-white shadow-xs'
+                                                            : 'border-2 border-gray-300 bg-white'
                                                 }`}>
                                                     {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                                                 </div>
@@ -563,13 +722,13 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                         value={mkSearch}
                                         onChange={(e) => setMkSearch(e.target.value)}
                                         placeholder="Cari kode atau nama mata kuliah..."
-                                        className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720]"
+                                        className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28]"
                                     />
                                 </div>
                                 <select
                                     value={semesterFilter}
                                     onChange={(e) => setSemesterFilter(e.target.value)}
-                                    className="px-3 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] text-gray-700 font-semibold"
+                                    className="px-3 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] text-gray-700 font-semibold"
                                 >
                                     <option value="ALL">Semua Semester</option>
                                     {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
@@ -588,12 +747,12 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                             onClick={() => handleToggleMk(mk.id)}
                                             className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                                                 isSelected
-                                                    ? 'border-[#801720] bg-[#801720]/5 ring-1.5 ring-[#801720]/20'
+                                                    ? 'border-[#9E1B28] bg-[#9E1B28]/5 ring-1.5 ring-[#9E1B28]/20'
                                                     : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/70 bg-white'
                                             }`}
                                         >
                                             <div className="space-y-1 pr-2">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="text-xs font-black text-gray-900">{mk.kode_mk}</span>
                                                     <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
                                                         {mk.sks} SKS
@@ -610,7 +769,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                             </div>
 
                                             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                                                isSelected ? 'bg-[#801720] text-white shadow-xs' : 'border-2 border-gray-300 bg-white'
+                                                isSelected ? 'bg-[#9E1B28] text-white shadow-xs' : 'border-2 border-gray-300 bg-white'
                                             }`}>
                                                 {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                                             </div>
@@ -661,7 +820,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                             {/* Course Header */}
                                             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                                                 <div className="flex items-center gap-3">
-                                                    <span className="w-6 h-6 rounded-lg bg-[#801720]/10 text-[#801720] font-black text-xs flex items-center justify-center">
+                                                    <span className="w-6 h-6 rounded-lg bg-[#9E1B28]/10 text-[#9E1B28] font-black text-xs flex items-center justify-center">
                                                         {idx + 1}
                                                     </span>
                                                     <div>
@@ -693,6 +852,16 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                 </div>
                                             </div>
 
+                                                {/* Conflict Alert Banner if any overlap */}
+                                            {currentCoordinatorList.some((id) => currentVerifikatorList.includes(id)) && (
+                                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
+                                                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                                                    <span className="font-semibold">
+                                                        Perhatian: Dosen tidak dapat menjadi Koordinator sekaligus Verifikator pada mata kuliah yang sama.
+                                                    </span>
+                                                </div>
+                                            )}
+
                                             {/* Two Columns Grid for Koordinator (Max 3) & Verifikator (Max 5) */}
                                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
@@ -717,7 +886,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleCopyCoordinatorsToAll(mkId)}
-                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#801720] hover:text-[#681219] hover:underline cursor-pointer"
+                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#9E1B28] hover:text-[#681219] hover:underline cursor-pointer"
                                                                 title="Salin koordinator MK ini ke semua MK lainnya"
                                                             >
                                                                 <Copy className="w-3 h-3" /> Terapkan ke Semua MK
@@ -751,9 +920,9 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                                 return (
                                                                     <span
                                                                         key={kId}
-                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#801720] border border-red-200 rounded-lg text-xs font-bold animate-in fade-in duration-100"
+                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#9E1B28] border border-red-200 rounded-lg text-xs font-bold animate-in fade-in duration-100"
                                                                     >
-                                                                        <GraduationCap className="w-3 h-3 text-[#801720] shrink-0" />
+                                                                        <GraduationCap className="w-3 h-3 text-[#9E1B28] shrink-0" />
                                                                         <span className="truncate max-w-[200px]">
                                                                             {kObj?.kode_dosen} - {kObj?.nama_lengkap}
                                                                         </span>
@@ -800,7 +969,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleCopyVerifikatorsToAll(mkId)}
-                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#801720] hover:text-[#681219] hover:underline cursor-pointer"
+                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#9E1B28] hover:text-[#681219] hover:underline cursor-pointer"
                                                                 title="Salin daftar verifikator MK ini ke semua MK lainnya"
                                                             >
                                                                 <Copy className="w-3 h-3" /> Terapkan ke Semua MK
@@ -871,19 +1040,19 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                         <button
                                             type="button"
                                             onClick={() => setShowAddMkSelector(true)}
-                                            className="w-full py-3.5 border-2 border-dashed border-gray-300 hover:border-[#801720] bg-gray-50/70 hover:bg-[#801720]/5 rounded-2xl flex items-center justify-center gap-2.5 text-xs font-extrabold text-gray-600 hover:text-[#801720] transition-all cursor-pointer group shadow-2xs"
+                                            className="w-full py-3.5 border-2 border-dashed border-gray-300 hover:border-[#9E1B28] bg-gray-50/70 hover:bg-[#9E1B28]/5 rounded-2xl flex items-center justify-center gap-2.5 text-xs font-extrabold text-gray-600 hover:text-[#9E1B28] transition-all cursor-pointer group shadow-2xs"
                                         >
-                                            <div className="w-7 h-7 rounded-xl bg-white group-hover:bg-[#801720] text-gray-500 group-hover:text-white flex items-center justify-center shadow-xs border border-gray-200 group-hover:border-[#801720] transition-all">
+                                            <div className="w-7 h-7 rounded-xl bg-white group-hover:bg-[#9E1B28] text-gray-500 group-hover:text-white flex items-center justify-center shadow-xs border border-gray-200 group-hover:border-[#9E1B28] transition-all">
                                                 <Plus className="w-4 h-4" />
                                             </div>
                                             <span>Tambah Penetapan Mata Kuliah</span>
                                             <span className="text-[11px] font-normal text-gray-400">({unselectedMks.length} mata kuliah tersedia)</span>
                                         </button>
                                     ) : (
-                                        <div className="p-5 bg-slate-50 border-2 border-[#801720]/30 rounded-2xl space-y-3.5 animate-in fade-in duration-150 shadow-xs">
+                                        <div className="p-5 bg-slate-50 border-2 border-[#9E1B28]/30 rounded-2xl space-y-3.5 animate-in fade-in duration-150 shadow-xs">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <BookOpen className="w-4 h-4 text-[#801720]" />
+                                                    <BookOpen className="w-4 h-4 text-[#9E1B28]" />
                                                     <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">
                                                         Pilih Mata Kuliah untuk Ditambahkan
                                                     </h4>
@@ -904,7 +1073,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                     value={addMkSearch}
                                                     onChange={(e) => setAddMkSearch(e.target.value)}
                                                     placeholder="Ketik kode atau nama mata kuliah yang ingin ditambahkan..."
-                                                    className="w-full pl-10 pr-4 py-2 text-xs font-semibold border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]"
+                                                    className="w-full pl-10 pr-4 py-2 text-xs font-semibold border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28]"
                                                     autoFocus
                                                 />
                                             </div>
@@ -919,11 +1088,11 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                         <div
                                                             key={m.id}
                                                             onClick={() => handleAddAdditionalMk(m)}
-                                                            className="p-3 bg-white hover:bg-[#801720]/5 border border-gray-200 hover:border-[#801720] rounded-xl flex items-center justify-between cursor-pointer transition-all group shadow-2xs"
+                                                            className="p-3 bg-white hover:bg-[#9E1B28]/5 border border-gray-200 hover:border-[#9E1B28] rounded-xl flex items-center justify-between cursor-pointer transition-all group shadow-2xs"
                                                         >
                                                             <div className="min-w-0 pr-2">
                                                                 <div className="flex items-center gap-1.5">
-                                                                    <span className="font-extrabold text-xs text-gray-900 group-hover:text-[#801720]">{m.kode_mk}</span>
+                                                                    <span className="font-extrabold text-xs text-gray-900 group-hover:text-[#9E1B28]">{m.kode_mk}</span>
                                                                     <span className="text-[10px] font-bold px-1.5 py-0.2 bg-gray-100 text-gray-600 rounded">
                                                                         {m.sks} SKS
                                                                     </span>
@@ -935,7 +1104,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                                 </div>
                                                                 <p className="text-xs text-gray-600 font-medium truncate mt-0.5">{m.nama_mk}</p>
                                                             </div>
-                                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#801720] bg-red-50 px-2.5 py-1 rounded-lg border border-red-200/80 group-hover:bg-[#801720] group-hover:text-white transition-all shrink-0">
+                                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#9E1B28] bg-red-50 px-2.5 py-1 rounded-lg border border-red-200/80 group-hover:bg-[#9E1B28] group-hover:text-white transition-all shrink-0">
                                                                 <Plus className="w-3.5 h-3.5" /> Tambah
                                                             </span>
                                                         </div>
@@ -974,7 +1143,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                         value={namaKelompok}
                                         onChange={(e) => setNamaKelompok(e.target.value)}
                                         placeholder="Contoh: Kelompok Sistem Informasi - UTS Ganjil 2026"
-                                        className="w-full p-2.5 text-xs font-bold text-gray-900 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720]"
+                                        className="w-full p-2.5 text-xs font-bold text-gray-900 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28]"
                                     />
                                 </div>
 
@@ -987,7 +1156,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                         value={keterangan}
                                         onChange={(e) => setKeterangan(e.target.value)}
                                         placeholder="Tambahkan catatan khusus untuk kelompok penugasan ini..."
-                                        className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] resize-none"
+                                        className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] resize-none"
                                     />
                                 </div>
                             </div>
@@ -1024,7 +1193,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                                             {koorList.map((k) => (
                                                                 <span
                                                                     key={k.id}
-                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-50 text-[#801720] border border-red-200"
+                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-50 text-[#9E1B28] border border-red-200"
                                                                 >
                                                                     <GraduationCap className="w-2.5 h-2.5" />
                                                                     {k.kode_dosen} - {k.nama_lengkap}
@@ -1064,9 +1233,10 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                             <button
                                 type="button"
                                 onClick={handlePrev}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+                                className="p-2.5 bg-white hover:bg-gray-100 text-gray-600 rounded-xl border border-gray-200 transition-colors cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold shadow-2xs"
                             >
-                                <ArrowLeft className="w-3.5 h-3.5" /> Kembali
+                                <ArrowLeft className="w-4 h-4" />
+                                <span>Kembali</span>
                             </button>
                         ) : <div />}
 
@@ -1078,7 +1248,7 @@ export default function Create({ auth, periodeList = [], mataKuliahList = [], do
                                     disabled={!canAdvance()}
                                     className={`inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold text-white rounded-xl transition-all ${
                                         canAdvance()
-                                            ? 'bg-[#801720] hover:bg-[#681219] shadow-md shadow-[#801720]/20 cursor-pointer'
+                                            ? 'bg-[#9E1B28] hover:bg-[#681219] shadow-md shadow-[#9E1B28]/20 cursor-pointer'
                                             : 'bg-gray-300 cursor-not-allowed'
                                     }`}
                                 >

@@ -23,7 +23,6 @@ class MataKuliahController extends Controller
         'CHANGE_PASSWORD'             => 'mengubah kata sandi akun',
         'VERIFIKASI_APPROVED'         => 'menyetujui soal',
         'VERIFIKASI_REVISION'         => 'meminta revisi atas soal',
-        'VERIFIKASI_REJECTED'         => 'menolak soal',
         'BERITA_ACARA_CREATED'        => 'mengunduh berita acara verifikasi',
         'BERITA_ACARA_ALL_DOWNLOADED' => 'mengunduh semua berita acara',
         'BERITA_ACARA_SOAL_DOWNLOADED'=> 'mengunduh berita acara soal',
@@ -90,7 +89,6 @@ class MataKuliahController extends Controller
             'in_review'  => $soalList->whereIn('status', [Soal::STATUS_DRAFT, Soal::STATUS_SUBMITTED, Soal::STATUS_IN_REVIEW, Soal::STATUS_RESUBMITTED])->count(),
             'revision'   => $soalList->where('status', Soal::STATUS_REVISION)->count(),
             'approved'   => $approved,
-            'rejected'   => $soalList->where('status', Soal::STATUS_REJECTED)->count(),
         ];
 
         $verifikators = PenugasanVerifikator::with('dosen')
@@ -136,10 +134,7 @@ class MataKuliahController extends Controller
             ? $soalList->filter(fn ($s) => $s->created_at >= $assignment->created_at)
             : $soalList;
 
-        $activeSoal = $uploadOpen ? $currentAssignmentSoal->first(fn ($s) => !in_array($s->status, [
-            Soal::STATUS_APPROVED,
-            Soal::STATUS_REJECTED,
-        ])) : null;
+        $activeSoal = $uploadOpen ? $currentAssignmentSoal->first(fn ($s) => $s->status !== Soal::STATUS_APPROVED) : null;
 
         return Inertia::render('Koordinator/MataKuliah/Show', [
             'mataKuliah'    => $mataKuliah,

@@ -1,15 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
-import FlashAlert from '../../../Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showAlert, showConfirm } from '@/Utils/sweetalert';
 import { Head, router, usePage } from '@inertiajs/react';
 
 import axios from 'axios';
 import {
-    Target, Plus, Search, Edit2, Trash2, Download, Upload,
-    CheckCircle2, AlertCircle, FileSpreadsheet, Eye,
-    AlertTriangle, X, ChevronRight, ArrowRight, Check,
-    CloudUpload, FileText, Pencil, Save, RotateCcw
+    Target,
+    Plus,
+    Search,
+    Edit2,
+    Trash2,
+    Download,
+    Upload,
+    AlertCircle,
+    FileSpreadsheet,
+    Eye,
+    AlertTriangle,
+    X,
+    ArrowRight,
+    Check,
+    CloudUpload,
+    FileText,
+    Pencil,
+    Save,
+    RotateCcw,
+    Users
 } from 'lucide-react';
 
 // ─── Bloom options ────────────────────────────────────────────────────────────
@@ -30,13 +45,13 @@ function Stepper({ steps, activeStep }) {
                         <div className="flex flex-col items-center gap-1 flex-shrink-0">
                             <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
                                 done ? 'bg-emerald-500 border-emerald-500 text-white' :
-                                active ? 'bg-[#801720] border-[#801720] text-white shadow-lg shadow-red-200' :
+                                active ? 'bg-[#9E1B28] border-[#9E1B28] text-white shadow-lg shadow-red-200' :
                                 'bg-white border-gray-200 text-gray-400'
                             }`}>
                                 {done ? <Check className="w-4 h-4" /> : step.number}
                             </div>
                             <span className={`text-[10px] font-semibold text-center leading-tight max-w-[72px] ${
-                                active ? 'text-[#801720]' : done ? 'text-emerald-600' : 'text-gray-400'
+                                active ? 'text-[#9E1B28]' : done ? 'text-emerald-600' : 'text-gray-400'
                             }`}>{step.label}</span>
                         </div>
                         {idx < steps.length - 1 && (
@@ -98,10 +113,6 @@ export default function PloIndex({ ploList, filters }) {
     ];
 
     // ─── Handlers ─────────────────────────────────────────────────────────────
-    const handleSearch = (e) => {
-        e.preventDefault();
-    };
-
     const handleCreateSubmit = (e) => {
         e.preventDefault();
         setFormProcessing(true);
@@ -260,58 +271,69 @@ export default function PloIndex({ ploList, filters }) {
         });
     };
 
-
     // ─── Render ────────────────────────────────────────────────────────────────
     return (
         <AuthenticatedLayout title="Manajemen PLO">
             <Head title="Master Data PLO" />
 
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
-                        <Target className="w-6 h-6 text-[#801720]" /> Master PLO
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Kelola Program Learning Outcomes (PLO) dan capaian pembelajaran lulusan</p>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                    <a href="/superadmin/plo/template" className="flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-all">
-                        <Download className="w-3.5 h-3.5" /> Template
-                    </a>
-                    <button
-                        onClick={openImportWizard}
-                        className="flex items-center gap-1.5 px-3 py-2 border border-[#801720] text-[#801720] rounded-xl text-xs font-semibold cursor-pointer hover:bg-red-50 transition-all"
-                    >
-                        <Upload className="w-3.5 h-3.5" /> Impor
-                    </button>
-                    <a href="/superadmin/plo/export" className="flex items-center gap-1.5 px-3 py-2 bg-gray-700 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-all">
-                        <Download className="w-3.5 h-3.5" /> Ekspor
-                    </a>
-                    <button
-                        onClick={() => setIsCreateOpen(true)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] transition-all shadow-sm"
-                    >
-                        <Plus className="w-3.5 h-3.5" /> Tambah PLO
-                    </button>
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                            <Target className="w-3.5 h-3.5" />
+                            <span>Program Learning Outcomes</span>
+                        </div>
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Master PLO</h1>
+                        <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                            Kelola Program Learning Outcomes (PLO) dan capaian pembelajaran lulusan.
+                        </p>
+                    </div>
+                    <div className="flex gap-2 flex-wrap shrink-0">
+                        <a href="/superadmin/plo/template?v=1" className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white hover:bg-white/20 transition-all">
+                            <Download className="w-3.5 h-3.5" /> Template
+                        </a>
+                        <button
+                            onClick={openImportWizard}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white cursor-pointer hover:bg-white/20 transition-all"
+                        >
+                            <Upload className="w-3.5 h-3.5" /> Impor
+                        </button>
+                        <a href="/superadmin/plo/export" className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white hover:bg-white/20 transition-all">
+                            <Download className="w-3.5 h-3.5" /> Ekspor
+                        </a>
+                        <button
+                            onClick={() => setIsCreateOpen(true)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-white text-[#9E1B28] rounded-xl text-xs font-bold hover:bg-rose-50 transition-all shadow-sm"
+                        >
+                            <Plus className="w-3.5 h-3.5" /> Tambah PLO
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Flash Messages */}
-            <FlashAlert flash={flash} />
 
             {/* Search */}
-            <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Cari kode atau deskripsi..."
-                        className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none"
-                    />
-                </div>
-                <button type="submit" className="px-4 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] transition-all">Cari</button>
-            </form>
+            <div className="relative max-w-sm mb-6">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Cari kode atau deskripsi..."
+                    className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] focus:bg-white outline-none transition-all"
+                />
+                {search && (
+                    <button
+                        type="button"
+                        onClick={() => setSearch('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                        title="Bersihkan pencarian"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                )}
+            </div>
 
             {/* Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -330,7 +352,7 @@ export default function PloIndex({ ploList, filters }) {
                                 ploList.data.map((plo, idx) => (
                                     <tr key={plo.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-5 py-3 text-sm text-gray-600">{(ploList.current_page - 1) * ploList.per_page + idx + 1}</td>
-                                        <td className="px-5 py-3 font-bold text-[#801720]">{plo.kode_plo}</td>
+                                        <td className="px-5 py-3 font-bold text-[#9E1B28]">{plo.kode_plo}</td>
                                         <td className="px-5 py-3 text-gray-700">{plo.deskripsi}</td>
                                         <td className="px-5 py-3 text-right">
                                             <div className="flex justify-end gap-2">
@@ -362,7 +384,7 @@ export default function PloIndex({ ploList, filters }) {
                                     disabled={!link.url}
                                     onClick={() => link.url && router.get(link.url)}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${link.active ? 'bg-[#801720] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${link.active ? 'bg-[#9E1B28] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'}`}
                                 />
                             ))}
                         </div>
@@ -375,10 +397,10 @@ export default function PloIndex({ ploList, filters }) {
                 <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
                         {/* Modal Header */}
-                        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-[#801720]/5 to-white">
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-[#9E1B28]/5 to-white">
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-[#801720]/10 flex items-center justify-center">
-                                    <FileSpreadsheet className="w-5 h-5 text-[#801720]" />
+                                <div className="w-9 h-9 rounded-xl bg-[#9E1B28]/10 flex items-center justify-center">
+                                    <FileSpreadsheet className="w-5 h-5 text-[#9E1B28]" />
                                 </div>
                                 <div>
                                     <h2 className="text-base font-extrabold text-slate-800">Impor Data PLO</h2>
@@ -408,7 +430,7 @@ export default function PloIndex({ ploList, filters }) {
                                         <p className="text-xs text-blue-600 mb-3">Unduh template Excel, isi data, lalu impor kembali ke sistem.</p>
                                         <div className="bg-white rounded-xl border border-blue-200 overflow-hidden">
                                             <table className="w-full text-xs">
-                                                <thead className="bg-[#801720] text-white">
+                                                <thead className="bg-[#9E1B28] text-white">
                                                     <tr>
                                                         <th className="p-2.5 text-left font-bold">KODE PLO</th>
                                                         <th className="p-2.5 text-left font-bold">Program Learning Outcome / Capaian Pembelajaran</th>
@@ -417,7 +439,7 @@ export default function PloIndex({ ploList, filters }) {
                                                 <tbody>
                                                     {[['PLO01', 'Mampu menerapkan pemikiran logis, kritis, sistematis...'], ['PLO02', 'Mampu merancang dan mengimplementasikan perangkat lunak...']].map(([k, d]) => (
                                                         <tr key={k} className="border-t border-blue-100">
-                                                            <td className="p-2.5 font-semibold text-[#801720]">{k}</td>
+                                                            <td className="p-2.5 font-semibold text-[#9E1B28]">{k}</td>
                                                             <td className="p-2.5 text-gray-600">{d}</td>
                                                         </tr>
                                                     ))}
@@ -426,14 +448,14 @@ export default function PloIndex({ ploList, filters }) {
                                         </div>
                                     </div>
                                     <div className="flex flex-col sm:flex-row gap-3">
-                                        <a href="/superadmin/plo/template"
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#801720]/40 rounded-xl text-sm font-semibold text-[#801720] hover:bg-red-50 transition-all"
+                                        <a href="/superadmin/plo/template?v=1"
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#9E1B28]/40 rounded-xl text-sm font-semibold text-[#9E1B28] hover:bg-red-50 transition-all"
                                         >
                                             <Download className="w-4 h-4" /> Unduh Template Excel
                                         </a>
                                         <button
                                             onClick={() => setActiveStep(2)}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] transition-all"
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] transition-all"
                                         >
                                             Lanjut ke Impor <ArrowRight className="w-4 h-4" />
                                         </button>
@@ -447,8 +469,8 @@ export default function PloIndex({ ploList, filters }) {
                                     <div
                                         className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
                                             isDragging
-                                                ? 'border-[#801720] bg-red-50/60 scale-[1.01]'
-                                                : 'border-gray-300 hover:border-[#801720]/50 hover:bg-red-50/30'
+                                                ? 'border-[#9E1B28] bg-red-50/60 scale-[1.01]'
+                                                : 'border-gray-300 hover:border-[#9E1B28]/50 hover:bg-red-50/30'
                                         }`}
                                         onClick={() => fileInputRef.current?.click()}
                                         onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
@@ -462,8 +484,8 @@ export default function PloIndex({ ploList, filters }) {
                                             handleFileDrop(file);
                                         }}
                                     >
-                                        <CloudUpload className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragging ? 'text-[#801720]' : 'text-gray-300'}`} />
-                                        <p className={`text-sm font-semibold transition-colors ${isDragging ? 'text-[#801720]' : 'text-gray-600'}`}>
+                                        <CloudUpload className={`w-12 h-12 mx-auto mb-3 transition-colors ${isDragging ? 'text-[#9E1B28]' : 'text-gray-300'}`} />
+                                        <p className={`text-sm font-semibold transition-colors ${isDragging ? 'text-[#9E1B28]' : 'text-gray-600'}`}>
                                             {isDragging ? 'Lepaskan file di sini!' : 'Klik atau seret file Excel ke sini'}
                                         </p>
                                         <p className="text-xs text-gray-400 mt-1">Format: .xlsx, .xls, .csv (Maks. 5MB)</p>
@@ -486,7 +508,7 @@ export default function PloIndex({ ploList, filters }) {
                                         <button
                                             onClick={handlePreview}
                                             disabled={!selectedFile || isPreviewing}
-                                            className="flex-1 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                            className="flex-1 py-2.5 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                                         >
                                             {isPreviewing ? (<><span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span> Memvalidasi...</>) : (<><Eye className="w-4 h-4" /> Validasi & Pratinjau</>)}
                                         </button>
@@ -526,27 +548,27 @@ export default function PloIndex({ ploList, filters }) {
                                         <table className="w-full text-xs">
                                             <thead className="bg-slate-100">
                                                 <tr>
-                                                    <th className="p-2.5 text-left font-bold text-slate-600 w-10">No</th>
-                                                    <th className="p-2.5 text-left font-bold text-slate-600 w-24">Kode PLO</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 w-10 whitespace-nowrap">No</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 w-24 whitespace-nowrap">Kode PLO</th>
                                                     <th className="p-2.5 text-left font-bold text-slate-600">Deskripsi</th>
-                                                    <th className="p-2.5 text-center font-bold text-slate-600 w-24">Status</th>
+                                                    <th className="p-2.5 text-center font-bold text-slate-600 w-24 whitespace-nowrap">Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
                                                 {previewRows.map((row, idx) => (
                                                     <tr key={idx} className={`${!row.is_valid ? 'bg-red-50/60' : 'hover:bg-slate-50/50'}`}>
-                                                        <td className="p-2.5 text-slate-400">{row.row}</td>
-                                                        <td className="p-2.5 font-bold text-[#801720]">{row.kode_plo}</td>
+                                                        <td className="p-2.5 text-slate-400 whitespace-nowrap">{row.row}</td>
+                                                        <td className="p-2.5 font-bold text-[#9E1B28] whitespace-nowrap">{row.kode_plo}</td>
                                                         <td className="p-2.5 text-slate-700">
                                                             <p className="line-clamp-2">{row.deskripsi}</p>
                                                             {row.errors?.length > 0 && (
                                                                 <p className="text-red-500 mt-0.5 text-[10px]">⚠ {row.errors.join(' | ')}</p>
                                                             )}
                                                         </td>
-                                                        <td className="p-2.5 text-center">
+                                                        <td className="p-2.5 text-center whitespace-nowrap">
                                                             {row.is_valid
-                                                                ? <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold inline-flex items-center gap-1"><Check className="w-3 h-3" /> Valid</span>
-                                                                : <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold inline-flex items-center gap-1"><X className="w-3 h-3" /> Kesalahan</span>
+                                                                ? <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold inline-flex items-center gap-1.5 whitespace-nowrap"><Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" /> Valid</span>
+                                                                : <span className="px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-200 text-[11px] font-bold inline-flex items-center gap-1.5 whitespace-nowrap"><X className="w-3.5 h-3.5 text-red-600 flex-shrink-0" /> Kesalahan</span>
                                                             }
                                                         </td>
                                                     </tr>
@@ -562,7 +584,7 @@ export default function PloIndex({ ploList, filters }) {
                                         <button
                                             onClick={proceedToEdit}
                                             disabled={previewRows.length === 0}
-                                            className="flex-1 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                            className="flex-1 py-2.5 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                                         >
                                             <Pencil className="w-4 h-4" /> Lanjut Edit & Konfirmasi
                                         </button>
@@ -586,10 +608,10 @@ export default function PloIndex({ ploList, filters }) {
                                         <table className="w-full text-xs">
                                             <thead className="bg-slate-100 sticky top-0">
                                                 <tr>
-                                                    <th className="p-2.5 text-left font-bold text-slate-600 w-24">Kode PLO</th>
+                                                    <th className="p-2.5 text-left font-bold text-slate-600 w-24 whitespace-nowrap">Kode PLO</th>
                                                     <th className="p-2.5 text-left font-bold text-slate-600">Deskripsi</th>
-                                                    <th className="p-2.5 text-center font-bold text-slate-600 w-20">Status</th>
-                                                    <th className="p-2.5 text-center font-bold text-slate-600 w-16">Aksi</th>
+                                                    <th className="p-2.5 text-center font-bold text-slate-600 w-24 whitespace-nowrap">Status</th>
+                                                    <th className="p-2.5 text-center font-bold text-slate-600 w-16 whitespace-nowrap">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
@@ -601,10 +623,10 @@ export default function PloIndex({ ploList, filters }) {
                                                                     autoFocus
                                                                     defaultValue={row.kode_plo}
                                                                     onBlur={(e) => saveEditRow(idx, 'kode_plo', e.target.value)}
-                                                                    className="w-full px-2 py-1 border border-[#801720] rounded-lg text-xs font-bold text-[#801720] focus:outline-none"
+                                                                    className="w-full px-2 py-1 border border-[#9E1B28] rounded-lg text-xs font-bold text-[#9E1B28] focus:outline-none"
                                                                 />
                                                             ) : (
-                                                                <span className="font-bold text-[#801720]">{row.kode_plo || '—'}</span>
+                                                                <span className="font-bold text-[#9E1B28]">{row.kode_plo || '—'}</span>
                                                             )}
                                                         </td>
                                                         <td className="p-2">
@@ -613,17 +635,17 @@ export default function PloIndex({ ploList, filters }) {
                                                                     rows={2}
                                                                     defaultValue={row.deskripsi}
                                                                     onBlur={(e) => { saveEditRow(idx, 'deskripsi', e.target.value); setEditingRow(null); }}
-                                                                    className="w-full px-2 py-1 border border-[#801720] rounded-lg text-xs focus:outline-none resize-none"
+                                                                    className="w-full px-2 py-1 border border-[#9E1B28] rounded-lg text-xs focus:outline-none resize-none"
                                                                 />
                                                             ) : (
                                                                 <span className="text-slate-700 line-clamp-2">{row.deskripsi || '—'}</span>
                                                             )}
                                                             {row.errors?.length > 0 && <p className="text-red-500 text-[10px] mt-0.5">⚠ {row.errors.join(' | ')}</p>}
                                                         </td>
-                                                        <td className="p-2 text-center">
+                                                        <td className="p-2 text-center whitespace-nowrap">
                                                             {row.is_valid
-                                                                ? <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">✓ Valid</span>
-                                                                : <span className="px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold">✗ Kesalahan</span>
+                                                                ? <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold inline-flex items-center gap-1.5 whitespace-nowrap"><Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" /> Valid</span>
+                                                                : <span className="px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-200 text-[11px] font-bold inline-flex items-center gap-1.5 whitespace-nowrap"><X className="w-3.5 h-3.5 text-red-600 flex-shrink-0" /> Kesalahan</span>
                                                             }
                                                         </td>
                                                         <td className="p-2">
@@ -654,7 +676,7 @@ export default function PloIndex({ ploList, filters }) {
                                         <button
                                             onClick={handleConfirmImport}
                                             disabled={isConfirming || previewRows.filter(r => r.is_valid).length === 0}
-                                            className="flex-1 py-2.5 bg-[#801720] text-white rounded-xl text-sm font-semibold hover:bg-[#6a1219] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                            className="flex-1 py-2.5 bg-[#9E1B28] text-white rounded-xl text-sm font-semibold hover:bg-[#801720] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                                         >
                                             {isConfirming
                                                 ? <><span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span> Menyimpan...</>
@@ -688,7 +710,7 @@ export default function PloIndex({ ploList, filters }) {
                             <button type="button" onClick={() => setDeletePlo(null)} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
                                 Batal
                             </button>
-                            <button type="button" onClick={handleConfirmDelete} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724] transition-colors shadow-md cursor-pointer">
+                            <button type="button" onClick={handleConfirmDelete} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#9B1724] transition-colors shadow-md cursor-pointer">
                                 Ya, Hapus Data
                             </button>
                         </div>
@@ -710,7 +732,7 @@ export default function PloIndex({ ploList, filters }) {
                                     onChange={(e) => setCreateForm(f => ({ ...f, kode_plo: e.target.value }))}
                                     placeholder="Contoh: PLO01"
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                             </div>
                             <div>
@@ -721,12 +743,12 @@ export default function PloIndex({ ploList, filters }) {
                                     onChange={(e) => setCreateForm(f => ({ ...f, deskripsi: e.target.value }))}
                                     placeholder="Tuliskan deskripsi CPL / PLO..."
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                             </div>
                             <div className="flex justify-end gap-2 pt-4">
                                 <button type="button" onClick={() => setIsCreateOpen(false)} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
-                                <button type="submit" disabled={formProcessing} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]">
+                                <button type="submit" disabled={formProcessing} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#9B1724]">
                                     {formProcessing ? 'Menyimpan...' : 'Simpan'}
                                 </button>
                             </div>
@@ -748,7 +770,7 @@ export default function PloIndex({ ploList, filters }) {
                                     value={editForm.kode_plo}
                                     onChange={(e) => setEditForm(f => ({ ...f, kode_plo: e.target.value }))}
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                             </div>
                             <div>
@@ -758,12 +780,12 @@ export default function PloIndex({ ploList, filters }) {
                                     value={editForm.deskripsi}
                                     onChange={(e) => setEditForm(f => ({ ...f, deskripsi: e.target.value }))}
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                             </div>
                             <div className="flex justify-end gap-2 pt-4">
                                 <button type="button" onClick={() => setEditPlo(null)} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
-                                <button type="submit" disabled={formProcessing} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]">
+                                <button type="submit" disabled={formProcessing} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#9B1724]">
                                     {formProcessing ? 'Menyimpan...' : 'Simpan Perubahan'}
                                 </button>
                             </div>

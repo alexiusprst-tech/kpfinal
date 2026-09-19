@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
-import FlashAlert from '../../../Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showConfirm } from '@/Utils/sweetalert';
 import { Head, useForm, router, usePage } from '@inertiajs/react';
 
 import {
-    Users, Plus, Search, Edit2, Trash2, CheckCircle, XCircle,
-    UserCheck, FileCheck, ShieldAlert, AlertTriangle, X, Filter,
-    UserMinus, ShieldOff, BookOpen, Calendar, AlertCircle, Key
+    Plus,
+    Search,
+    Edit2,
+    Trash2,
+    CheckCircle,
+    XCircle,
+    UserCheck,
+    FileCheck,
+    ShieldAlert,
+    AlertTriangle,
+    X,
+    Filter,
+    UserMinus,
+    AlertCircle,
+    Key,
+    Users
 } from 'lucide-react';
 
 export default function Index({ dosenList, filters }) {
@@ -50,6 +62,7 @@ export default function Index({ dosenList, filters }) {
 
     const createForm = useForm({
         kode_dosen: '',
+        nip: '',
         nama_lengkap: '',
         email: '',
         kategori_dosen: 'Dosen Tetap',
@@ -58,6 +71,7 @@ export default function Index({ dosenList, filters }) {
 
     const editForm = useForm({
         kode_dosen: '',
+        nip: '',
         nama_lengkap: '',
         email: '',
         kategori_dosen: 'Dosen Tetap',
@@ -68,7 +82,7 @@ export default function Index({ dosenList, filters }) {
     const passwordForm = useForm({
         password: '',
         password_confirmation: '',
-        must_change_password: false,
+        must_change_password: true,
     });
 
     const handleCreateSubmit = (e) => {
@@ -85,6 +99,7 @@ export default function Index({ dosenList, filters }) {
         setEditDosen(dosen);
         editForm.setData({
             kode_dosen: dosen.kode_dosen,
+            nip: dosen.nip || '',
             nama_lengkap: dosen.nama_lengkap,
             email: dosen.email || '',
             kategori_dosen: dosen.kategori_dosen || 'Dosen Tetap',
@@ -105,9 +120,9 @@ export default function Index({ dosenList, filters }) {
     const handlePasswordOpen = (dosen) => {
         setPasswordDosen(dosen);
         passwordForm.setData({
-            password: '',
-            password_confirmation: '',
-            must_change_password: dosen.kategori_dosen === 'LB' || dosen.kategori_dosen === 'LUAR_BIASA',
+            password: dosen.nip || '',
+            password_confirmation: dosen.nip || '',
+            must_change_password: true,
         });
         passwordForm.clearErrors();
     };
@@ -140,7 +155,6 @@ export default function Index({ dosenList, filters }) {
         }
     };
 
-
     const handleRevokeAssignment = (type, penugasanId = null, penugasanType = null) => {
         if (!revokeDosen) return;
         setIsRevoking(true);
@@ -168,26 +182,30 @@ export default function Index({ dosenList, filters }) {
         <AuthenticatedLayout title="Manajemen Dosen">
             <Head title="Master Data Dosen" />
 
-            {/* Header Title */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-[#1E293B] tracking-tight">Manajemen Dosen</h1>
-                    <p className="text-xs sm:text-sm text-[#64748B] font-medium">
-                        Kelola data master dosen, hak akses penugasan, dan pencabutan peran secara real-time.
-                    </p>
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                            <Users className="w-3.5 h-3.5" />
+                            <span>Data Master Dosen</span>
+                        </div>
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Manajemen Dosen</h1>
+                        <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                            Kelola data master dosen, hak akses penugasan, dan pencabutan peran secara real-time.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setIsCreateOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white text-[#9E1B28] rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer hover:bg-rose-50 shrink-0"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Tambah Dosen</span>
+                    </button>
                 </div>
-
-                <button
-                    onClick={() => setIsCreateOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#801720] hover:bg-[#9B1724] text-white rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span>Tambah Dosen</span>
-                </button>
             </div>
 
             {/* Flash Messages */}
-            <FlashAlert flash={flash} />
 
             {/* Filter & Real-Time Search Bar */}
             <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/70 shadow-sm mb-6 space-y-3">
@@ -200,7 +218,7 @@ export default function Index({ dosenList, filters }) {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Cari nama, kode dosen, atau email secara real-time..."
-                            className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all font-medium"
+                            className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] transition-all font-medium"
                         />
                         {search && (
                             <button
@@ -216,7 +234,7 @@ export default function Index({ dosenList, filters }) {
                     {/* Filter Badges & Reset Button */}
                     <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                         <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold mr-1">
-                            <Filter className="w-3.5 h-3.5 text-[#801720]" />
+                            <Filter className="w-3.5 h-3.5 text-[#9E1B28]" />
                             <span>Filter:</span>
                         </div>
 
@@ -224,7 +242,7 @@ export default function Index({ dosenList, filters }) {
                         <div className="inline-flex bg-slate-100 p-1 rounded-xl gap-1">
                             <button
                                 onClick={() => setKategori('')}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${!kategori ? 'bg-white text-[#801720] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${!kategori ? 'bg-white text-[#9E1B28] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
                             >
                                 Semua Kategori
                             </button>
@@ -246,7 +264,7 @@ export default function Index({ dosenList, filters }) {
                         <div className="inline-flex bg-slate-100 p-1 rounded-xl gap-1">
                             <button
                                 onClick={() => setStatus('')}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${!status ? 'bg-white text-[#801720] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${!status ? 'bg-white text-[#9E1B28] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
                             >
                                 Semua Status
                             </button>
@@ -278,7 +296,7 @@ export default function Index({ dosenList, filters }) {
                 {/* Active Filter Indicators & Total Count */}
                 <div className="flex items-center justify-between text-xs text-slate-500 font-semibold pt-1 border-t border-slate-100">
                     <div>
-                        Menampilkan <strong className="text-[#801720] font-extrabold">{dosenList.from || 0} - {dosenList.to || 0}</strong> dari <strong className="text-slate-800 font-extrabold">{dosenList.total}</strong> data dosen
+                        Menampilkan <strong className="text-[#9E1B28] font-extrabold">{dosenList.from || 0} - {dosenList.to || 0}</strong> dari <strong className="text-slate-800 font-extrabold">{dosenList.total}</strong> data dosen
                         {(search || kategori || status) && <span className="text-slate-400 font-normal"> (hasil filter)</span>}
                     </div>
                 </div>
@@ -307,7 +325,14 @@ export default function Index({ dosenList, filters }) {
 
                                     return (
                                         <tr key={dosen.id} className="hover:bg-slate-50/80 transition-colors">
-                                            <td className="p-4 font-bold text-[#801720] whitespace-nowrap">{dosen.kode_dosen}</td>
+                                            <td className="p-4 whitespace-nowrap">
+                                                <div className="font-bold text-[#9E1B28] text-xs">{dosen.kode_dosen}</div>
+                                                {dosen.nip ? (
+                                                    <div className="text-[11px] text-slate-400 font-medium tracking-tight">NIP: {dosen.nip}</div>
+                                                ) : (
+                                                    <div className="text-[10px] text-slate-300 italic">Tanpa NIP</div>
+                                                )}
+                                            </td>
                                             <td className="p-4 font-bold">{dosen.nama_lengkap}</td>
                                             <td className="p-4 whitespace-nowrap">
                                                 {isLB ? (
@@ -425,7 +450,7 @@ export default function Index({ dosenList, filters }) {
                                     onClick={() => link.url && router.get(link.url)}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                                        link.active ? 'bg-[#801720] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                                        link.active ? 'bg-[#9E1B28] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                                     }`}
                                 />
                             ))}
@@ -459,9 +484,22 @@ export default function Index({ dosenList, filters }) {
                                     onChange={(e) => createForm.setData('kode_dosen', e.target.value)}
                                     placeholder="Contoh: DSN006"
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {createForm.errors.kode_dosen && <p className="text-[10px] text-red-600 mt-1">{createForm.errors.kode_dosen}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">NIP (Nomor Induk Pegawai)</label>
+                                <input
+                                    type="text"
+                                    value={createForm.data.nip}
+                                    onChange={(e) => createForm.setData('nip', e.target.value)}
+                                    placeholder="Contoh: 25930036"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
+                                />
+                                {createForm.errors.nip && <p className="text-[10px] text-red-600 mt-1">{createForm.errors.nip}</p>}
+                                <p className="text-[10px] text-slate-400 mt-1">Digunakan sebagai kata sandi login awal akun dosen.</p>
                             </div>
 
                             <div>
@@ -472,7 +510,7 @@ export default function Index({ dosenList, filters }) {
                                     onChange={(e) => createForm.setData('nama_lengkap', e.target.value)}
                                     placeholder="Contoh: Dr. Budi Santoso, M.Kom."
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {createForm.errors.nama_lengkap && <p className="text-[10px] text-red-600 mt-1">{createForm.errors.nama_lengkap}</p>}
                             </div>
@@ -484,7 +522,7 @@ export default function Index({ dosenList, filters }) {
                                     value={createForm.data.email}
                                     onChange={(e) => createForm.setData('email', e.target.value)}
                                     placeholder="Contoh: budi@telkomuniversity.ac.id"
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {createForm.errors.email && <p className="text-[10px] text-red-600 mt-1">{createForm.errors.email}</p>}
                             </div>
@@ -494,7 +532,7 @@ export default function Index({ dosenList, filters }) {
                                 <select
                                     value={createForm.data.kategori_dosen}
                                     onChange={(e) => createForm.setData('kategori_dosen', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 >
                                     <option value="Dosen Tetap">Dosen Tetap</option>
                                     <option value="LB">LB (Luar Biasa)</option>
@@ -507,16 +545,19 @@ export default function Index({ dosenList, filters }) {
                                         type="checkbox"
                                         checked={createForm.data.create_user}
                                         onChange={(e) => createForm.setData('create_user', e.target.checked)}
-                                        className="rounded border-slate-300 text-[#801720] focus:ring-[#801720]"
+                                        className="rounded border-slate-300 text-[#9E1B28] focus:ring-[#9E1B28]"
                                     />
                                     <span className="text-xs font-bold text-slate-700">Buat Akun User Sekaligus</span>
                                 </label>
 
                                 {createForm.data.create_user && (
                                     <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2 animate-in fade-in duration-200">
-                                        <p className="text-[11px] text-slate-500">
-                                            Password default: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[#801720] font-bold">password</code>
+                                        <p className="text-[11px] text-slate-600">
+                                            Password awal login: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[#9E1B28] font-bold">{createForm.data.nip ? createForm.data.nip : 'NIP Dosen (atau "password" jika NIP kosong)'}</code>
                                         </p>
+                                        <div className="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                                            <strong>Aktivasi Pertama:</strong> Dosen baru akan langsung dialihkan ke form perubahan kata sandi saat pertama kali login.
+                                        </div>
                                         <div className="p-2.5 rounded-lg bg-blue-50/70 border border-blue-100 text-[11px] text-blue-700 leading-relaxed">
                                             <strong>Catatan Peran:</strong> Akun dosen dibuat dengan status <span className="font-bold">Belum Ditugaskan (Tanpa Peran)</span>. Peran Koordinator / Verifikator akan otomatis diberikan saat dosen ditugaskan pada Kelompok Verifikasi.
                                         </div>
@@ -535,7 +576,7 @@ export default function Index({ dosenList, filters }) {
                                 <button
                                     type="submit"
                                     disabled={createForm.processing}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]"
+                                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#9B1724]"
                                 >
                                     Simpan Dosen
                                 </button>
@@ -569,9 +610,21 @@ export default function Index({ dosenList, filters }) {
                                     value={editForm.data.kode_dosen}
                                     onChange={(e) => editForm.setData('kode_dosen', e.target.value)}
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {editForm.errors.kode_dosen && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.kode_dosen}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">NIP (Nomor Induk Pegawai)</label>
+                                <input
+                                    type="text"
+                                    value={editForm.data.nip}
+                                    onChange={(e) => editForm.setData('nip', e.target.value)}
+                                    placeholder="Contoh: 25930036"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
+                                />
+                                {editForm.errors.nip && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.nip}</p>}
                             </div>
 
                             <div>
@@ -581,7 +634,7 @@ export default function Index({ dosenList, filters }) {
                                     value={editForm.data.nama_lengkap}
                                     onChange={(e) => editForm.setData('nama_lengkap', e.target.value)}
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {editForm.errors.nama_lengkap && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.nama_lengkap}</p>}
                             </div>
@@ -592,7 +645,7 @@ export default function Index({ dosenList, filters }) {
                                     type="email"
                                     value={editForm.data.email}
                                     onChange={(e) => editForm.setData('email', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {editForm.errors.email && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.email}</p>}
                             </div>
@@ -602,7 +655,7 @@ export default function Index({ dosenList, filters }) {
                                 <select
                                     value={editForm.data.kategori_dosen}
                                     onChange={(e) => editForm.setData('kategori_dosen', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 >
                                     <option value="Dosen Tetap">Dosen Tetap</option>
                                     <option value="LB">LB (Luar Biasa)</option>
@@ -614,7 +667,7 @@ export default function Index({ dosenList, filters }) {
                                 <select
                                     value={editForm.data.status}
                                     onChange={(e) => editForm.setData('status', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 >
                                     <option value="ACTIVE">Aktif</option>
                                     <option value="INACTIVE">Nonaktif</option>
@@ -628,7 +681,7 @@ export default function Index({ dosenList, filters }) {
                                     value={editForm.data.password}
                                     onChange={(e) => editForm.setData('password', e.target.value)}
                                     placeholder="Kosongkan jika tidak ingin merubah password"
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {editForm.errors.password && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.password}</p>}
                                 <p className="text-[11px] text-slate-500 mt-1">
@@ -647,7 +700,7 @@ export default function Index({ dosenList, filters }) {
                                 <button
                                     type="submit"
                                     disabled={editForm.processing}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724]"
+                                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#9B1724]"
                                 >
                                     Simpan Perubahan
                                 </button>
@@ -684,7 +737,7 @@ export default function Index({ dosenList, filters }) {
                             <button
                                 type="button"
                                 onClick={handleConfirmDelete}
-                                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#801720] hover:bg-[#9B1724] transition-colors shadow-md cursor-pointer"
+                                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#9B1724] transition-colors shadow-md cursor-pointer"
                             >
                                 Ya, Hapus Data
                             </button>
@@ -722,7 +775,7 @@ export default function Index({ dosenList, filters }) {
                         {/* Dosen Info Card */}
                         <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
                             <div>
-                                <span className="font-extrabold text-sm text-[#801720] block">
+                                <span className="font-extrabold text-sm text-[#9E1B28] block">
                                     {revokeDosen.kode_dosen}
                                 </span>
                                 <span className="text-xs font-bold text-gray-800">
@@ -889,6 +942,11 @@ export default function Index({ dosenList, filters }) {
                                     <p className="text-xs text-slate-500 font-medium">
                                         {passwordDosen.nama_lengkap} ({passwordDosen.kode_dosen})
                                     </p>
+                                    {passwordDosen.nip && (
+                                        <p className="text-[11px] text-blue-600 font-semibold mt-0.5">
+                                            NIP Dosen: {passwordDosen.nip}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             <button
@@ -910,7 +968,7 @@ export default function Index({ dosenList, filters }) {
                                     onChange={(e) => passwordForm.setData('password', e.target.value)}
                                     placeholder="Masukkan password baru (min 8 karakter)"
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {passwordForm.errors.password && (
                                     <p className="text-[10px] text-red-600 mt-1 font-semibold">{passwordForm.errors.password}</p>
@@ -925,7 +983,7 @@ export default function Index({ dosenList, filters }) {
                                     onChange={(e) => passwordForm.setData('password_confirmation', e.target.value)}
                                     placeholder="Ketik ulang password baru"
                                     required
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#801720]"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {passwordForm.errors.password_confirmation && (
                                     <p className="text-[10px] text-red-600 mt-1 font-semibold">{passwordForm.errors.password_confirmation}</p>
@@ -938,7 +996,7 @@ export default function Index({ dosenList, filters }) {
                                         type="checkbox"
                                         checked={passwordForm.data.must_change_password}
                                         onChange={(e) => passwordForm.setData('must_change_password', e.target.checked)}
-                                        className="rounded border-slate-300 text-[#801720] focus:ring-[#801720]"
+                                        className="rounded border-slate-300 text-[#9E1B28] focus:ring-[#9E1B28]"
                                     />
                                     <span className="text-xs font-bold text-slate-700">Wajibkan ganti password saat login berikutnya</span>
                                 </label>

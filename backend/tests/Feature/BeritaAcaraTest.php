@@ -235,4 +235,49 @@ class BeritaAcaraTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_generate_nomor_resolves_collision_when_nomor_already_exists(): void
+    {
+        $otherPeriode = PeriodeVerifikasi::create([
+            'id'              => (string) Str::uuid(),
+            'tahun_ajaran_id' => $this->periode->tahun_ajaran_id,
+            'nama'            => 'UAS Ganjil 2025/2026',
+            'tanggal_mulai'   => now()->subDays(1)->toDateString(),
+            'tanggal_selesai' => now()->addDays(10)->toDateString(),
+            'deadline_upload' => now()->addDays(5)->toDateTimeString(),
+            'status'          => 'INACTIVE',
+        ]);
+
+        // Pre-create an existing BeritaAcara with 001 for this MK and month
+        $existingNomor = sprintf('001/BAP-Ver/%s/%s', $this->mk->kode_mk, now()->format('m/Y'));
+        \App\Models\BeritaAcara::create([
+            'id'              => (string) Str::uuid(),
+            'nomor'           => $existingNomor,
+            'periode_id'      => $otherPeriode->id, // from another period
+            'mata_kuliah_id'  => $this->mk->id,
+            'koordinator_id'  => $this->koordinatorDosen->id,
+            'dibuat_oleh'     => $this->verifikatorUser->id,
+            'jumlah_soal'     => 1,
+            'jumlah_approved' => 1,
+            'jumlah_revision' => 0,
+            'file_path'       => 'berita-acara/test.pdf',
+            'tanggal'         => now(),
+        ]);
+
+        $response = $this->actingAs($this->verifikatorUser)
+            ->get(route('verifikator.berita-acara.cetak-soal', [
+                'soal' => $this->approvedSoal->id,
+            ]));
+
+        $response->assertOk();
+
+        // The newly created BeritaAcara for this period should have sequence 002 (or next available)
+        $newBA = \App\Models\BeritaAcara::where('periode_id', $this->periode->id)
+            ->where('mata_kuliah_id', $this->mk->id)
+            ->first();
+
+        $this->assertNotNull($newBA);
+        $this->assertNotEquals($existingNomor, $newBA->nomor);
+        $this->assertEquals(sprintf('002/BAP-Ver/%s/%s', $this->mk->kode_mk, now()->format('m/Y')), $newBA->nomor);
+    }
 }

@@ -22,7 +22,6 @@ class BeritaAcara extends Model
         'jumlah_soal',
         'jumlah_approved',
         'jumlah_revision',
-        'jumlah_rejected',
         'file_path',
         'tanggal',
     ];
@@ -32,7 +31,6 @@ class BeritaAcara extends Model
         'jumlah_soal' => 'integer',
         'jumlah_approved' => 'integer',
         'jumlah_revision' => 'integer',
-        'jumlah_rejected' => 'integer',
     ];
 
     public function periode()

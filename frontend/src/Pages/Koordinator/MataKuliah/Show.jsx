@@ -1,15 +1,21 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    ArrowLeft, BookOpen, Target, FileText, Users, Activity as ActivityIcon,
-    Download, GraduationCap, FilePlus2, Eye, Pencil, Send, X, AlertTriangle, Sparkles
+    ArrowLeft,
+    BookOpen,
+    Target,
+    FileText,
+    Activity as ActivityIcon,
+    GraduationCap,
+    FilePlus2,
+    Eye,
+    Pencil,
+    Send,
+    AlertTriangle
 } from 'lucide-react';
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showConfirm } from '@/Utils/sweetalert';
 import { relativeTime } from '@/Utils/date';
-
-
 
 const STATUS_CONFIG = {
     BELUM_UPLOAD: { label: 'Belum Diunggah', color: 'bg-slate-100 text-slate-700 border border-slate-200', dot: 'bg-slate-400' },
@@ -19,7 +25,6 @@ const STATUS_CONFIG = {
     DRAFT:       { label: 'Sedang Diverifikasi', color: 'bg-purple-100 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
     REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700 border border-amber-200',   dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
-    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600 border border-red-200',         dot: 'bg-red-400' },
 };
 
 function StatusBadge({ status }) {
@@ -31,7 +36,6 @@ function StatusBadge({ status }) {
         </span>
     );
 }
-
 
 const TABS = [
     { key: 'soal',      label: 'Soal',      icon: FileText },
@@ -48,7 +52,7 @@ function SoalActions({ soal, onSubmit }) {
                     <Link href={`/koordinator/soal/${soal.id}/edit`} className={`${base} bg-gray-100 text-gray-700 hover:bg-gray-200`}>
                         <Pencil className="w-3 h-3" /> Ubah
                     </Link>
-                    <button onClick={() => onSubmit(soal)} className={`${base} bg-[#801720] text-white hover:bg-[#6a1219]`}>
+                    <button onClick={() => onSubmit(soal)} className={`${base} bg-[#9E1B28] text-white hover:bg-[#801720]`}>
                         <Send className="w-3 h-3" /> Kirim
                     </button>
                 </div>
@@ -56,7 +60,7 @@ function SoalActions({ soal, onSubmit }) {
         default:
             return (
                 <div className="flex items-center justify-end">
-                    <Link href={`/koordinator/soal/${soal.id}`} className={`${base} bg-[#801720] text-white hover:bg-[#6a1219] shadow-xs`}>
+                    <Link href={`/koordinator/soal/${soal.id}`} className={`${base} bg-[#9E1B28] text-white hover:bg-[#801720] shadow-xs`}>
                         <Eye className="w-3 h-3 text-white" /> Tinjau
                     </Link>
                 </div>
@@ -134,16 +138,18 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
         }
     };
 
-
     return (
         <AuthenticatedLayout title={mataKuliah.nama_mk}>
             <Head title={mataKuliah.nama_mk} />
-            <FlashAlert flash={flash} />
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <Link href="/koordinator/dashboard" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720]">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali
+                    <Link
+                        href="/koordinator/dashboard"
+                        className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer inline-flex items-center shrink-0"
+                        title="Kembali"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div className="flex items-center gap-2">
                         {(() => {
@@ -161,7 +167,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                 return (
                                     <Link
                                         href={`/koordinator/soal/create?mata_kuliah_id=${mataKuliah.id}`}
-                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219] shadow-sm transition-all duration-200"
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#9E1B28] text-white rounded-xl text-xs font-semibold hover:bg-[#801720] shadow-sm transition-all duration-200"
                                     >
                                         <FilePlus2 className="w-3.5 h-3.5" /> Unggah Soal
                                     </Link>
@@ -189,7 +195,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         <div>
                             <h1 className="text-xl font-extrabold text-gray-800 flex items-center gap-2">
-                                <BookOpen className="w-5 h-5 text-[#801720]" /> {mataKuliah.nama_mk}
+                                <BookOpen className="w-5 h-5 text-[#9E1B28]" /> {mataKuliah.nama_mk}
                             </h1>
                             <p className="text-sm text-gray-500 mt-1">
                                 {mataKuliah.kode_mk} · Semester {mataKuliah.semester} · {mataKuliah.sks} SKS
@@ -205,12 +211,11 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
                         {[
                             ['Sedang Diverifikasi', stats.in_review, 'text-purple-600 bg-purple-50/60 border-purple-100'],
                             ['Perlu Revisi', stats.revision, 'text-amber-600 bg-amber-50/60 border-amber-100'],
                             ['Disetujui', stats.approved, 'text-emerald-600 bg-emerald-50/60 border-emerald-100'],
-                            ['Ditolak', stats.rejected, 'text-red-600 bg-red-50/60 border-red-100'],
                         ].map(([label, value, color]) => (
                             <div key={label} className={`rounded-xl p-3 text-center border ${color}`}>
                                 <p className="text-xl font-extrabold">{value}</p>
@@ -229,7 +234,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                             return (
                                 <button key={t.key} onClick={() => setTab(t.key)}
                                     className={`flex items-center gap-1.5 px-5 py-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${
-                                        active ? 'border-[#801720] text-[#801720]' : 'border-transparent text-gray-500 hover:text-gray-700'
+                                        active ? 'border-[#9E1B28] text-[#9E1B28]' : 'border-transparent text-gray-500 hover:text-gray-700'
                                     }`}>
                                     <Icon className="w-3.5 h-3.5" /> {t.label}
                                 </button>
@@ -285,10 +290,10 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                             ) : (
                                 <div className="grid md:grid-cols-2 gap-4">
                                     {ploGroups.map(plo => (
-                                        <div key={plo.id} className="border border-gray-100 rounded-2xl p-5 bg-slate-50/50 hover:bg-white hover:border-[#801720]/20 transition-all space-y-3.5 shadow-xs">
+                                        <div key={plo.id} className="border border-gray-100 rounded-2xl p-5 bg-slate-50/50 hover:bg-white hover:border-[#9E1B28]/20 transition-all space-y-3.5 shadow-xs">
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1.5">
-                                                    <span className="px-2.5 py-0.5 rounded-full bg-[#801720]/10 text-[#801720] text-xs font-black border border-[#801720]/20">
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-[#9E1B28]/10 text-[#9E1B28] text-xs font-black border border-[#9E1B28]/20">
                                                         {plo.kode_plo}
                                                     </span>
                                                 </div>
@@ -327,8 +332,6 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                             )
                         )}
 
-
-
                         {tab === 'aktivitas' && (
                             activity.length === 0 ? (
                                 <p className="text-sm text-gray-400 text-center py-10">Belum ada aktivitas.</p>
@@ -336,7 +339,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                 <div className="space-y-3">
                                     {activity.map(item => (
                                         <div key={item.id} className="flex items-start gap-3">
-                                            <div className="w-2 h-2 rounded-full bg-[#801720] mt-1.5 flex-shrink-0" />
+                                            <div className="w-2 h-2 rounded-full bg-[#9E1B28] mt-1.5 flex-shrink-0" />
                                             <div className="min-w-0">
                                                 <p className="text-xs text-gray-700 leading-snug">{item.description}</p>
                                                 <p className="text-[10px] text-gray-400">{relativeTime(item.created_at)}</p>
@@ -367,7 +370,7 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
                                 Batal
                             </button>
                             <button onClick={handleSubmit}
-                                className="flex-1 px-4 py-2 rounded-xl bg-[#801720] text-white text-sm font-semibold hover:bg-[#6a1219]">
+                                className="flex-1 px-4 py-2 rounded-xl bg-[#9E1B28] text-white text-sm font-semibold hover:bg-[#801720]">
                                 Ya, Kirim
                             </button>
                         </div>

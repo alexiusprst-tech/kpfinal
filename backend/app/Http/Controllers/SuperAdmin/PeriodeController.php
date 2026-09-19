@@ -34,7 +34,7 @@ class PeriodeController extends Controller
             ->withCount('soal as soal_count');
 
         if ($search = $request->string('search')->trim()->value()) {
-            $query->where('nama', 'ilike', "%{$search}%");
+            $query->whereRaw('LOWER(nama) LIKE ?', ['%' . strtolower($search) . '%']);
         }
         if ($status = $request->input('status')) {
             $query->where('status', $status);
@@ -160,7 +160,6 @@ class PeriodeController extends Controller
                 'pending'  => $soalInReview,
                 'revisi'   => (int) ($soalByStatus['REVISION'] ?? 0),
                 'approved' => $soalApproved,
-                'rejected' => (int) ($soalByStatus['REJECTED'] ?? 0),
                 'in_review' => $soalInReview,
                 'active_review_target' => $activeReviewTarget,
                 'progress' => $activeReviewTarget > 0 ? (int) round(($soalApproved / $activeReviewTarget) * 100) : 0,
@@ -228,19 +227,7 @@ class PeriodeController extends Controller
         return redirect()->back()->with('success', "Periode '{$periode->nama}' ditutup.");
     }
 
-    public function destroy(Request $request, PeriodeVerifikasi $periode)
-    {
-        if ($periode->status === 'ACTIVE') {
-            return redirect()->back()->with('error', 'Periode aktif tidak bisa dihapus.');
-        }
-
-        try {
-            $old = $periode->toArray();
-            $periode->delete();
-            AuditLog::record($request->user()->id, 'DELETE_PERIODE', 'PeriodeVerifikasi', $periode->id, $old, null);
-            return redirect()->back()->with('success', 'Periode Verifikasi berhasil dihapus.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', "Periode '{$periode->nama}' tidak dapat dihapus karena masih terikat dengan data soal atau penugasan.");
-        }
-    }
+    // Periode verifikasi sengaja tidak dapat dihapus (hanya diubah/ditutup) —
+    // lihat route registration di routes/web.php (destroy dikecualikan dari
+    // Route::resource) dan tidak ada tombol hapus di frontend.
 }

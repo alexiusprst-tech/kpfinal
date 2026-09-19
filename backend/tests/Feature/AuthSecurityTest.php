@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class AuthSecurityTest extends TestCase
@@ -32,6 +33,7 @@ class AuthSecurityTest extends TestCase
         $this->dosen = Dosen::create([
             'id'           => (string) Str::uuid(),
             'kode_dosen'   => 'DSN01',
+            'nip'          => '12345678',
             'nama_lengkap' => 'Dosen Test, M.Kom.',
             'email'        => 'dosen@telkomuniversity.ac.id',
             'user_id'      => $this->user->id,
@@ -95,6 +97,75 @@ class AuthSecurityTest extends TestCase
 
         $response->assertRedirect('/koordinator/dashboard');
         $this->assertAuthenticatedAs($this->user);
+    }
+
+    public function test_user_can_login_with_nip(): void
+    {
+        $response = $this->post('/login', [
+            'email'    => '12345678',
+            'password' => 'secret123',
+        ]);
+
+        $response->assertRedirect('/koordinator/dashboard');
+        $this->assertAuthenticatedAs($this->user);
+    }
+
+    /**
+     * Design decision (2026-09-18 audit): a dosen who must change their
+     * password is NOT redirected to a dedicated /profile page. Instead they
+     * land on their normal role dashboard, which renders with
+     * must_change_password_enforced=true in the shared Inertia auth prop.
+     * AuthenticatedLayout uses that prop to show a full-screen blocking
+     * MustChangePasswordModal (see resources of frontend/src/Components/
+     * MustChangePasswordModal.jsx) that cannot be dismissed except by
+     * changing the password or logging out. EnsurePasswordChanged middleware
+     * additionally blocks every non-GET request until the password is
+     * changed, so the user can browse (GET) but cannot mutate any data.
+     */
+    public function test_dosen_with_must_change_password_lands_on_dashboard_with_modal_enforced(): void
+    {
+        $this->user->update(['must_change_password' => true]);
+
+        $response = $this->post('/login', [
+            'email'    => '12345678',
+            'password' => 'secret123',
+        ]);
+
+        $response->assertRedirect('/koordinator/dashboard');
+        $this->assertAuthenticatedAs($this->user);
+
+        $this->get('/koordinator/dashboard')->assertInertia(fn (Assert $page) => $page
+            ->where('auth.user.must_change_password_enforced', true)
+        );
+    }
+
+    public function test_new_dosen_auto_provisioned_uses_nip_as_password(): void
+    {
+        $dosenBaru = Dosen::create([
+            'id'           => (string) Str::uuid(),
+            'kode_dosen'   => 'NEW01',
+            'nip'          => '99887766',
+            'nama_lengkap' => 'Dosen Baru, M.Kom.',
+            'email'        => 'dosenbaru@telkomuniversity.ac.id',
+            'status'       => 'ACTIVE',
+        ]);
+
+        $response = $this->post('/login', [
+            'email'    => '99887766',
+            'password' => '99887766',
+        ]);
+
+        // No active assignment yet, so redirectByRole() sends the newly
+        // provisioned dosen to the koordinator dashboard (see
+        // LoginController::redirectByRole) — the blocking password-change
+        // modal still enforces the change before any data can be mutated.
+        $response->assertRedirect('/koordinator/dashboard');
+        $this->assertAuthenticated();
+
+        $provisionedUser = User::where('email', 'dosenbaru@telkomuniversity.ac.id')->first();
+        $this->assertNotNull($provisionedUser);
+        $this->assertTrue($provisionedUser->must_change_password);
+        $this->assertTrue(Hash::check('99887766', $provisionedUser->password));
     }
 
     public function test_user_cannot_login_with_invalid_password(): void

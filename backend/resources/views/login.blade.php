@@ -6,14 +6,14 @@
     <title>Masuk - Sistem Verifikasi Soal Ujian Telkom University</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['"Inter"', 'system-ui', 'sans-serif'],
                     },
                     colors: {
                         telkom: {
@@ -21,7 +21,7 @@
                             pink: '#DD586F',
                             pinkHover: '#C9485F',
                             dark: '#1E293B',
-                            maroon: '#801720',
+                            maroon: '#9E1B28',
                         }
                     }
                 }
@@ -30,7 +30,7 @@
     </script>
     <style>
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             -webkit-font-smoothing: antialiased;
             background-color: #0f172a;
         }
@@ -158,9 +158,9 @@
             <form action="{{ url('/login') }}" method="POST" class="space-y-4">
                 @csrf
 
-                <!-- Field Email / Kode Dosen -->
+                <!-- Field Email / NIP / Kode Dosen -->
                 <div>
-                    <label for="email" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Email / Kode Dosen</label>
+                    <label for="email" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Email / NIP / Kode Dosen</label>
                     <div class="relative flex items-center">
                         <div class="absolute left-3.5 text-slate-400 pointer-events-none flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -172,7 +172,7 @@
                             id="email" 
                             name="email" 
                             value="{{ old('email') }}" 
-                            placeholder="example@telkomuniversity.ac.id" 
+                            placeholder="Email / NIP / Kode Dosen" 
                             required 
                             autocomplete="username"
                             style="padding-left: 2.75rem; padding-right: 1rem;"
@@ -214,6 +214,7 @@
                             </svg>
                         </button>
                     </div>
+
                 </div>
 
                 <!-- Submit Button (Vibrant Coral/Pink-Red #DD586F) -->

@@ -8,20 +8,16 @@ import {
     Target,
     Activity,
     Clock,
+    History,
     FileCheck,
     FileText,
-    LogOut,
     Menu,
     X,
     FolderKanban,
-    Bell,
     PanelLeftClose,
-    PanelLeftOpen,
-    UserCircle2,
-    ShieldCheck,
-    Sparkles,
+    PanelLeftOpen
 } from "lucide-react";
-import { showToast, showConfirm } from "@/Utils/sweetalert";
+import { showToast } from "@/Utils/sweetalert";
 import NotificationDropdown from "@/Components/NotificationDropdown";
 import ProfileDropdown from "@/Components/ProfileDropdown";
 import MustChangePasswordModal from "@/Components/MustChangePasswordModal";
@@ -40,11 +36,12 @@ function getNavSections(user, pathname = "") {
             { type: "item", label: "Dosen", href: "/superadmin/dosen", icon: Users },
             { type: "divider", label: "Penugasan" },
             { type: "item", label: "Kelompok Verifikasi", href: "/superadmin/kelompok-verifikasi", icon: FolderKanban },
+            { type: "divider", label: "Sistem" },
+            { type: "item", label: "Log Aktivitas", href: "/superadmin/aktivitas", icon: History },
         ];
     }
 
     const isDualRole = user.has_dual_role || (user.is_koordinator && user.is_verifikator);
-    const noAssignment = user.has_no_assignment;
 
     if (isDualRole) {
         let activeRole = "koordinator";
@@ -124,20 +121,20 @@ function NavLink({ item, collapsed }) {
             <div
                 title={collapsed ? item.label : "Belum ada penugasan aktif"}
                 className={[
-                    "flex items-center gap-3.5 rounded-2xl text-sm font-bold transition-all duration-200 group relative",
-                    collapsed ? "justify-center p-3" : "px-3 py-2.5",
-                    "text-slate-300 cursor-not-allowed opacity-60 select-none",
+                    "flex items-center gap-3 rounded-[6px] text-[14px] font-medium transition-colors duration-150 group relative",
+                    collapsed ? "justify-center p-2.5" : "px-3 py-2.5",
+                    "text-slate-300 cursor-not-allowed select-none",
                 ].join(" ")}
             >
-                <Icon className="w-5 h-5 flex-shrink-0 text-slate-300" />
+                <Icon className="w-4.5 h-4.5 flex-shrink-0 text-slate-300" />
                 {!collapsed && (
                     <span className="tracking-tight truncate flex items-center gap-1.5">
                         {item.label}
-                        <span className="text-[9px] font-extrabold uppercase bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-md border border-amber-200">Terkunci</span>
+                        <span className="text-[9px] font-bold uppercase bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-[4px] border border-slate-200">Terkunci</span>
                     </span>
                 )}
                 {collapsed && (
-                    <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-lg">
+                    <span className="absolute left-full ml-2 px-2.5 py-1 bg-slate-900 text-white text-xs font-medium rounded-[4px] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-md">
                         {item.label} (Belum ada penugasan)
                     </span>
                 )}
@@ -150,17 +147,17 @@ function NavLink({ item, collapsed }) {
             href={item.href}
             title={collapsed ? item.label : undefined}
             className={[
-                "flex items-center gap-3.5 rounded-2xl text-sm font-bold transition-all duration-200 group relative",
-                collapsed ? "justify-center p-3" : "px-3 py-2.5",
+                "flex items-center gap-3 rounded-[6px] text-[14px] transition-colors duration-150 group relative",
+                collapsed ? "justify-center p-2.5" : "px-3 py-2.5",
                 active
-                    ? "bg-[#801720] text-white shadow-md shadow-[#801720]/25"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                    ? "bg-[#9E1B28]/8 text-[#9E1B28] font-semibold border-r-2 border-[#9E1B28]"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium",
             ].join(" ")}
         >
-            <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-white" : "text-slate-500 group-hover:text-slate-900"}`} />
+            <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${active ? "text-[#9E1B28]" : "text-slate-400 group-hover:text-slate-600"}`} />
             {!collapsed && <span className="tracking-tight truncate">{item.label}</span>}
             {collapsed && (
-                <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-lg">
+                <span className="absolute left-full ml-2 px-2.5 py-1 bg-slate-900 text-white text-xs font-medium rounded-[4px] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-md">
                     {item.label}
                 </span>
             )}
@@ -200,7 +197,7 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
             icon: "question",
             confirmButtonText: "Ya, Keluar",
             cancelButtonText: "Batal",
-            confirmButtonColor: "#801720",
+            confirmButtonColor: "#9E1B28",
         });
         if (result.isConfirmed) window.location.href = "/logout";
     };
@@ -211,23 +208,22 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
     const homeHref = homeItem?.href || "/dashboard";
 
     return (
-        <div className="min-h-screen bg-[#F0F3F8] flex flex-col lg:flex-row font-sans">
+        <div className="min-h-screen bg-[#F4F6FA] flex flex-col lg:flex-row font-sans">
 
             {/* MOBILE TOPBAR */}
-            <div className="lg:hidden bg-white text-slate-900 border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+            <div className="lg:hidden bg-white text-slate-900 border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-50 shadow-2xs">
                 <Link href={homeHref} className="flex items-center gap-2.5 cursor-pointer">
-                    <img src="/images/logo-telkom.png" alt="Logo Telkom" width="36" height="36" className="h-9 w-auto object-contain flex-shrink-0" />
-                    <span className="font-extrabold text-sm text-[#801720] tracking-tight">Verifikasi Soal</span>
+                    <img src="/images/logo-telkom.png" alt="Logo Telkom" className="h-11 w-auto object-contain flex-shrink-0" />
+                    <span className="font-bold text-base text-[#9E1B28] tracking-tight">Verifikasi Soal</span>
                 </Link>
                 <div className="flex items-center gap-2">
                     {user?.role !== "SUPER_ADMIN" && (
                         <NotificationDropdown align="right" />
                     )}
-                    <ProfileDropdown align="right" compact={true} />
                     <button
                         type="button"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 transition-all text-slate-700 cursor-pointer"
+                        className="p-2 rounded-[6px] bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors text-slate-700 cursor-pointer"
                         aria-label={mobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
                         aria-expanded={mobileMenuOpen}
                     >
@@ -240,35 +236,35 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
             <aside className={[
                 "fixed inset-y-0 left-0 z-40 bg-white text-slate-800 flex flex-col",
                 "transition-all duration-300 ease-in-out",
-                "border-r border-slate-200/80 shadow-lg lg:shadow-none flex-shrink-0",
+                "border-r border-slate-200 shadow-sm lg:shadow-none flex-shrink-0",
                 "lg:sticky lg:top-0 lg:h-screen",
                 mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-                sidebarCollapsed ? "w-[72px]" : "w-72",
+                sidebarCollapsed ? "w-[72px]" : "w-64",
             ].join(" ")}>
 
-                <div className="flex flex-col h-full justify-between overflow-y-auto overflow-x-hidden py-6 px-3">
+                <div className="flex flex-col h-full justify-between py-5 px-3">
 
                     {/* Top */}
-                    <div>
+                    <div className="flex flex-col min-h-0 flex-1">
                         {/* Brand + Toggle */}
-                        <div className={`flex items-center mb-8 pb-5 border-b border-slate-100 ${sidebarCollapsed ? "justify-center" : "justify-between px-1"}`}>
+                        <div className={`flex items-center mb-5 pb-4 border-b border-slate-100 flex-shrink-0 ${sidebarCollapsed ? "justify-center" : "justify-between px-1"}`}>
                             {!sidebarCollapsed ? (
                                 <Link href={homeHref} className="flex items-center gap-3 min-w-0 cursor-pointer select-none">
-                                    <img src="/images/logo-telkom.png" alt="Logo Telkom" width="40" height="40" className="h-10 w-auto object-contain flex-shrink-0" />
+                                    <img src="/images/logo-telkom.png" alt="Logo Telkom" className="h-14 w-auto object-contain flex-shrink-0" />
                                     <div className="min-w-0">
-                                        <h1 className="font-black text-sm leading-tight tracking-tight text-[#801720] truncate">Sistem Verifikasi</h1>
-                                        <p className="text-[11px] text-slate-500 font-bold tracking-wide">Telkom University</p>
+                                        <h1 className="font-bold text-[15px] leading-tight tracking-tight text-slate-900 truncate">Sistem Verifikasi</h1>
+                                        <p className="text-xs text-slate-500 font-medium tracking-wide">Telkom University</p>
                                     </div>
                                 </Link>
                             ) : (
-                                <Link href={homeHref} className="cursor-pointer select-none" title="Beranda">
-                                    <img src="/images/logo-telkom.png" alt="Logo Telkom" width="32" height="32" className="h-8 w-auto object-contain" />
+                                <Link href={homeHref} className="cursor-pointer select-none flex items-center justify-center" title="Beranda">
+                                    <img src="/images/logo-telkom.png" alt="Logo Telkom" className="h-11 w-auto object-contain" />
                                 </Link>
                             )}
                             <button
                                 type="button"
                                 onClick={() => setSidebarCollapsed(c => !c)}
-                                className="hidden lg:flex p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all flex-shrink-0"
+                                className="hidden lg:flex p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors flex-shrink-0 cursor-pointer"
                                 title={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
                                 aria-label={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
                             >
@@ -277,14 +273,14 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
                         </div>
 
                         {/* Nav */}
-                        <nav className="space-y-0.5">
+                        <nav className="space-y-0.5 overflow-y-auto overflow-x-hidden flex-1 pr-1">
                             {navSections.map((section, idx) => {
                                 if (section.type === "divider") {
                                     return sidebarCollapsed
-                                        ? <div key={idx} className="my-3 mx-2 border-t border-slate-100" />
+                                        ? <div key={idx} className="my-2 mx-2 border-t border-slate-100" />
                                         : (
-                                            <div key={idx} className="pt-5 pb-1.5 px-2">
-                                                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">{section.label}</span>
+                                            <div key={idx} className="pt-4 pb-1 px-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{section.label}</span>
                                             </div>
                                         );
                                 }
@@ -293,7 +289,13 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
                         </nav>
                     </div>
 
-                    {/* Bottom sidebar clean - profile moved to top right */}
+                    {/* Bottom Sidebar - Fitur Profile */}
+                    <div className="pt-3 mt-3 border-t border-slate-100 flex-shrink-0">
+                        <ProfileDropdown
+                            variant="sidebar"
+                            sidebarCollapsed={sidebarCollapsed}
+                        />
+                    </div>
                 </div>
             </aside>
 

@@ -1,13 +1,23 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+﻿import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import axios from 'axios';
 import {
-    ArrowLeft, Upload, FileText, X, CheckCircle2, AlertTriangle,
-    Plus, Trash2, Download, Sparkles, BookOpen, Layers, Clock,
-    HelpCircle, ChevronDown, ChevronUp, FileCode
+    ArrowLeft,
+    Upload,
+    FileText,
+    X,
+    AlertTriangle,
+    Plus,
+    Trash2,
+    Download,
+    Sparkles,
+    BookOpen,
+    Layers,
+    HelpCircle,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
-import FlashAlert from '@/Components/FlashAlert';
 import { showToast, showAlert } from '@/Utils/sweetalert';
 
 const ALLOWED_EXT = ['pdf', 'doc', 'docx'];
@@ -18,7 +28,6 @@ function formatSize(bytes) {
     const mb = bytes / (1024 * 1024);
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
-
 
 export default function SoalCreate({ assignments, kategoriAll, defaultKategori, activePeriode, selectedMataKuliahId, uploadOpen }) {
     const { flash } = usePage().props;
@@ -382,8 +391,12 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                     <p className="text-sm text-gray-500 mt-2">
                         Periode verifikasi tidak sedang aktif atau batas waktu unggah sudah lewat. Hubungi Super Admin jika Anda memerlukan perpanjangan.
                     </p>
-                    <Link href="/koordinator/dashboard" className="inline-flex items-center gap-1.5 mt-5 px-4 py-2 bg-[#801720] text-white rounded-xl text-xs font-semibold hover:bg-[#6a1219]">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Kembali
+                    <Link
+                        href="/koordinator/dashboard"
+                        className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer inline-flex items-center shrink-0 mt-5"
+                        title="Kembali"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
                     </Link>
                 </div>
             </AuthenticatedLayout>
@@ -393,26 +406,26 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
     return (
         <AuthenticatedLayout title="Buat & Unggah Lembar Soal">
             <Head title="Buat & Unggah Lembar Soal" />
-            <FlashAlert flash={flash} />
 
             <div className="w-full space-y-6 pb-12">
-                {/* Back link */}
-                <Link
-                    href={selectedMk ? `/koordinator/mata-kuliah/${selectedMk.id}` : '/koordinator/soal'}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors"
-                >
-                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali
-                </Link>
-
                 {/* Page Title Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl font-extrabold text-gray-800 flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-[#801720]" /> Buat & Unggah Lembar Soal
-                        </h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            Konfigurasi pemetaan PLO & CLO, unduh template resmi jika diperlukan, dan unggah naskah soal final untuk diverifikasi.
-                        </p>
+                    <div className="flex items-center gap-3">
+                        <Link
+                            href={selectedMk ? `/koordinator/mata-kuliah/${selectedMk.id}` : '/koordinator/soal'}
+                            className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer inline-flex items-center shrink-0"
+                            title="Kembali"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </Link>
+                        <div>
+                            <h1 className="text-xl font-extrabold text-gray-800 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-[#9E1B28]" /> Buat & Unggah Lembar Soal
+                            </h1>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Konfigurasi pemetaan PLO & CLO, unduh template resmi jika diperlukan, dan unggah naskah soal final untuk diverifikasi.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -426,7 +439,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                 {/* SECTION 1: Informasi Mata Kuliah & Soal */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
                     <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-[#801720]" /> 1. Informasi Mata Kuliah & Ujian
+                        <BookOpen className="w-4 h-4 text-[#9E1B28]" /> 1. Informasi Mata Kuliah & Ujian
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -438,7 +451,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                             <select
                                 value={data.mata_kuliah_id}
                                 onChange={(e) => setData('mata_kuliah_id', e.target.value)}
-                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all"
+                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none transition-all"
                             >
                                 {assignments.map((a) => (
                                     <option key={a.id} value={a.id}>
@@ -458,7 +471,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                 value={data.judul}
                                 onChange={(e) => setData('judul', e.target.value)}
                                 placeholder="Contoh: UTS - Pemrograman Web"
-                                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all"
+                                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none transition-all"
                             />
                         </div>
 
@@ -498,7 +511,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                         }));
                                     }
                                 }}
-                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all"
+                                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none transition-all"
                             >
                                 {(kategoriAll || []).map((k) => (
                                     <option key={k.id} value={k.id}>
@@ -518,7 +531,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
                             <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                <Layers className="w-4 h-4 text-[#801720]" /> 2. Pemetaan PLO &amp; CLO Soal
+                                <Layers className="w-4 h-4 text-[#9E1B28]" /> 2. Pemetaan PLO &amp; CLO Soal
                             </h2>
                             <p className="text-[11px] text-gray-500 mt-0.5">
                                 Tentukan PLO dan CLO yang diuji pada naskah soal ini beserta bobot LO-nya (total 100% per PLO).
@@ -560,7 +573,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                     <div key={ploIdx} className="rounded-2xl border border-gray-200 bg-gray-50/50 p-4 space-y-3">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-200">
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                <span className="w-7 h-7 rounded-lg bg-[#801720] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                                <span className="w-7 h-7 rounded-lg bg-[#9E1B28] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
                                                     {ploIdx + 1}
                                                 </span>
                                                 <select
@@ -604,7 +617,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                                             <select
                                                                 value={cloItem.kode}
                                                                 onChange={(e) => handleCloSelect(ploIdx, cloIdx, e.target.value)}
-                                                                className="px-2 py-1 rounded-lg border border-gray-300 bg-gray-50 text-xs font-bold text-[#801720] outline-none"
+                                                                className="px-2 py-1 rounded-lg border border-gray-300 bg-gray-50 text-xs font-bold text-[#9E1B28] outline-none"
                                                             >
                                                                 {availableClos.map(c => (
                                                                     <option key={c.kode} value={c.kode}>
@@ -624,7 +637,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                                                     max="100"
                                                                     value={parseInt(cloItem.bobot_lo) || ''}
                                                                     onChange={(e) => handleCloChange(ploIdx, cloIdx, 'bobot_lo', `${e.target.value}%`)}
-                                                                    className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-xs font-bold text-center text-gray-800 outline-none focus:border-[#801720]"
+                                                                    className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-xs font-bold text-center text-gray-800 outline-none focus:border-[#9E1B28]"
                                                                 />
                                                                 <span className="text-xs font-bold text-gray-500">%</span>
                                                             </div>
@@ -645,7 +658,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                                     <div className="pt-2 border-t border-gray-100">
                                                         <div className="flex items-center justify-between mb-1">
                                                             <label className="text-[11px] font-bold text-gray-700 flex items-center gap-1.5">
-                                                                <FileText className="w-3.5 h-3.5 text-[#801720]" />
+                                                                <FileText className="w-3.5 h-3.5 text-[#9E1B28]" />
                                                                 Pertanyaan / Isi Soal ({cloItem.kode})
                                                             </label>
                                                             <span className="text-[10px] text-gray-400">
@@ -657,7 +670,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                                             onChange={(e) => handleCloChange(ploIdx, cloIdx, 'soal', e.target.value)}
                                                             rows={3}
                                                             placeholder={`Tuliskan teks pertanyaan / deskripsi soal untuk ${cloItem.kode} di sini...`}
-                                                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] outline-none transition-all resize-y bg-gray-50/50 hover:bg-white focus:bg-white"
+                                                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none transition-all resize-y bg-gray-50/50 hover:bg-white focus:bg-white"
                                                         />
                                                     </div>
                                                 </div>
@@ -668,7 +681,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                             <button
                                                 type="button"
                                                 onClick={() => addClo(ploIdx)}
-                                                className="inline-flex items-center gap-1 text-xs font-bold text-[#801720] hover:underline"
+                                                className="inline-flex items-center gap-1 text-xs font-bold text-[#9E1B28] hover:underline"
                                             >
                                                 <Plus className="w-3 h-3" /> Tambah CLO ke {ploItem.kode}
                                             </button>
@@ -683,7 +696,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                     onClick={addPlo}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold transition-all shadow-xs"
                                 >
-                                    <Plus className="w-3.5 h-3.5 text-[#801720]" /> Tambah PLO Lain
+                                    <Plus className="w-3.5 h-3.5 text-[#9E1B28]" /> Tambah PLO Lain
                                 </button>
 
                                 <button
@@ -718,7 +731,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                                         value={item}
                                                         onChange={(e) => handlePetunjukChange(idx, e.target.value)}
                                                         placeholder="Tuliskan petunjuk pengerjaan..."
-                                                        className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720] transition-all"
+                                                        className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] transition-all"
                                                     />
                                                     <button
                                                         type="button"
@@ -740,7 +753,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                                         <button
                                             type="button"
                                             onClick={addPetunjuk}
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#801720] hover:underline cursor-pointer"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#9E1B28] hover:underline cursor-pointer"
                                         >
                                             <Plus className="w-3.5 h-3.5" /> Tambah Petunjuk Lain
                                         </button>
@@ -754,7 +767,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                 {/* SECTION 3: Upload Berkas Soal */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
                     <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                        <Upload className="w-4 h-4 text-[#801720]" /> 3. Unggah Berkas Naskah Soal
+                        <Upload className="w-4 h-4 text-[#9E1B28]" /> 3. Unggah Berkas Naskah Soal
                     </h2>
                     <p className="text-[11px] text-gray-500">
                         Unggah naskah soal yang telah selesai disusun (format PDF, DOC, atau DOCX, maksimal 20 MB).
@@ -766,10 +779,10 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
                         className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${dragOver
-                                ? 'border-[#801720] bg-red-50/40'
+                                ? 'border-[#9E1B28] bg-red-50/40'
                                 : data.file
                                     ? 'border-emerald-400 bg-emerald-50/30'
-                                    : 'border-gray-300 hover:border-[#801720]/50 hover:bg-gray-50/60'
+                                    : 'border-gray-300 hover:border-[#9E1B28]/50 hover:bg-gray-50/60'
                             }`}
                     >
                         <input
@@ -803,7 +816,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                <div className="w-10 h-10 rounded-2xl bg-red-100/70 border border-red-200/60 flex items-center justify-center mx-auto text-[#801720]">
+                                <div className="w-10 h-10 rounded-2xl bg-red-100/70 border border-red-200/60 flex items-center justify-center mx-auto text-[#9E1B28]">
                                     <Upload className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -833,7 +846,7 @@ export default function SoalCreate({ assignments, kategoriAll, defaultKategori, 
                         type="button"
                         onClick={(e) => handleSubmit(e, true)}
                         disabled={processing || !data.file}
-                        className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#801720] hover:bg-[#6a1219] text-white text-xs font-bold shadow-sm shadow-[#801720]/25 disabled:opacity-50 transition-all cursor-pointer"
+                        className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#9E1B28] hover:bg-[#801720] text-white text-xs font-bold shadow-sm shadow-[#9E1B28]/25 disabled:opacity-50 transition-all cursor-pointer"
                     >
                         {processing ? 'Menyimpan & Mengirim...' : 'Kirim Soal untuk Verifikasi'}
                     </button>

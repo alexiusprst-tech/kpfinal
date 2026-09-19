@@ -2,14 +2,26 @@ import React, { useState } from 'react';
 import { Head, Link, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    LayoutDashboard, FileCheck, AlertTriangle, CheckCircle2,
-    XCircle, Clock, ArrowRight, BookOpen, ShieldCheck, RefreshCw,
-    TrendingUp, FileText, Search, User, Filter, Check, Printer, Bell,
-    FilePlus2
+    FileCheck,
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
+    ArrowRight,
+    BookOpen,
+    ShieldCheck,
+    RefreshCw,
+    FileText,
+    Search,
+    User,
+    Filter,
+    Check,
+    Printer,
+    FilePlus2,
+    Activity as ActivityIcon
 } from 'lucide-react';
-import ProfileDropdown from '@/Components/ProfileDropdown';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import StatCard from '@/Components/StatCard';
+import { relativeTime } from '@/Utils/date';
 
 const STATUS_CONFIG = {
     BELUM_UPLOAD: { label: 'Belum Diunggah', color: 'bg-slate-100 text-slate-700 border border-slate-200', dot: 'bg-slate-400' },
@@ -19,7 +31,6 @@ const STATUS_CONFIG = {
     DRAFT: { label: 'Ditinjau', color: 'bg-purple-50 text-purple-700 border border-purple-200', dot: 'bg-purple-500' },
     REVISION: { label: 'Revisi', color: 'bg-amber-50 text-amber-700 border border-amber-200', dot: 'bg-amber-500' },
     APPROVED: { label: 'Disetujui', color: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
-    REJECTED: { label: 'Ditolak', color: 'bg-red-50 text-red-700 border border-red-200', dot: 'bg-red-500' },
 };
 
 function StatusBadge({ status }) {
@@ -32,7 +43,7 @@ function StatusBadge({ status }) {
     );
 }
 
-export default function VerifikatorDashboard({ auth, activePeriod, stats, pendingSoal = [], assignments = [], recentVerifikasis = [], noAssignmentMessage }) {
+export default function VerifikatorDashboard({ auth, activePeriod, stats, pendingSoal = [], assignments = [], recentVerifikasis = [], activity = [], noAssignmentMessage }) {
     const { notifications, auth: pageAuth } = usePage().props;
     const currentUser = auth?.user || pageAuth?.user;
     const userName = currentUser?.name || 'Bapak/Ibu Verifikator';
@@ -52,7 +63,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
     const formatDate = (d) => {
         if (!d) return '—';
         return new Date(d).toLocaleDateString('id-ID', {
-            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            day: '2-digit', month: 'long', year: 'numeric'
         });
     };
 
@@ -80,7 +91,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                 </Link>
                                 <Link
                                     href="/verifikator/dashboard"
-                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-[#801720] text-white shadow-xs cursor-pointer"
+                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-[#9E1B28] text-white shadow-xs cursor-pointer"
                                 >
                                     <ShieldCheck className="w-3.5 h-3.5" />
                                     <span>Verifikator Soal</span>
@@ -88,23 +99,22 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                             </div>
                         )}
                         <NotificationDropdown align="right" />
-                        <ProfileDropdown align="right" />
                     </div>
                 </div>
 
                 {/* Banner Hero */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-[#801720] via-[#9B1B26] to-[#B82332] text-white rounded-3xl p-6 lg:p-8 shadow-xl shadow-[#801720]/15">
+                <div className="relative overflow-hidden bg-gradient-to-r from-[#9E1B28] via-[#9B1B26] to-[#B82332] text-white rounded-3xl p-6 lg:p-8 shadow-xl shadow-[#9E1B28]/15">
                     <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 pointer-events-none flex items-center justify-end pr-8">
                         <img src="/images/logo-telkom.png" alt="Telkom University" width="192" height="192" className="w-48 h-48 object-contain filter brightness-0 invert" />
                     </div>
 
-                    <div className="relative z-10 max-w-3xl space-y-3">
+                    <div className="relative z-10 max-w-4xl space-y-3">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white/90 text-xs font-semibold">
                             <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
                             <span>Dosen Verifikator Soal</span>
                         </div>
 
-                        <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-white">
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white leading-tight">
                             Selamat Datang, {userName}
                         </h1>
 
@@ -141,13 +151,12 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                 </div>
 
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <StatCard label="Mata Kuliah Verifikator" value={assignments.length} icon={BookOpen} color="bg-slate-700" />
-                    <StatCard label="Belum Diunggah" value={belumUploadCount} icon={FilePlus2} color="bg-gray-500" />
-                    <StatCard label="Ditinjau" value={stats?.pending || 0} icon={Clock} color="bg-purple-600" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <StatCard label="Mata Kuliah Verifikator" value={assignments.length} icon={BookOpen} color="bg-blue-600" />
+                    <StatCard label="Belum Diunggah" value={belumUploadCount} icon={FilePlus2} color="bg-slate-500" />
+                    <StatCard label="Ditinjau" value={stats?.pending || 0} icon={Clock} color="bg-sky-500" />
                     <StatCard label="Perlu Revisi" value={stats?.revision || 0} icon={AlertTriangle} color="bg-amber-500" />
                     <StatCard label="Disetujui" value={stats?.approved || 0} icon={CheckCircle2} color="bg-emerald-600" />
-                    <StatCard label="Ditolak" value={stats?.rejected || 0} icon={XCircle} color="bg-red-500" />
                 </div>
 
                 {/* Main Content Grid: Antrean Soal (50%) & Mata Kuliah Verifikator (50%) with equal sizing */}
@@ -158,7 +167,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-gray-100">
                                 <div>
                                     <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                                        <FileCheck className="w-5 h-5 text-[#801720]" /> Antrean Soal Menunggu Verifikasi
+                                        <FileCheck className="w-5 h-5 text-[#9E1B28]" /> Antrean Soal Menunggu Verifikasi
                                     </h2>
                                     <p className="text-xs text-gray-500 font-medium mt-0.5">
                                         Tinjau dokumen dan berikan persetujuan atau catatan revisi
@@ -166,7 +175,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                 </div>
                                 <Link
                                     href="/verifikator/soal"
-                                    className="inline-flex items-center gap-1 text-xs font-bold text-[#801720] hover:text-[#6a1219] hover:underline flex-shrink-0"
+                                    className="inline-flex items-center gap-1 text-xs font-bold text-[#9E1B28] hover:text-[#801720] hover:underline flex-shrink-0"
                                 >
                                     <span>Lihat Seluruh Soal</span>
                                     <ArrowRight className="w-3.5 h-3.5" />
@@ -183,7 +192,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                         aria-label="Cari judul soal atau nama dosen"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20"
                                     />
                                 </div>
                                 {assignments.length > 0 && (
@@ -191,7 +200,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                         value={selectedMk}
                                         onChange={(e) => setSelectedMk(e.target.value)}
                                         aria-label="Filter berdasarkan mata kuliah"
-                                        className="text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#801720]/20"
+                                        className="text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20"
                                     >
                                         <option value="ALL">Semua MK Ditugaskan</option>
                                         {assignments.map(a => (
@@ -225,7 +234,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                             className={`rounded-2xl border transition-all flex flex-col justify-between gap-3 group ${
                                                 isResubmitted
                                                     ? 'border-amber-200 bg-amber-50/40 hover:bg-amber-50 hover:border-amber-300 hover:shadow-md'
-                                                    : 'border-gray-100 bg-slate-50/60 hover:bg-white hover:border-[#801720]/30 hover:shadow-md'
+                                                    : 'border-gray-100 bg-slate-50/60 hover:bg-white hover:border-[#9E1B28]/30 hover:shadow-md'
                                             }`}
                                         >
                                             <div className="p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -237,7 +246,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                                     </div>
                                                     <div className="min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                            <h3 className="font-bold text-gray-800 text-xs group-hover:text-[#801720] transition-colors truncate">
+                                                            <h3 className="font-bold text-gray-800 text-xs group-hover:text-[#9E1B28] transition-colors truncate">
                                                                 {soal.judul}
                                                             </h3>
                                                             <StatusBadge status={soal.status} />
@@ -268,7 +277,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                                         className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${
                                                             isResubmitted
                                                                 ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                                                                : 'bg-[#801720] hover:bg-[#9B1B26] text-white'
+                                                                : 'bg-[#9E1B28] hover:bg-[#9B1B26] text-white'
                                                         }`}
                                                     >
                                                         <span>Tinjau</span>
@@ -308,7 +317,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                         <div>
                             <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
                                 <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                                    <BookOpen className="w-5 h-5 text-[#801720]" /> Mata Kuliah Verifikator
+                                    <BookOpen className="w-5 h-5 text-[#9E1B28]" /> Mata Kuliah Verifikator
                                 </h2>
                                 <span className="text-xs font-semibold text-slate-500">
                                     {assignments.length} MK
@@ -320,7 +329,7 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                             ) : (
                                 <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
                                     {assignments.map(a => {
-                                        const isComplete = a.total > 0 && a.pending === 0;
+                                        const isCompleted = a.total > 0 && a.pending === 0;
                                         return (
                                             <div key={a.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100/60 transition-colors flex items-center justify-between gap-3">
                                                 <div className="min-w-0 flex-1">
@@ -330,15 +339,15 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                                                 <div className="flex items-center gap-2 flex-shrink-0">
                                                     {a.total === 0 ? (
                                                         <StatusBadge status="BELUM_UPLOAD" />
-                                                    ) : isComplete ? (
+                                                    ) : isCompleted ? (
                                                         <a
                                                             href={`/verifikator/mata-kuliah/${a.mata_kuliah_id}/berita-acara`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#801720] text-white rounded-xl text-[10px] font-bold hover:bg-[#6a1219] transition-all shadow-xs"
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#9E1B28] text-white rounded-xl text-[10px] font-bold hover:bg-[#801720] transition-all shadow-xs"
                                                             title="Cetak Berita Acara"
                                                         >
-                                                            <Printer className="w-3 h-3" /> Berita Acara
+                                                            <FileCheck className="w-3 h-3" /> Berita Acara
                                                         </a>
                                                     ) : (
                                                         <StatusBadge status="IN_REVIEW" />
@@ -359,65 +368,39 @@ export default function VerifikatorDashboard({ auth, activePeriod, stats, pendin
                     </div>
                 </div>
 
-                {/* Timeline Riwayat Keputusan Verifikasi */}
+                {/* Aktivitas Terbaru (Full Width) */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
-                    <div className="pb-2 border-b border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div>
-                            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                                <Clock className="w-5 h-5 text-[#801720]" /> Riwayat Verifikasi Saya
+                            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <ActivityIcon className="w-5 h-5 text-[#9E1B28]" /> Aktivitas Terbaru
                             </h2>
-                            <p className="text-xs text-gray-500 font-medium mt-0.5">
-                                Keputusan verifikasi terbaru yang Anda berikan pada sistem
+                            <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                Riwayat aktivitas sistem verifikasi terkini Anda
                             </p>
                         </div>
-                        <span className="text-xs font-semibold text-slate-500">
-                            {recentVerifikasis.length} Catatan
+                        <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl">
+                            {activity.length} Aktivitas
                         </span>
                     </div>
 
-                    {recentVerifikasis.length === 0 ? (
-                        <div className="text-center py-10 text-gray-500">
-                            <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-xs font-semibold">Belum Ada Keputusan</p>
-                            <p className="text-[11px] text-gray-500 mt-0.5">Riwayat verifikasi Anda akan muncul di sini.</p>
+                    {activity.length === 0 ? (
+                        <div className="text-center py-10 text-slate-400">
+                            <ActivityIcon className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                            <p className="text-xs font-semibold">Belum Ada Aktivitas</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">Log aktivitas Anda akan tercatat secara otomatis di sini.</p>
                         </div>
                     ) : (
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {recentVerifikasis.map(v => {
-                                const actionConfig = {
-                                    APPROVED: { label: 'Disetujui', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
-                                    REVISION: { label: 'Perlu Revisi', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: RefreshCw },
-                                    REJECTED: { label: 'Ditolak', color: 'bg-red-50 text-red-700 border-red-200', icon: XCircle },
-                                }[v.action] || { label: v.action, color: 'bg-slate-100 text-slate-800 border-slate-300', icon: Check };
-
-                                const Icon = actionConfig.icon;
-
-                                return (
-                                    <div key={v.id} className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-100 hover:bg-slate-100/60 transition-all text-xs space-y-2 flex flex-col justify-between">
-                                        <div>
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${actionConfig.color} inline-flex items-center gap-1`}>
-                                                    <Icon className="w-3 h-3" /> {actionConfig.label}
-                                                </span>
-                                                <span className="text-[10px] text-gray-500 font-semibold">{formatDate(v.created_at)}</span>
-                                            </div>
-
-                                            <p className="font-bold text-gray-800 truncate mt-2">
-                                                {v.soal?.judul || 'Soal Ujian'}
-                                            </p>
-                                            <p className="text-[10px] text-gray-500 font-medium">
-                                                {v.soal?.mata_kuliah?.nama_mk}
-                                            </p>
-                                        </div>
-
-                                        {v.catatan && (
-                                            <p className="text-[10px] text-gray-700 italic bg-white p-2 rounded-xl border border-gray-200/80 line-clamp-2 mt-1">
-                                                "{v.catatan}"
-                                            </p>
-                                        )}
+                        <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
+                            {activity.map(item => (
+                                <div key={item.id} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100 hover:bg-slate-100/70 transition-colors">
+                                    <div className="w-2 h-2 rounded-full bg-[#9E1B28] mt-1.5 flex-shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs text-slate-700 leading-snug">{item.description}</p>
+                                        <p className="text-[10px] text-slate-400 mt-1 font-semibold">{relativeTime(item.created_at)}</p>
                                     </div>
-                                );
-                            })}
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>

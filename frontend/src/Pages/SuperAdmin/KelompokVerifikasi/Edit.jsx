@@ -1,18 +1,32 @@
 import React, { useState, useMemo } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showToast, showAlert } from '@/Utils/sweetalert';
 import SearchableSelect from '@/Components/SearchableSelect';
 
 import {
-    ArrowLeft, Check, CheckCircle2, Clock, FolderKanban, Info,
-    Plus, Search, Shield, Trash2, Users, BookOpen, Calendar,
-    AlertCircle, Save, Sparkles, X, PowerOff, Play, Copy, CheckCheck,
+    ArrowLeft,
+    Check,
+    CheckCircle2,
+    Search,
+    Shield,
+    AlertCircle,
+    Save,
+    X,
+    Copy,
+    CheckCheck,
     GraduationCap
 } from 'lucide-react';
 
-export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAll = [], dosenAll = [] }) {
-    const { errors } = usePage().props;
+export default function KelompokVerifikasiEdit({
+    kelompok,
+    periodeAll = [],
+    mkAll = [],
+    dosenAll = [],
+    activeKoordinatorList = [],
+    activeVerifikatorList = [],
+}) {
+    const { errors, flash } = usePage().props;
     const [submitting, setSubmitting] = useState(false);
     const [copyNotification, setCopyNotification] = useState('');
 
@@ -93,6 +107,36 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
     const handleToggleCoordinator = (mkId, dosenId) => {
         if (!dosenId) return;
 
+        const currentKoorList = mkCoordinatorMap[mkId] || [];
+        const isRemoving = currentKoorList.includes(dosenId);
+
+        if (!isRemoving) {
+            // Aturan: Dosen tidak dapat menjadi Verifikator dan Koordinator pada mata kuliah yang sama
+            const thisMkVerifs = mkVerifikatorMap[mkId] || [];
+            if (thisMkVerifs.includes(dosenId)) {
+                const dObj = dosenAll.find((d) => d.id === dosenId);
+                showAlert({
+                    title: 'Konflik Peran Dosen',
+                    text: `Dosen ${dObj?.nama_lengkap || 'tersebut'} sudah ditugaskan sebagai Verifikator pada mata kuliah ini. Dosen tidak dapat menjadi Verifikator dan Koordinator pada mata kuliah yang sama.`,
+                    icon: 'warning',
+                });
+                return;
+            }
+
+            const isDbActiveVerif = activeVerifikatorList.some(
+                (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === dosenId
+            );
+            if (isDbActiveVerif) {
+                const dObj = dosenAll.find((d) => d.id === dosenId);
+                showAlert({
+                    title: 'Konflik Penugasan Aktif',
+                    text: `Dosen ${dObj?.nama_lengkap || 'tersebut'} sudah menjadi Verifikator aktif untuk mata kuliah ini pada periode terpilih.`,
+                    icon: 'warning',
+                });
+                return;
+            }
+        }
+
         setMkCoordinatorMap((prev) => {
             const currentList = prev[mkId] || [];
             if (currentList.includes(dosenId)) {
@@ -124,10 +168,38 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
     const handleToggleVerifikator = (mkId, dosenId) => {
         if (!dosenId) return;
 
-        const dosenObj = dosenAll.find((d) => d.id === dosenId);
-        if (dosenObj && !isDosenTetap(dosenObj)) {
-            showToast('error', 'Verifikator Soal hanya dapat ditentukan dari Dosen Tetap.');
-            return;
+        const currentVerifList = mkVerifikatorMap[mkId] || [];
+        const isRemoving = currentVerifList.includes(dosenId);
+
+        if (!isRemoving) {
+            const dosenObj = dosenAll.find((d) => d.id === dosenId);
+            if (dosenObj && !isDosenTetap(dosenObj)) {
+                showToast('error', 'Verifikator Soal hanya dapat ditentukan dari Dosen Tetap.');
+                return;
+            }
+
+            // Aturan: Dosen tidak dapat menjadi Koordinator dan Verifikator pada mata kuliah yang sama
+            const thisMkCoors = mkCoordinatorMap[mkId] || [];
+            if (thisMkCoors.includes(dosenId)) {
+                showAlert({
+                    title: 'Konflik Peran Dosen',
+                    text: `Dosen ${dosenObj?.nama_lengkap || 'tersebut'} sudah ditugaskan sebagai Koordinator pada mata kuliah ini. Dosen tidak dapat menjadi Verifikator dan Koordinator pada mata kuliah yang sama.`,
+                    icon: 'warning',
+                });
+                return;
+            }
+
+            const isDbActiveKoor = activeKoordinatorList.some(
+                (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === dosenId
+            );
+            if (isDbActiveKoor) {
+                showAlert({
+                    title: 'Konflik Penugasan Aktif',
+                    text: `Dosen ${dosenObj?.nama_lengkap || 'tersebut'} sudah menjadi Koordinator aktif untuk mata kuliah ini pada periode terpilih.`,
+                    icon: 'warning',
+                });
+                return;
+            }
         }
 
         setMkVerifikatorMap((prev) => {
@@ -163,7 +235,13 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
             const updated = { ...prev };
             selectedMkIds.forEach((mkId) => {
                 const koorList = mkCoordinatorMap[mkId] || [];
-                updated[mkId] = sourceList.filter((id) => !koorList.includes(id));
+                updated[mkId] = sourceList.filter((id) => {
+                    if (koorList.includes(id)) return false;
+                    const isDbActiveKoor = activeKoordinatorList.some(
+                        (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === id
+                    );
+                    return !isDbActiveKoor;
+                });
             });
             return updated;
         });
@@ -180,7 +258,13 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
             const updated = { ...prev };
             selectedMkIds.forEach((mkId) => {
                 const verifList = mkVerifikatorMap[mkId] || [];
-                updated[mkId] = sourceList.filter((id) => !verifList.includes(id));
+                updated[mkId] = sourceList.filter((id) => {
+                    if (verifList.includes(id)) return false;
+                    const isDbActiveVerif = activeVerifikatorList.some(
+                        (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === id
+                    );
+                    return !isDbActiveVerif;
+                });
             });
             return updated;
         });
@@ -197,20 +281,16 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
         return dosenAll.map((d) => {
             const isThisMkKoor = thisMkCoors.includes(d.id);
             const isThisMkVerif = thisMkVerifs.includes(d.id);
+            const isDbActiveVerif = activeVerifikatorList.some(
+                (item) => item.periode_id === periodeId && item.mata_kuliah_id === currentMkId && item.dosen_id === d.id
+            );
 
-            const isDisabled = isThisMkKoor || isThisMkVerif;
-            let badge = null;
-            if (isThisMkKoor) {
-                badge = 'Dipilih';
-            } else if (isThisMkVerif) {
-                badge = 'Verifikator MK ini';
-            }
+            const isDisabled = isThisMkKoor || isThisMkVerif || isDbActiveVerif;
 
             return {
                 value: d.id,
                 label: `${d.kode_dosen} – ${d.nama_lengkap}`,
                 disabled: isDisabled,
-                badge: badge,
             };
         });
     };
@@ -226,20 +306,16 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
         return dosenTetapList.map((d) => {
             const isThisMkKoor = thisMkCoors.includes(d.id);
             const isThisMkVerif = thisMkVerifs.includes(d.id);
+            const isDbActiveKoor = activeKoordinatorList.some(
+                (item) => item.periode_id === periodeId && item.mata_kuliah_id === currentMkId && item.dosen_id === d.id
+            );
 
-            const isDisabled = isThisMkVerif || isThisMkKoor;
-            let badge = null;
-            if (isThisMkVerif) {
-                badge = 'Dipilih';
-            } else if (isThisMkKoor) {
-                badge = 'Koor MK ini';
-            }
+            const isDisabled = isThisMkVerif || isThisMkKoor || isDbActiveKoor;
 
             return {
                 value: d.id,
                 label: `${d.kode_dosen} – ${d.nama_lengkap}`,
                 disabled: isDisabled,
-                badge: badge,
             };
         });
     };
@@ -294,6 +370,18 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                 return;
             }
 
+            // Validasi Dosen tidak bisa menjadi verifikator dan koordinator pada mata kuliah yang sama
+            const overlap = koors.filter((id) => verifs.includes(id));
+            if (overlap.length > 0) {
+                const conflictingDosen = dosenAll.find((d) => d.id === overlap[0]);
+                showAlert({
+                    title: 'Konflik Peran Dosen',
+                    text: `Dosen ${conflictingDosen?.nama_lengkap || 'terpilih'} tidak dapat menjadi Koordinator sekaligus Verifikator pada mata kuliah ${mk?.nama_mk || mk?.kode_mk}.`,
+                    icon: 'error',
+                });
+                return;
+            }
+
             // Validasi Verifikator wajib Dosen Tetap
             for (const vId of verifs) {
                 const vObj = dosenAll.find((d) => d.id === vId);
@@ -307,7 +395,6 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                 }
             }
         }
-
 
         const payload = {
             nama: namaKelompok,
@@ -324,12 +411,23 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
         setSubmitting(true);
         router.put(`/superadmin/kelompok-verifikasi/${kelompok.id}`, payload, {
             onFinish: () => setSubmitting(false),
+            onError: (errs) => {
+                const firstErr = Object.values(errs)[0];
+                if (firstErr) {
+                    showAlert({
+                        title: 'Gagal Memperbarui Kelompok',
+                        text: firstErr,
+                        icon: 'error',
+                    });
+                }
+            },
         });
     };
 
     return (
         <AuthenticatedLayout title={`Ubah ${kelompok.nama}`}>
             <Head title={`Ubah ${kelompok.nama} - Super Admin`} />
+
 
             <div className="w-full space-y-6 pb-16">
                 
@@ -338,9 +436,10 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                     <div className="flex items-center gap-3">
                         <Link
                             href={`/superadmin/kelompok-verifikasi/${kelompok.id}`}
-                            className="p-2 bg-white hover:bg-gray-100 text-gray-600 rounded-xl border border-gray-200 transition-colors cursor-pointer"
+                            className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer shrink-0"
+                            title="Kembali ke Detail Kelompok"
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <ArrowLeft className="w-5 h-5" />
                         </Link>
                         <div>
                             <h1 className="text-xl font-black text-gray-900 tracking-tight">Ubah Kelompok Verifikasi</h1>
@@ -391,7 +490,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                     type="text"
                                     value={namaKelompok}
                                     onChange={(e) => setNamaKelompok(e.target.value)}
-                                    className="w-full p-2.5 text-xs font-bold text-gray-900 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720]"
+                                    className="w-full p-2.5 text-xs font-bold text-gray-900 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28]"
                                     required
                                 />
                             </div>
@@ -403,12 +502,12 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                 <select
                                     value={periodeId}
                                     onChange={(e) => setPeriodeId(e.target.value)}
-                                    className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] font-semibold"
+                                    className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] font-semibold"
                                     required
                                 >
                                     {periodeAll.map((p) => (
                                         <option key={p.id} value={p.id}>
-                                            {p.nama} — {p.tahun_ajaran?.nama || ''} ({p.status})
+                                            {p.nama} {p.tahun_ajaran?.nama && p.tahun_ajaran.nama !== '-' && !p.nama.includes(p.tahun_ajaran.nama) ? `— ${p.tahun_ajaran.nama} ` : ''}({p.status})
                                         </option>
                                     ))}
                                 </select>
@@ -421,7 +520,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                 <select
                                     value={status}
                                     onChange={(e) => setStatus(e.target.value)}
-                                    className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] font-bold"
+                                    className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] font-bold"
                                     required
                                 >
                                     <option value="DRAFT">DRAF (Belum diterbitkan ke dosen)</option>
@@ -439,7 +538,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                     rows={2}
                                     value={keterangan}
                                     onChange={(e) => setKeterangan(e.target.value)}
-                                    className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720] resize-none"
+                                    className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] resize-none"
                                 />
                             </div>
                         </div>
@@ -462,14 +561,14 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                     value={mkSearch}
                                     onChange={(e) => setMkSearch(e.target.value)}
                                     placeholder="Cari Kode atau Nama Mata Kuliah..."
-                                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720]"
+                                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28]"
                                 />
                             </div>
                             <div>
                                 <select
                                     value={mkSemesterFilter}
                                     onChange={(e) => setMkSemesterFilter(e.target.value)}
-                                    className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#801720]/15 focus:border-[#801720]"
+                                    className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28]"
                                 >
                                     <option value="">Semua Semester</option>
                                     {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
@@ -489,7 +588,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                         onClick={() => toggleMkSelection(mk.id)}
                                         className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 select-none ${
                                             isSelected
-                                                ? 'bg-[#801720]/5 border-[#801720] ring-1.5 ring-[#801720]/20'
+                                                ? 'bg-[#9E1B28]/5 border-[#9E1B28] ring-1.5 ring-[#9E1B28]/20'
                                                 : 'bg-white border-gray-200 hover:border-gray-300'
                                         }`}
                                     >
@@ -498,7 +597,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                             <p className="text-xs font-bold text-gray-800 truncate">{mk.nama_mk}</p>
                                         </div>
                                         <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                                            isSelected ? 'bg-[#801720] text-white shadow-xs' : 'border-2 border-gray-300 bg-white'
+                                            isSelected ? 'bg-[#9E1B28] text-white shadow-xs' : 'border-2 border-gray-300 bg-white'
                                         }`}>
                                             {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                                         </div>
@@ -519,7 +618,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                     Gunakan pencarian nama/kode dosen untuk menetapkan koordinator dan verifikator masing-masing MK.
                                 </p>
                             </div>
-                            <span className="text-xs font-bold text-[#801720] bg-[#801720]/10 px-3 py-1.5 rounded-xl">
+                            <span className="text-xs font-bold text-[#9E1B28] bg-[#9E1B28]/10 px-3 py-1.5 rounded-xl">
                                 {selectedMkIds.length} MK Dikonfigurasi
                             </span>
                         </div>
@@ -538,7 +637,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                         {/* MK Header */}
                                         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                                             <div className="flex items-center gap-2.5">
-                                                <span className="w-6 h-6 rounded-xl bg-[#801720] text-white flex items-center justify-center text-xs font-black">
+                                                <span className="w-6 h-6 rounded-xl bg-[#9E1B28] text-white flex items-center justify-center text-xs font-black">
                                                     {idx + 1}
                                                 </span>
                                                 <span className="font-black text-sm text-gray-900">{mk?.kode_mk}</span>
@@ -548,6 +647,16 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                                 {mk?.sks} SKS
                                             </span>
                                         </div>
+
+                                        {/* Conflict Alert Banner if any overlap */}
+                                        {currentCoordinatorList.some((id) => currentVerifikatorList.includes(id)) && (
+                                            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
+                                                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                                                <span className="font-semibold">
+                                                    Perhatian: Dosen tidak dapat menjadi Koordinator sekaligus Verifikator pada mata kuliah yang sama.
+                                                </span>
+                                            </div>
+                                        )}
 
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                                             
@@ -572,7 +681,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                                         <button
                                                             type="button"
                                                             onClick={() => handleCopyCoordinatorsToAll(mkId)}
-                                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#801720] hover:underline cursor-pointer"
+                                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#9E1B28] hover:underline cursor-pointer"
                                                         >
                                                             <Copy className="w-3 h-3" /> Terapkan ke Semua MK
                                                         </button>
@@ -603,9 +712,9 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                                             return (
                                                                 <span
                                                                     key={kId}
-                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#801720] border border-red-200 rounded-lg text-xs font-bold"
+                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#9E1B28] border border-red-200 rounded-lg text-xs font-bold"
                                                                 >
-                                                                    <GraduationCap className="w-3 h-3 text-[#801720] shrink-0" />
+                                                                    <GraduationCap className="w-3 h-3 text-[#9E1B28] shrink-0" />
                                                                     <span className="truncate max-w-[200px]">
                                                                         {kObj?.kode_dosen} - {kObj?.nama_lengkap}
                                                                     </span>
@@ -652,7 +761,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                                                         <button
                                                             type="button"
                                                             onClick={() => handleCopyVerifikatorsToAll(mkId)}
-                                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#801720] hover:underline cursor-pointer"
+                                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#9E1B28] hover:underline cursor-pointer"
                                                         >
                                                             <Copy className="w-3 h-3" /> Terapkan ke Semua MK
                                                         </button>
@@ -736,7 +845,7 @@ export default function KelompokVerifikasiEdit({ kelompok, periodeAll = [], mkAl
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#801720] hover:bg-[#681219] text-white text-xs font-extrabold rounded-xl shadow-md shadow-[#801720]/20 transition-all cursor-pointer disabled:opacity-50"
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#9E1B28] hover:bg-[#681219] text-white text-xs font-extrabold rounded-xl shadow-md shadow-[#9E1B28]/20 transition-all cursor-pointer disabled:opacity-50"
                         >
                             <Save className="w-4 h-4" />
                             {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}

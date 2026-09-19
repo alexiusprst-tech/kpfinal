@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Check } from 'lucide-react';
 
 export default function SearchableSelect({ 
@@ -63,7 +63,7 @@ export default function SearchableSelect({
                 disabled={disabled}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 border rounded-xl text-xs outline-none bg-white text-left transition-all ${
                     isOpen 
-                        ? 'border-[#801720] ring-2 ring-[#801720]/20' 
+                        ? 'border-[#9E1B28] ring-2 ring-[#9E1B28]/20' 
                         : selectedOption
                         ? 'border-gray-300 hover:border-gray-400 font-semibold text-gray-900'
                         : 'border-gray-200 hover:border-gray-300 text-gray-400'
@@ -72,7 +72,7 @@ export default function SearchableSelect({
                 <span className={`block truncate pr-2 ${selectedOption ? 'text-gray-900 font-bold' : 'text-gray-400'}`}>
                     {displayText}
                 </span>
-                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[#801720]' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[#9E1B28]' : ''}`} />
             </button>
 
             {isOpen && (
@@ -123,7 +123,7 @@ export default function SearchableSelect({
                                             isDisabled 
                                                 ? 'bg-slate-50/90 text-slate-400 cursor-not-allowed select-none' 
                                                 : isSelected 
-                                                ? 'bg-[#801720]/10 text-[#801720] font-bold cursor-pointer' 
+                                                ? 'bg-[#9E1B28]/10 text-[#9E1B28] font-bold cursor-pointer' 
                                                 : 'hover:bg-gray-50 text-gray-700 font-medium cursor-pointer'
                                         }`}
                                     >
@@ -131,21 +131,25 @@ export default function SearchableSelect({
                                             {option.label}
                                         </span>
 
-                                        {/* Disabled Reason Badge + Checkmark */}
+                                        {/* Disabled Reason Badge */}
                                         {isDisabled && option.badge && (
                                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold shrink-0 border ${
-                                                option.badge === 'Koor' || option.badge === 'Koordinator'
-                                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                    : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                                option.badge === 'Dipilih'
+                                                    ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                                    : option.badge.includes('Koor')
+                                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                    : option.badge.includes('Verifikator')
+                                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                                    : 'bg-rose-50 text-rose-700 border-rose-200'
                                             }`}>
                                                 <span>{option.badge}</span>
-                                                <Check className="w-3 h-3 stroke-[2.5]" />
+                                                {option.badge === 'Dipilih' && <Check className="w-3 h-3 stroke-[2.5]" />}
                                             </span>
                                         )}
 
                                         {/* Active Selected Checkmark */}
                                         {!isDisabled && isSelected && (
-                                            <Check className="w-3.5 h-3.5 text-[#801720] shrink-0 stroke-[2.5]" />
+                                            <Check className="w-3.5 h-3.5 text-[#9E1B28] shrink-0 stroke-[2.5]" />
                                         )}
                                     </button>
                                 );

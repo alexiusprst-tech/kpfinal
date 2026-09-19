@@ -42,7 +42,6 @@ class Soal extends Model
     const STATUS_REVISION    = 'REVISION';
     const STATUS_RESUBMITTED = 'RESUBMITTED';
     const STATUS_APPROVED    = 'APPROVED';
-    const STATUS_REJECTED    = 'REJECTED';
 
     public function canBeSubmitted(): bool
     {
@@ -102,33 +101,45 @@ class Soal extends Model
 
     public function notifyVerifier($title, $message)
     {
-        $verifikator = PenugasanVerifikator::where('mata_kuliah_id', $this->mata_kuliah_id)
+        $verifikators = PenugasanVerifikator::where('mata_kuliah_id', $this->mata_kuliah_id)
             ->where('periode_id', $this->periode_id)
             ->where('status', 'ACTIVE')
-            ->first();
+            ->with('dosen')
+            ->get();
 
-        if ($verifikator && $verifikator->dosen && $verifikator->dosen->user_id) {
-            Notification::create([
-                'user_id' => $verifikator->dosen->user_id,
-                'title'   => $title,
-                'message' => $message,
-            ]);
+        $notifiedUserIds = [];
+        foreach ($verifikators as $v) {
+            $userId = $v->dosen?->user_id;
+            if ($userId && !in_array($userId, $notifiedUserIds)) {
+                Notification::create([
+                    'user_id' => $userId,
+                    'title'   => $title,
+                    'message' => $message,
+                ]);
+                $notifiedUserIds[] = $userId;
+            }
         }
     }
 
     public function notifyCoordinator($title, $message)
     {
-        $koordinator = PenugasanKoordinator::where('mata_kuliah_id', $this->mata_kuliah_id)
+        $koordinators = PenugasanKoordinator::where('mata_kuliah_id', $this->mata_kuliah_id)
             ->where('periode_id', $this->periode_id)
             ->where('status', 'ACTIVE')
-            ->first();
+            ->with('dosen')
+            ->get();
 
-        if ($koordinator && $koordinator->dosen && $koordinator->dosen->user_id) {
-            Notification::create([
-                'user_id' => $koordinator->dosen->user_id,
-                'title'   => $title,
-                'message' => $message,
-            ]);
+        $notifiedUserIds = [];
+        foreach ($koordinators as $k) {
+            $userId = $k->dosen?->user_id;
+            if ($userId && !in_array($userId, $notifiedUserIds)) {
+                Notification::create([
+                    'user_id' => $userId,
+                    'title'   => $title,
+                    'message' => $message,
+                ]);
+                $notifiedUserIds[] = $userId;
+            }
         }
     }
 }

@@ -3,13 +3,19 @@
 namespace Tests\Feature;
 
 use App\Models\Dosen;
+use App\Models\KategoriSoal;
+use App\Models\KelompokKoordinator;
+use App\Models\KelompokMataKuliah;
 use App\Models\KelompokVerifikasi;
+use App\Models\KelompokVerifikator;
 use App\Models\MataKuliah;
 use App\Models\PenugasanKoordinator;
 use App\Models\PenugasanVerifikator;
 use App\Models\PeriodeVerifikasi;
+use App\Models\Soal;
 use App\Models\TahunAjaran;
 use App\Models\User;
+use App\Models\Verifikasi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -730,5 +736,349 @@ class KelompokVerifikasiTest extends TestCase
         $this->assertEmpty($mkStats['koordinator_list']);
         $this->assertNull($mkStats['koordinator']);
         $this->assertEmpty($props['verifikatorListStats']);
+    }
+
+    public function test_newly_created_draft_group_in_existing_period_does_not_show_historical_verified_soal(): void
+    {
+        $kategori = KategoriSoal::create([
+            'id'   => (string) Str::uuid(),
+            'nama' => 'UTS Teori',
+        ]);
+
+        // Historical approved soal in the same period
+        $soal = Soal::create([
+            'id'             => (string) Str::uuid(),
+            'mata_kuliah_id' => $this->mk1->id,
+            'periode_id'     => $this->periode->id,
+            'kategori_id'    => $kategori->id,
+            'uploaded_by'    => $this->koordinatorUser->id,
+            'judul'          => 'Naskah UTS Pemrograman',
+            'nama_file'      => 'soal.pdf',
+            'file_path'      => 'soal/soal.pdf',
+            'mime_type'      => 'application/pdf',
+            'file_size'      => 10240,
+            'status'         => 'APPROVED',
+        ]);
+
+        Verifikasi::create([
+            'id'             => (string) Str::uuid(),
+            'soal_id'        => $soal->id,
+            'verifikator_id' => $this->verifikatorUser->id,
+            'action'         => 'APPROVED',
+            'created_at'     => now()->subDays(1),
+        ]);
+
+        // Create new DRAFT group
+        $kelompok = KelompokVerifikasi::create([
+            'id'         => (string) Str::uuid(),
+            'nama'       => 'Kelompok Draf Baru',
+            'periode_id' => $this->periode->id,
+            'status'     => 'DRAFT',
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        KelompokMataKuliah::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'koordinator_id' => $this->dosen1->id,
+        ]);
+
+        KelompokVerifikator::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->get(route('superadmin.kelompok-verifikasi.show', $kelompok->id));
+
+        $response->assertStatus(200);
+        $props = $response->inertiaPage()['props'];
+
+        // Group Progress must be 0
+        $this->assertEquals(0, $props['progress']['approvedSoal']);
+        $this->assertEquals(0, $props['progress']['verification']);
+        $this->assertEquals(0, $props['progress']['totalSoal']);
+
+        // MK stats must be 0
+        $this->assertEquals(0, $props['mkListStats'][0]['approved']);
+        $this->assertEquals(0, $props['mkListStats'][0]['soal_count']);
+        $this->assertEquals('PENDING', $props['mkListStats'][0]['status_progres']);
+
+        // Verifikator stats must be 0
+        $this->assertEquals(0, $props['verifikatorListStats'][0]['diverifikasi']);
+        $this->assertEquals(0, $props['verifikatorListStats'][0]['total_soal']);
+    }
+
+    public function test_newly_created_active_group_does_not_count_soal_created_prior_to_group(): void
+    {
+        $kategori = KategoriSoal::create([
+            'id'   => (string) Str::uuid(),
+            'nama' => 'UAS Praktik',
+        ]);
+
+        // Historical approved soal created 2 hours ago
+        $historicalSoal = Soal::create([
+            'id'             => (string) Str::uuid(),
+            'mata_kuliah_id' => $this->mk1->id,
+            'periode_id'     => $this->periode->id,
+            'kategori_id'    => $kategori->id,
+            'uploaded_by'    => $this->koordinatorUser->id,
+            'judul'          => 'Soal Lama Sebelum Kelompok Dibuat',
+            'nama_file'      => 'soal_lama.pdf',
+            'file_path'      => 'soal/soal_lama.pdf',
+            'mime_type'      => 'application/pdf',
+            'file_size'      => 10240,
+            'status'         => 'APPROVED',
+        ]);
+        $historicalSoal->timestamps = false;
+        $historicalSoal->created_at = now()->subHours(2);
+        $historicalSoal->save();
+
+        Verifikasi::create([
+            'id'             => (string) Str::uuid(),
+            'soal_id'        => $historicalSoal->id,
+            'verifikator_id' => $this->verifikatorUser->id,
+            'action'         => 'APPROVED',
+            'created_at'     => now()->subHours(1),
+        ]);
+
+        // Create new ACTIVE group now
+        $kelompok = KelompokVerifikasi::create([
+            'id'         => (string) Str::uuid(),
+            'nama'       => 'Kelompok Aktif Baru',
+            'periode_id' => $this->periode->id,
+            'status'     => 'ACTIVE',
+            'created_by' => $this->superAdmin->id,
+            'created_at' => now(),
+        ]);
+
+        KelompokMataKuliah::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'koordinator_id' => $this->dosen1->id,
+        ]);
+
+        KelompokVerifikator::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->get(route('superadmin.kelompok-verifikasi.show', $kelompok->id));
+
+        $response->assertStatus(200);
+        $props = $response->inertiaPage()['props'];
+
+        // Should NOT inherit historical soal
+        $this->assertEquals(0, $props['progress']['approvedSoal']);
+        $this->assertEquals(0, $props['progress']['verification']);
+        $this->assertEquals(0, $props['progress']['totalSoal']);
+        $this->assertEquals(0, $props['mkListStats'][0]['approved']);
+        $this->assertEquals(0, $props['verifikatorListStats'][0]['diverifikasi']);
+    }
+
+    public function test_cannot_create_duplicate_group_in_same_period(): void
+    {
+        // 1. Create first group
+        $payload1 = [
+            'nama'        => 'Kelompok Pertama',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'ACTIVE',
+            'mata_kuliah' => [
+                [
+                    'mata_kuliah_id'  => $this->mk1->id,
+                    'koordinator_ids' => [$this->dosen1->id],
+                    'verifikator_ids' => [$this->dosen2->id],
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload1);
+
+        $this->assertDatabaseHas('kelompok_verifikasi', ['nama' => 'Kelompok Pertama']);
+
+        // 2. Attempt to create second group in the same period
+        $payload2 = [
+            'nama'        => 'Kelompok Kedua',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'DRAFT',
+            'mata_kuliah' => [
+                [
+                    'mata_kuliah_id'  => $this->mk2->id,
+                    'koordinator_ids' => [$this->dosen3->id],
+                    'verifikator_ids' => [$this->dosen2->id],
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload2);
+
+        $response->assertSessionHasErrors(['periode_id']);
+        $errors = session('errors')->get('periode_id');
+        $this->assertStringContainsString('hanya dapat dibuat 1 kelompok verifikasi', $errors[0]);
+    }
+
+    public function test_courses_can_be_assigned_to_multiple_groups_in_different_periods(): void
+    {
+        // 1. Create first ACTIVE group with mk1 in period 1
+        $payload1 = [
+            'nama'        => 'Kelompok Pertama Aktif',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'ACTIVE',
+            'mata_kuliah' => [
+                [
+                    'mata_kuliah_id'  => $this->mk1->id,
+                    'koordinator_ids' => [$this->dosen1->id],
+                    'verifikator_ids' => [$this->dosen2->id],
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload1);
+
+        // 2. Create second period
+        $periode2 = PeriodeVerifikasi::create([
+            'id'              => (string) Str::uuid(),
+            'tahun_ajaran_id' => $this->periode->tahun_ajaran_id,
+            'nama'            => 'UAS Ganjil 2026/2027',
+            'tanggal_mulai'   => '2026-12-01',
+            'tanggal_selesai' => '2026-12-31',
+            'deadline_upload' => '2026-12-25 23:59:59',
+            'status'          => 'DRAFT',
+        ]);
+
+        // 3. Create second ACTIVE group in period 2 with the same mk1
+        $payload2 = [
+            'nama'        => 'Kelompok Kedua Aktif',
+            'periode_id'  => $periode2->id,
+            'status'      => 'ACTIVE',
+            'mata_kuliah' => [
+                [
+                    'mata_kuliah_id'  => $this->mk1->id,
+                    'koordinator_ids' => [$this->dosen3->id],
+                    'verifikator_ids' => [$this->dosen2->id],
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload2);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('kelompok_verifikasi', ['nama' => 'Kelompok Kedua Aktif']);
+    }
+
+    public function test_activation_rejects_group_with_coordinator_as_verifikator_on_same_course(): void
+    {
+        $kelompok = KelompokVerifikasi::create([
+            'id'         => (string) Str::uuid(),
+            'nama'       => 'Kelompok Draft Conflict',
+            'periode_id' => $this->periode->id,
+            'status'     => 'DRAFT',
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        KelompokMataKuliah::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'koordinator_id' => $this->dosen1->id,
+        ]);
+
+        KelompokKoordinator::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+        ]);
+
+        // Same lecturer assigned to both roles on mk1
+        KelompokVerifikator::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.activate', $kelompok->id));
+
+        $response->assertSessionHas('error');
+        $error = session('error');
+        $this->assertStringContainsString('tidak dapat menjadi Koordinator sekaligus Verifikator', $error);
+    }
+
+    public function test_cannot_delete_kelompok_verifikasi(): void
+    {
+        $kelompok = KelompokVerifikasi::create([
+            'id'         => (string) Str::uuid(),
+            'nama'       => 'Kelompok Tidak Bisa Dihapus',
+            'periode_id' => $this->periode->id,
+            'status'     => 'DRAFT',
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->delete(route('superadmin.kelompok-verifikasi.destroy', $kelompok->id));
+
+        $response->assertSessionHas('error');
+        $this->assertStringContainsString('tidak dapat dihapus', session('error'));
+        $this->assertDatabaseHas('kelompok_verifikasi', ['id' => $kelompok->id]);
+    }
+
+    public function test_update_rejects_changing_period_to_another_period_with_existing_group(): void
+    {
+        $kelompok1 = KelompokVerifikasi::create([
+            'id'         => (string) Str::uuid(),
+            'nama'       => 'Kelompok Periode 1',
+            'periode_id' => $this->periode->id,
+            'status'     => 'DRAFT',
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        $periode2 = PeriodeVerifikasi::create([
+            'id'              => (string) Str::uuid(),
+            'tahun_ajaran_id' => $this->periode->tahun_ajaran_id,
+            'nama'            => 'Periode 2',
+            'tanggal_mulai'   => '2026-12-01',
+            'tanggal_selesai' => '2026-12-31',
+            'deadline_upload' => '2026-12-25 23:59:59',
+            'status'          => 'DRAFT',
+        ]);
+
+        $kelompok2 = KelompokVerifikasi::create([
+            'id'         => (string) Str::uuid(),
+            'nama'       => 'Kelompok Periode 2',
+            'periode_id' => $periode2->id,
+            'status'     => 'DRAFT',
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->put(route('superadmin.kelompok-verifikasi.update', $kelompok2->id), [
+                'nama'        => 'Kelompok Periode 2 Diubah',
+                'periode_id'  => $this->periode->id, // Conflict with kelompok1
+                'status'      => 'DRAFT',
+                'mata_kuliah' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'koordinator_ids' => [$this->dosen1->id],
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
+
+        $response->assertSessionHasErrors(['periode_id']);
+        $errors = session('errors')->get('periode_id');
+        $this->assertStringContainsString('Target periode sudah memiliki kelompok verifikasi', $errors[0]);
     }
 }

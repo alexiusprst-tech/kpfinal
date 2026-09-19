@@ -4,6 +4,12 @@ import './css/app.css';
 import { createRoot } from 'react-dom/client';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { Chart as ChartJS } from 'chart.js';
+
+// Default Chart.js typography across entire app to Inter
+if (ChartJS?.defaults?.font) {
+    ChartJS.defaults.font.family = "'Inter', system-ui, sans-serif";
+}
 
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'Sistem Verifikasi Soal';
 

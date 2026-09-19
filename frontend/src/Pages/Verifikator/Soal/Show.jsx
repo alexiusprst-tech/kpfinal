@@ -2,12 +2,24 @@ import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    ArrowLeft, FileText, Download, CheckCircle2, RefreshCw,
-    XCircle, Clock, History, User, Calendar, BookOpen, Eye,
-    Send, FileCheck, AlertTriangle, Layers, MessageSquare, ClipboardList
+    ArrowLeft,
+    FileText,
+    Download,
+    CheckCircle2,
+    RefreshCw,
+    Clock,
+    History,
+    User,
+    Calendar,
+    BookOpen,
+    Eye,
+    Send,
+    FileCheck,
+    AlertTriangle,
+    Layers,
+    ClipboardList
 } from 'lucide-react';
-import FlashAlert from '@/Components/FlashAlert';
-import { showToast, showAlert, showConfirm } from '@/Utils/sweetalert';
+import { showAlert, showConfirm } from '@/Utils/sweetalert';
 import DocumentPreviewModal from '@/Components/DocumentPreviewModal';
 
 const STATUS_CONFIG = {
@@ -17,13 +29,11 @@ const STATUS_CONFIG = {
     DRAFT:       { label: 'Ditinjau', color: 'bg-purple-100 text-purple-700',   dot: 'bg-purple-500' },
     REVISION:    { label: 'Revisi',    color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
     APPROVED:    { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-    REJECTED:    { label: 'Ditolak',   color: 'bg-red-100 text-red-600',         dot: 'bg-red-400' },
 };
 
 const ACTION_CONFIG = {
     APPROVED: { label: 'Disetujui',     icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200', badge: 'bg-emerald-100 text-emerald-700' },
     REVISION: { label: 'Perlu Revisi',  icon: RefreshCw,    color: 'text-amber-600',   bg: 'bg-amber-50 border-amber-200',     badge: 'bg-amber-100 text-amber-700' },
-    REJECTED: { label: 'Ditolak',       icon: XCircle,      color: 'text-red-600',     bg: 'bg-red-50 border-red-200',         badge: 'bg-red-100 text-red-600' },
 };
 
 function StatusBadge({ status }) {
@@ -116,17 +126,20 @@ export default function VerifikatorSoalShow({ soal }) {
         e.preventDefault();
         if (!action) return;
 
-        // Validasi: Saat Minta Revisi, catatan evaluasi CLO wajib diisi
-        if (action === 'REVISION' && allCloItems.length > 0) {
-            const hasMissingCatatan = allCloItems.some(
-                (item) => !(cloFeedback[item.fullKode]?.catatan || '').trim()
-            );
-            if (hasMissingCatatan) {
+        // Validasi: Saat Minta Revisi, minimal ada satu catatan evaluasi (per-CLO atau Catatan Umum)
+        if (action === 'REVISION') {
+            const hasAnyCloNote = allCloItems.some((item) => {
+                const c = cloFeedback[item.fullKode];
+                return (c?.catatan || '').trim() || (c?.rekomendasi || '').trim() || (c?.no_soal || '').trim();
+            });
+            const hasGeneralNote = (catatan || '').trim().length > 0;
+
+            if (!hasAnyCloNote && !hasGeneralNote) {
                 await showAlert({
-                    title: 'Catatan Evaluasi Wajib Diisi',
-                    text: 'Saat meminta revisi, kolom "Catatan Evaluasi" untuk setiap CLO wajib diisi terlebih dahulu.',
+                    title: 'Catatan Revisi Diperlukan',
+                    text: 'Saat meminta revisi, mohon isi minimal satu catatan evaluasi pada CLO yang perlu direvisi atau berikan Catatan Umum Verifikator.',
                     icon: 'warning',
-                    confirmButtonColor: '#801720',
+                    confirmButtonColor: '#9E1B28',
                 });
                 return;
             }
@@ -135,7 +148,6 @@ export default function VerifikatorSoalShow({ soal }) {
         const actionLabels = {
             APPROVED: 'menyetujui',
             REVISION: 'meminta revisi untuk',
-            REJECTED: 'menolak',
         };
 
         const result = await showConfirm({
@@ -144,7 +156,7 @@ export default function VerifikatorSoalShow({ soal }) {
             icon: action === 'APPROVED' ? 'question' : 'warning',
             confirmButtonText: 'Ya, Kirim Keputusan',
             cancelButtonText: 'Batal',
-            confirmButtonColor: '#801720',
+            confirmButtonColor: '#9E1B28',
         });
 
         if (!result.isConfirmed) return;
@@ -164,16 +176,18 @@ export default function VerifikatorSoalShow({ soal }) {
         <>
         <AuthenticatedLayout title={`Tinjau: ${soal.judul}`}>
             <Head title={`Tinjau: ${soal.judul}`} />
-            <FlashAlert flash={flash} />
 
             <div className="w-full space-y-6 pb-12">
                 {/* Back Link */}
-                <Link
-                    href="/verifikator/soal"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#801720] transition-colors"
-                >
-                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Daftar Soal
-                </Link>
+                <div>
+                    <Link
+                        href="/verifikator/soal"
+                        className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer inline-flex items-center shrink-0"
+                        title="Kembali ke Daftar Soal"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                </div>
 
                 {/* Main Card: Header, File, & Detail Soal */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -247,7 +261,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                     <a
                                         href={downloadUrl}
                                         download={fileName}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#801720] hover:bg-[#6a1219] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#801720]/25 transition-all hover:scale-[1.02] active:scale-95"
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#9E1B28]/25 transition-all hover:scale-[1.02] active:scale-95"
                                         title="Unduh berkas naskah soal"
                                     >
                                         <Download className="w-3.5 h-3.5" /> Unduh
@@ -256,7 +270,6 @@ export default function VerifikatorSoalShow({ soal }) {
                             </div>
                         );
                     })()}
-
 
                     {/* Metadata Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-5 pt-5 border-t border-gray-100 text-xs">
@@ -289,7 +302,7 @@ export default function VerifikatorSoalShow({ soal }) {
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                <Layers className="w-4 h-4 text-[#801720]" /> Pemetaan PLO &amp; CLO Soal
+                                <Layers className="w-4 h-4 text-[#9E1B28]" /> Pemetaan PLO &amp; CLO Soal
                             </h2>
                             <span className="text-[11px] text-gray-400 font-medium">
                                 Dikonfigurasi oleh Koordinator MK
@@ -301,7 +314,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                 <div key={pIdx} className="p-3.5 rounded-xl border border-gray-200 bg-gray-50/50 space-y-2.5">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <span className="px-2 py-0.5 rounded-md bg-[#801720] text-white text-[10px] font-extrabold whitespace-nowrap flex-shrink-0">
+                                            <span className="px-2 py-0.5 rounded-md bg-[#9E1B28] text-white text-[10px] font-extrabold whitespace-nowrap flex-shrink-0">
                                                 {plo.kode}
                                             </span>
                                             <span className="text-xs font-bold text-gray-800">{plo.deskripsi}</span>
@@ -313,7 +326,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                             <div key={cIdx} className="p-2.5 rounded-lg bg-white border border-gray-200/80 text-xs space-y-1.5">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2 min-w-0">
-                                                        <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px] whitespace-nowrap flex-shrink-0">
+                                                        <span className="px-2 py-0.5 rounded bg-red-100 text-[#9E1B28] font-extrabold text-[10px] whitespace-nowrap flex-shrink-0">
                                                             {clo.kode}
                                                         </span>
                                                         <span className="text-gray-700 truncate">{clo.deskripsi}</span>
@@ -344,7 +357,7 @@ export default function VerifikatorSoalShow({ soal }) {
                 {canVerify ? (
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                         <h2 className="font-bold text-gray-800 text-base mb-1 flex items-center gap-2">
-                            <FileCheck className="w-5 h-5 text-[#801720]" /> Beri Keputusan Verifikasi
+                            <FileCheck className="w-5 h-5 text-[#9E1B28]" /> Beri Keputusan Verifikasi
                         </h2>
                         <p className="text-xs text-gray-500 mb-5">
                             Pilih keputusan verifikasi.
@@ -352,7 +365,7 @@ export default function VerifikatorSoalShow({ soal }) {
 
                         <form onSubmit={handleVerifikasi} className="space-y-6">
                             {/* Decision Radio Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {[
                                     {
                                         value: 'APPROVED',
@@ -366,12 +379,6 @@ export default function VerifikatorSoalShow({ soal }) {
                                         desc: 'Perlu perbaikan oleh Koordinator MK',
                                         icon: RefreshCw,
                                     },
-                                    {
-                                        value: 'REJECTED',
-                                        label: 'Tolak',
-                                        desc: 'Soal ditolak dan tidak dapat digunakan',
-                                        icon: XCircle,
-                                    },
                                 ].map((opt) => {
                                     const Icon = opt.icon;
                                     const isSelected = action === opt.value;
@@ -380,8 +387,8 @@ export default function VerifikatorSoalShow({ soal }) {
                                             key={opt.value}
                                             className={`relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
                                                 isSelected
-                                                    ? 'border-[#801720] bg-red-50/80 text-[#801720] ring-2 ring-[#801720]/20'
-                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-[#801720]/40 hover:bg-red-50/20'
+                                                    ? 'border-[#9E1B28] bg-red-50/80 text-[#9E1B28] ring-2 ring-[#9E1B28]/20'
+                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-[#9E1B28]/40 hover:bg-red-50/20'
                                             }`}
                                         >
                                             <input
@@ -394,10 +401,10 @@ export default function VerifikatorSoalShow({ soal }) {
                                             />
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isSelected ? 'bg-white shadow-xs' : 'bg-gray-100'}`}>
-                                                    <Icon className={`w-4 h-4 ${isSelected ? 'text-[#801720]' : 'text-gray-500'}`} />
+                                                    <Icon className={`w-4 h-4 ${isSelected ? 'text-[#9E1B28]' : 'text-gray-500'}`} />
                                                 </div>
-                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-[#801720]' : 'border-gray-300'}`}>
-                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-[#801720]" />}
+                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-[#9E1B28]' : 'border-gray-300'}`}>
+                                                    {isSelected && <div className="w-2 h-2 rounded-full bg-[#9E1B28]" />}
                                                 </div>
                                             </div>
                                             <span className="text-xs font-bold">{opt.label}</span>
@@ -411,13 +418,13 @@ export default function VerifikatorSoalShow({ soal }) {
                                 <div className="space-y-3 pt-2">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                                         <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                            <ClipboardList className="w-4 h-4 text-[#801720]" />
+                                            <ClipboardList className="w-4 h-4 text-[#9E1B28]" />
                                             Catatan Evaluasi CLO
                                         </h3>
                                         {action === 'REVISION' && (
-                                            <span className="text-[11px] text-red-600 font-semibold flex items-center gap-1">
-                                                <AlertTriangle className="w-3 h-3" />
-                                                Wajib diisi untuk setiap CLO saat meminta revisi
+                                            <span className="text-[11px] text-amber-700 font-semibold flex items-center gap-1">
+                                                <AlertTriangle className="w-3 h-3 text-amber-600" />
+                                                Isi catatan evaluasi pada CLO yang memerlukan perbaikan/revisi
                                             </span>
                                         )}
                                     </div>
@@ -426,11 +433,11 @@ export default function VerifikatorSoalShow({ soal }) {
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-xs">
                                                 <thead>
-                                                    <tr className="bg-[#801720] text-white text-[11px] font-bold">
+                                                    <tr className="bg-[#9E1B28] text-white text-[11px] font-bold">
                                                         <th className="px-3.5 py-2.5 text-left w-[12%]">Bentuk Asesmen</th>
                                                         <th className="px-3.5 py-2.5 text-left w-[20%]">CLO</th>
                                                         <th className="px-3.5 py-2.5 text-left w-[14%]">No. Soal</th>
-                                                        <th className="px-3.5 py-2.5 text-left w-[27%]">Catatan Evaluasi *</th>
+                                                        <th className="px-3.5 py-2.5 text-left w-[27%]">Catatan Evaluasi</th>
                                                         <th className="px-3.5 py-2.5 text-left w-[27%]">Rekomendasi Soal Terhadap PLO (jika ada)</th>
                                                     </tr>
                                                 </thead>
@@ -441,7 +448,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                                                 {soal.kategori?.nama || 'UTS'}
                                                             </td>
                                                             <td className="px-3.5 py-3 align-top">
-                                                                <span className="px-2 py-0.5 rounded bg-red-100 text-[#801720] font-extrabold text-[10px] inline-block mb-1">
+                                                                <span className="px-2 py-0.5 rounded bg-red-100 text-[#9E1B28] font-extrabold text-[10px] inline-block mb-1">
                                                                     {item.fullKode}
                                                                 </span>
                                                                 <p className="text-[11px] text-gray-600 leading-snug line-clamp-3">
@@ -454,7 +461,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                                                     placeholder="cth: 1, 3, 5"
                                                                     value={cloFeedback[item.fullKode]?.no_soal || ''}
                                                                     onChange={(e) => handleCloChange(item.fullKode, 'no_soal', e.target.value)}
-                                                                    className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#801720] focus:ring-1 focus:ring-[#801720] transition-all outline-none"
+                                                                    className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#9E1B28] focus:ring-1 focus:ring-[#9E1B28] transition-all outline-none"
                                                                 />
                                                             </td>
                                                             <td className="px-3.5 py-3 align-top">
@@ -463,7 +470,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                                                     placeholder={`Catatan evaluasi untuk ${item.fullKode} — apakah sudah sesuai, perlu perbaikan pada bagian mana, dll.`}
                                                                     value={cloFeedback[item.fullKode]?.catatan || ''}
                                                                     onChange={(e) => handleCloChange(item.fullKode, 'catatan', e.target.value)}
-                                                                    className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#801720] focus:ring-1 focus:ring-[#801720] transition-all outline-none min-h-[82px] resize-none overflow-hidden hover:overflow-y-auto focus:overflow-y-auto"
+                                                                    className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#9E1B28] focus:ring-1 focus:ring-[#9E1B28] transition-all outline-none min-h-[82px] resize-none overflow-hidden hover:overflow-y-auto focus:overflow-y-auto"
                                                                 />
                                                             </td>
                                                             <td className="px-3.5 py-3 align-top">
@@ -472,7 +479,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                                                     placeholder="Rekomendasi soal terhadap PLO ini (opsional)..."
                                                                     value={cloFeedback[item.fullKode]?.rekomendasi || ''}
                                                                     onChange={(e) => handleCloChange(item.fullKode, 'rekomendasi', e.target.value)}
-                                                                    className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#801720] focus:ring-1 focus:ring-[#801720] transition-all outline-none min-h-[82px] resize-none overflow-hidden hover:overflow-y-auto focus:overflow-y-auto"
+                                                                    className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#9E1B28] focus:ring-1 focus:ring-[#9E1B28] transition-all outline-none min-h-[82px] resize-none overflow-hidden hover:overflow-y-auto focus:overflow-y-auto"
                                                                 />
                                                             </td>
                                                         </tr>
@@ -484,8 +491,6 @@ export default function VerifikatorSoalShow({ soal }) {
                                 </div>
                             )}
 
-
-
                             {/* Section 3: Catatan Umum Verifikator */}
                             <div className="space-y-2 pt-2">
                                 <h3 className="text-sm font-bold text-gray-800">Catatan Umum Verifikator</h3>
@@ -494,7 +499,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                     placeholder="Catatan tambahan atau apresiasi (opsional)..."
                                     value={catatan}
                                     onChange={(e) => setCatatan(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#801720] focus:ring-1 focus:ring-[#801720] transition-all outline-none min-h-[76px] resize-none overflow-hidden hover:overflow-y-auto focus:overflow-y-auto"
+                                    className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#9E1B28] focus:ring-1 focus:ring-[#9E1B28] transition-all outline-none min-h-[76px] resize-none overflow-hidden hover:overflow-y-auto focus:overflow-y-auto"
                                 />
                             </div>
 
@@ -502,7 +507,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                 <button
                                     type="submit"
                                     disabled={processing || !action}
-                                    className="w-full inline-flex items-center justify-center gap-2 py-3 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-[#801720]/25 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed bg-[#801720] hover:bg-[#6a1219]"
+                                    className="w-full inline-flex items-center justify-center gap-2 py-3 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-[#9E1B28]/25 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed bg-[#9E1B28] hover:bg-[#801720]"
                                 >
                                     <Send className="w-3.5 h-3.5" />
                                     {processing ? 'Menyimpan Keputusan...' : 'Kirim Keputusan Verifikasi'}
@@ -530,7 +535,7 @@ export default function VerifikatorSoalShow({ soal }) {
                 {soal.revisi && soal.revisi.length > 0 && (
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                         <h2 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
-                            <History className="w-5 h-5 text-[#801720]" /> Riwayat File Revisi
+                            <History className="w-5 h-5 text-[#9E1B28]" /> Riwayat File Revisi
                         </h2>
                         <div className="space-y-3">
                             {soal.revisi.map((rev) => (
@@ -581,7 +586,7 @@ export default function VerifikatorSoalShow({ soal }) {
                 {/* Riwayat Verifikasi */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                     <h2 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-[#801720]" /> Riwayat Verifikasi
+                        <Clock className="w-5 h-5 text-[#9E1B28]" /> Riwayat Verifikasi
                     </h2>
                     {(!soal.verifikasi || soal.verifikasi.length === 0) ? (
                         <p className="text-xs text-gray-400 text-center py-6">Belum ada riwayat verifikasi sebelumnya.</p>
@@ -606,8 +611,6 @@ export default function VerifikatorSoalShow({ soal }) {
                                         return false;
                                     })
                                     : [];
-
-
 
                                 return (
                                     <div key={v.id} className={`p-4 rounded-2xl border ${cfg.bg} space-y-3`}>
@@ -645,7 +648,7 @@ export default function VerifikatorSoalShow({ soal }) {
                                                                     return (
                                                                         <tr key={nIdx} className="bg-white/60">
                                                                             <td className="px-3 py-2 align-top border-r border-black/5">
-                                                                                <span className="px-1.5 py-0.5 rounded bg-red-100 text-[#801720] font-bold text-[10px] whitespace-nowrap flex-shrink-0">
+                                                                                <span className="px-1.5 py-0.5 rounded bg-red-100 text-[#9E1B28] font-bold text-[10px] whitespace-nowrap flex-shrink-0">
                                                                                     {kode}
                                                                                 </span>
                                                                             </td>
@@ -667,7 +670,6 @@ export default function VerifikatorSoalShow({ soal }) {
                                                 </div>
                                             </div>
                                         )}
-
 
                                         <p className="text-[11px] text-gray-400">
                                             Diverifikasi oleh <span className="font-semibold text-gray-600">{v.verifikator?.name || 'Verifikator'}</span>

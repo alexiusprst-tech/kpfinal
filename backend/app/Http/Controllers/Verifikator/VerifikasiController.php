@@ -29,7 +29,7 @@ class VerifikasiController extends Controller
         }
 
         $validated = $request->validate([
-            'action'        => ['required', 'in:APPROVED,REVISION,REJECTED'],
+            'action'        => ['required', 'in:APPROVED,REVISION'],
             'catatan'       => ['nullable', 'string', 'max:2000'],
             'clo_feedback'  => ['nullable', 'array'],
             'plo_feedback'  => ['nullable', 'array'],
@@ -38,7 +38,6 @@ class VerifikasiController extends Controller
         $actionText = match ($validated['action']) {
             'APPROVED' => 'Disetujui',
             'REVISION' => 'Perlu Revisi',
-            'REJECTED' => 'Ditolak',
         };
 
         $result = DB::transaction(function () use ($user, $soal, $validated, $actionText) {
@@ -64,7 +63,6 @@ class VerifikasiController extends Controller
             $newStatus = match ($validated['action']) {
                 'APPROVED' => Soal::STATUS_APPROVED,
                 'REVISION' => Soal::STATUS_REVISION,
-                'REJECTED' => Soal::STATUS_REJECTED,
             };
 
             $lockedSoal->update(['status' => $newStatus]);

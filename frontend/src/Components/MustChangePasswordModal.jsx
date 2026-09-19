@@ -34,7 +34,7 @@ export default function MustChangePasswordModal({ open }) {
             icon: 'question',
             confirmButtonText: 'Ya, Keluar',
             cancelButtonText: 'Batal',
-            confirmButtonColor: '#801720',
+            confirmButtonColor: '#9E1B28',
         });
         if (result.isConfirmed) {
             window.location.href = '/logout';
@@ -46,6 +46,7 @@ export default function MustChangePasswordModal({ open }) {
 
     const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'D';
     const kodeDosen = user?.dosen?.kode_dosen || '101010';
+    const nip = user?.dosen?.nip;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -55,7 +56,7 @@ export default function MustChangePasswordModal({ open }) {
             {/* Modal Card */}
             <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200 z-10">
                 {/* Top Accent Line */}
-                <div className="h-1.5 bg-[#801720] w-full" />
+                <div className="h-1.5 bg-[#9E1B28] w-full" />
 
                 <div className="p-6 sm:p-7 space-y-5">
                     {/* Header Bar */}
@@ -63,7 +64,7 @@ export default function MustChangePasswordModal({ open }) {
                         <div className="flex items-center gap-2.5">
                             <img src="/images/logo-telkom.png" alt="Logo" className="h-8 w-auto object-contain flex-shrink-0" />
                             <div>
-                                <h3 className="text-[10px] font-black text-[#801720] tracking-wider uppercase leading-none">
+                                <h3 className="text-[10px] font-black text-[#9E1B28] tracking-wider uppercase leading-none">
                                     VERIFIKASI SOAL
                                 </h3>
                                 <p className="text-[9px] font-extrabold text-slate-500 tracking-tight leading-tight mt-0.5">
@@ -88,9 +89,9 @@ export default function MustChangePasswordModal({ open }) {
                     </div>
 
                     {/* User Info Banner */}
-                    <div className="flex items-center justify-between p-3.5 bg-red-50/50 rounded-2xl border-l-4 border-l-[#801720] border border-red-100/60">
+                    <div className="flex items-center justify-between p-3.5 bg-red-50/50 rounded-2xl border-l-4 border-l-[#9E1B28] border border-red-100/60">
                         <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 rounded-full bg-red-100 text-[#801720] font-black text-sm flex items-center justify-center border border-red-200 flex-shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-red-100 text-[#9E1B28] font-black text-sm flex items-center justify-center border border-red-200 flex-shrink-0">
                                 {userInitial}
                             </div>
                             <div className="min-w-0">
@@ -102,9 +103,6 @@ export default function MustChangePasswordModal({ open }) {
                                 </p>
                             </div>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-extrabold text-[10px] border border-slate-200 flex-shrink-0 ml-2">
-                            Kode Dosen: {kodeDosen}
-                        </span>
                     </div>
 
                     {/* Form */}
@@ -120,7 +118,7 @@ export default function MustChangePasswordModal({ open }) {
                                     value={data.password}
                                     onChange={e => setData('password', e.target.value)}
                                     placeholder="Masukkan kata sandi baru (min. 8 karakter)"
-                                    className="w-full px-3.5 pr-20 py-2.5 text-xs font-medium border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]"
+                                    className="w-full px-3.5 pr-20 py-2.5 text-xs font-medium border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28]"
                                     required
                                 />
                                 <button
@@ -147,7 +145,7 @@ export default function MustChangePasswordModal({ open }) {
                                     value={data.password_confirmation}
                                     onChange={e => setData('password_confirmation', e.target.value)}
                                     placeholder="Ulangi kata sandi baru"
-                                    className="w-full px-3.5 pr-20 py-2.5 text-xs font-medium border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#801720]/20 focus:border-[#801720]"
+                                    className="w-full px-3.5 pr-20 py-2.5 text-xs font-medium border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28]"
                                     required
                                 />
                                 <button
@@ -212,7 +210,7 @@ export default function MustChangePasswordModal({ open }) {
                             <button
                                 type="submit"
                                 disabled={processing || !isLengthValid || !isMatchValid}
-                                className="flex-1 py-3 px-4 bg-[#801720] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-50 transition-all shadow-md shadow-[#801720]/20 flex items-center justify-center gap-2 cursor-pointer"
+                                className="flex-1 py-3 px-4 bg-[#9E1B28] text-white text-xs font-bold rounded-xl hover:bg-[#681219] disabled:opacity-50 transition-all shadow-md shadow-[#9E1B28]/20 flex items-center justify-center gap-2 cursor-pointer"
                             >
                                 {processing ? 'Menyimpan...' : 'Simpan & Masuk ke Beranda'}
                             </button>

@@ -193,26 +193,135 @@ class SoalGeneratorController extends Controller
             $data['kode_dosen'] = $dosen->kode_dosen;
         }
 
-        // Pass base64 encoded logo for Word doc
+        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord->setDefaultFontName('Arial');
+        $phpWord->setDefaultFontSize(9.5);
+
+        $section = $phpWord->addSection([
+            'marginTop'    => 850,
+            'marginRight'  => 850,
+            'marginBottom' => 1100,
+            'marginLeft'   => 850,
+        ]);
+
+        // Form No
+        $section->addText('Form No: ' . ($data['form_no'] ?? 'IT-TELU-POL-D04/01'), ['size' => 8.5, 'color' => '333333']);
+
+        // Table Style Definition
+        $borderStyle = ['borderColor' => '000000', 'borderSize' => 6, 'cellMargin' => 60];
+        $phpWord->addTableStyle('ExamHeaderTable', $borderStyle);
+        $phpWord->addTableStyle('ExamBlockTable', $borderStyle);
+
+        // 1. Header Information Table
+        $headerTable = $section->addTable('ExamHeaderTable');
+
+        // Logo + Title Row
+        $headerTable->addRow();
+        $logoCell = $headerTable->addCell(2200, ['vMerge' => 'restart', 'valign' => 'center']);
         $logoPath = public_path('images/logo-telkom.png');
-        $logoBase64 = '';
         if (file_exists($logoPath)) {
-            $type = pathinfo($logoPath, PATHINFO_EXTENSION);
-            $logoData = file_get_contents($logoPath);
-            $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($logoData);
+            $logoCell->addImage($logoPath, [
+                'width'     => 110,
+                'height'    => 48,
+                'alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER
+            ]);
+        } else {
+            $logoCell->addText('TELKOM UNIVERSITY', ['bold' => true, 'size' => 9], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
         }
-        $data['logo_base64'] = $logoBase64;
-        
-        // Flag for Word export to style slightly differently if needed
-        $data['is_word'] = true;
 
-        $html = view('pdf.lembar-soal', $data)->render();
-        $filename = 'Lembar_Soal_' . Str::slug($data['kode_nama_mk']) . '.doc';
+        $titleCell = $headerTable->addCell(6800, ['gridSpan' => 3, 'valign' => 'center']);
+        $titleText = mb_strtoupper($data['nama_evaluasi'] ?? 'LEMBAR SOAL EVALUASI');
+        $titleCell->addText($titleText, ['bold' => true, 'size' => 11], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
 
-        return response($html)
-            ->header('Content-Type', 'application/vnd.ms-word')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
-            ->header('Cache-Control', 'max-age=0');
+        // Detail Rows
+        $headerTable->addRow();
+        $headerTable->addCell(2200, ['vMerge' => 'continue']);
+        $headerTable->addCell(1600)->addText('Mata Kuliah:', ['bold' => true, 'size' => 8.5]);
+        $headerTable->addCell(3000)->addText($data['kode_nama_mk'] ?? '-', ['size' => 8.5]);
+        $headerTable->addCell(2200)->addText('Kode Dosen: ' . ($data['kode_dosen'] ?? '-'), ['size' => 8.5]);
+
+        $headerTable->addRow();
+        $headerTable->addCell(2200, ['vMerge' => 'continue']);
+        $headerTable->addCell(1600)->addText('Tipe / Sifat:', ['bold' => true, 'size' => 8.5]);
+        $headerTable->addCell(3000)->addText(($data['tipe_ujian'] ?? 'UTS') . ' / ' . ($data['tipe_soal'] ?? 'Tutup Buku'), ['size' => 8.5]);
+        $headerTable->addCell(2200)->addText('Hari/Tgl: ' . ($data['tanggal_evaluasi'] ?? '-'), ['size' => 8.5]);
+
+        $section->addTextBreak(1);
+
+        // 2. Petunjuk Pengerjaan Soal Table
+        $petunjukTable = $section->addTable('ExamBlockTable');
+        $petunjukTable->addRow();
+        $petunjukLabel = $petunjukTable->addCell(2200, ['valign' => 'top', 'bgColor' => 'F2F2F2']);
+        $petunjukLabel->addText('PETUNJUK PENGERJAAN SOAL', ['bold' => true, 'size' => 8.5]);
+
+        $petunjukContent = $petunjukTable->addCell(6800, ['valign' => 'top']);
+        $petunjukList = $data['petunjuk_pengerjaan'] ?? [];
+        foreach ($petunjukList as $idx => $p) {
+            $num = $idx + 1;
+            $petunjukContent->addText("{$num}. {$p}", ['size' => 8.5]);
+        }
+
+        $section->addTextBreak(1);
+
+        // 3. PLO & CLO Assessment Mapping Table
+        $ploTable = $section->addTable('ExamBlockTable');
+
+        // Header Row
+        $ploTable->addRow();
+        $thBg = ['bgColor' => 'E6E6E6', 'valign' => 'center'];
+        $ploTable->addCell(1800, $thBg)->addText('PLO (Capaian)', ['bold' => true, 'size' => 8.5], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+        $ploTable->addCell(3400, $thBg)->addText('CLO / Course Learning Outcome', ['bold' => true, 'size' => 8.5], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+        $ploTable->addCell(1400, $thBg)->addText('Taksonomi', ['bold' => true, 'size' => 8.5], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+        $ploTable->addCell(1000, $thBg)->addText('Bobot LO', ['bold' => true, 'size' => 8.5], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+        $ploTable->addCell(1400, $thBg)->addText('Bentuk Soal', ['bold' => true, 'size' => 8.5], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+
+        foreach ($plo as $pItem) {
+            $ploCode = $pItem['kode'] ?? 'PLO';
+            $cloList = $pItem['clo'] ?? [];
+            if (empty($cloList)) continue;
+
+            $cloCount = count($cloList);
+            foreach ($cloList as $cIdx => $cItem) {
+                $ploTable->addRow();
+
+                if ($cIdx === 0) {
+                    $ploCell = $ploTable->addCell(1800, ['vMerge' => 'restart', 'valign' => 'center']);
+                    $ploCell->addText($ploCode, ['bold' => true, 'size' => 8.5]);
+                    if (!empty($pItem['deskripsi'])) {
+                        $ploCell->addText($pItem['deskripsi'], ['size' => 8, 'color' => '555555']);
+                    }
+                } else {
+                    $ploTable->addCell(1800, ['vMerge' => 'continue']);
+                }
+
+                $cloCell = $ploTable->addCell(3400, ['valign' => 'center']);
+                $cloKode = $cItem['kode'] ?? '';
+                $cloDesk = $cItem['deskripsi'] ?? '';
+                $cloCell->addText(($cloKode ? "{$cloKode}: " : '') . $cloDesk, ['size' => 8.5]);
+
+                $ploTable->addCell(1400, ['valign' => 'center'])->addText($cItem['bloom'] ?? '-', ['size' => 8.5], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+                $ploTable->addCell(1000, ['valign' => 'center'])->addText(($cItem['bobot_lo'] ?? '0') . (str_contains((string)$cItem['bobot_lo'], '%') ? '' : '%'), ['bold' => true, 'size' => 8.5], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+                $ploTable->addCell(1400, ['valign' => 'center'])->addText($cItem['bentuk_soal'] ?? 'Uraian', ['size' => 8.5], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
+            }
+        }
+
+        $section->addTextBreak(1);
+
+        // 4. Questions Body Area
+        $section->addText('NASKAH SOAL UJIAN:', ['bold' => true, 'size' => 9.5]);
+        $section->addTextBreak(2);
+
+        // Save to temporary file and stream as native .docx
+        $tempFile = tempnam(sys_get_temp_dir(), 'lembar_soal_') . '.docx';
+        $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+        $writer->save($tempFile);
+
+        $filename = 'Lembar_Soal_' . Str::slug($data['kode_nama_mk'] ?? 'Ujian') . '.docx';
+
+        return response()->download($tempFile, $filename, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ])->deleteFileAfterSend(true);
     }
 
     public function getCourseData(Request $request)
