@@ -72,6 +72,7 @@ function getNavSections(user, pathname = "") {
         return [
             { type: "item", label: "Beranda", href: "/koordinator/dashboard", icon: LayoutDashboard },
             { type: "divider", label: "Koordinator MK" },
+            { type: "item", label: "Kelompok Verifikasi", href: "/koordinator/kelompok-verifikasi", icon: FolderKanban },
             { type: "item", label: "Upload Soal", href: "/koordinator/soal", icon: FileText },
         ];
     }
@@ -89,6 +90,7 @@ function getNavSections(user, pathname = "") {
     return [
         { type: "item", label: "Beranda", href: "/koordinator/dashboard", icon: LayoutDashboard },
         { type: "divider", label: "Koordinator MK" },
+        { type: "item", label: "Kelompok Verifikasi", href: "/koordinator/kelompok-verifikasi", icon: FolderKanban },
         { type: "item", label: "Upload Soal", href: "/koordinator/soal", icon: FileText },
     ];
 }

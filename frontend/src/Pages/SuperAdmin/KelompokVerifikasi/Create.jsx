@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { showToast, showAlert } from '@/Utils/sweetalert';
@@ -36,16 +36,16 @@ export default function Create({
 }) {
     const { errors, flash } = usePage().props;
 
-    // Current Wizard Step: 1 = Periode, 2 = Mata Kuliah, 3 = Koordinator & Verifikator per MK, 4 = Review & Simpan
+    // Current Wizard Step: 1 = Periode, 2 = Mata Kuliah, 3 = Koordinator per MK + Review & Simpan
     const [step, setStep] = useState(1);
 
     // Form States
     const [periodeId, setPeriodeId] = useState('');
     const [selectedMkIds, setSelectedMkIds] = useState([]);
 
-    // Per-MK Coordinator & Verifikator Maps: { [mkId]: [dosenId, ...] }
+    // Per-MK Coordinator Map: { [mkId]: [dosenId, ...] }
+    // Verifikator TIDAK diisi di sini — ditentukan oleh Koordinator MK.
     const [mkCoordinatorMap, setMkCoordinatorMap] = useState({});
-    const [mkVerifikatorMap, setMkVerifikatorMap] = useState({});
 
     // Group Information
     const [namaKelompok, setNamaKelompok] = useState('');
@@ -95,14 +95,9 @@ export default function Create({
         setSelectedMkIds((prev) => {
             if (prev.includes(mkId)) {
                 const next = prev.filter((id) => id !== mkId);
-                // Clean coordinator and verifikator mappings for this MK
+                // Clean coordinator mappings for this MK
                 setMkCoordinatorMap((cMap) => {
                     const copy = { ...cMap };
-                    delete copy[mkId];
-                    return copy;
-                });
-                setMkVerifikatorMap((vMap) => {
-                    const copy = { ...vMap };
                     delete copy[mkId];
                     return copy;
                 });
@@ -113,7 +108,7 @@ export default function Create({
         });
     };
 
-    // Toggle coordinator for a specific MK (Max 3, cannot be assigned in verifikators or other coordinators)
+    // Toggle coordinator for a specific MK (Max 3)
     const handleToggleCoordinator = (mkId, dosenId) => {
         if (!dosenId) return;
 
@@ -121,18 +116,6 @@ export default function Create({
         const isRemoving = currentKoorList.includes(dosenId);
 
         if (!isRemoving) {
-            // Aturan: Dosen tidak dapat menjadi Verifikator dan Koordinator pada mata kuliah yang sama
-            const thisMkVerifs = mkVerifikatorMap[mkId] || [];
-            if (thisMkVerifs.includes(dosenId)) {
-                const dObj = dosenAll.find((d) => d.id === dosenId);
-                showAlert({
-                    title: 'Konflik Peran Dosen',
-                    text: `Dosen ${dObj?.nama_lengkap || 'tersebut'} sudah ditugaskan sebagai Verifikator pada mata kuliah ini. Dosen tidak dapat menjadi Verifikator dan Koordinator pada mata kuliah yang sama.`,
-                    icon: 'warning',
-                });
-                return;
-            }
-
             const isDbActiveVerif = activeVerifikatorList.some(
                 (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === dosenId
             );
@@ -167,103 +150,6 @@ export default function Create({
         });
     };
 
-    // Helper: Check whether lecturer is Dosen Tetap
-    const isDosenTetap = (dosen) => {
-        if (!dosen) return false;
-        if (typeof dosen.is_dosen_tetap === 'boolean') return dosen.is_dosen_tetap;
-        const kat = String(dosen.kategori_dosen || '').trim().toUpperCase();
-        return !['LB', 'LUAR_BIASA', 'DOSEN LUAR BIASA'].includes(kat);
-    };
-
-    // Toggle a verifikator for a specific MK (Max 5, strictly Dosen Tetap)
-    const handleToggleVerifikator = (mkId, dosenId) => {
-        if (!dosenId) return;
-
-        const currentVerifList = mkVerifikatorMap[mkId] || [];
-        const isRemoving = currentVerifList.includes(dosenId);
-
-        if (!isRemoving) {
-            const dosenObj = dosenAll.find((d) => d.id === dosenId);
-            if (dosenObj && !isDosenTetap(dosenObj)) {
-                showToast('error', 'Verifikator Soal hanya dapat ditentukan dari Dosen Tetap.');
-                return;
-            }
-
-            // Aturan: Dosen tidak dapat menjadi Koordinator dan Verifikator pada mata kuliah yang sama
-            const thisMkCoors = mkCoordinatorMap[mkId] || [];
-            if (thisMkCoors.includes(dosenId)) {
-                showAlert({
-                    title: 'Konflik Peran Dosen',
-                    text: `Dosen ${dosenObj?.nama_lengkap || 'tersebut'} sudah ditugaskan sebagai Koordinator pada mata kuliah ini. Dosen tidak dapat menjadi Verifikator dan Koordinator pada mata kuliah yang sama.`,
-                    icon: 'warning',
-                });
-                return;
-            }
-
-            const isDbActiveKoor = activeKoordinatorList.some(
-                (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === dosenId
-            );
-            if (isDbActiveKoor) {
-                showAlert({
-                    title: 'Konflik Penugasan Aktif',
-                    text: `Dosen ${dosenObj?.nama_lengkap || 'tersebut'} sudah menjadi Koordinator aktif untuk mata kuliah ini pada periode terpilih.`,
-                    icon: 'warning',
-                });
-                return;
-            }
-        }
-
-        setMkVerifikatorMap((prev) => {
-            const currentList = prev[mkId] || [];
-            if (currentList.includes(dosenId)) {
-                return {
-                    ...prev,
-                    [mkId]: currentList.filter((id) => id !== dosenId),
-                };
-            } else {
-                if (currentList.length >= 5) {
-                    showToast('warning', 'Maksimal 5 dosen verifikator untuk setiap mata kuliah.');
-                    return prev;
-                }
-                return {
-                    ...prev,
-                    [mkId]: [...currentList, dosenId],
-                };
-            }
-        });
-    };
-
-    // Copy Verifikators from one MK to all other selected MKs (strictly Dosen Tetap)
-    const handleCopyVerifikatorsToAll = (sourceMkId) => {
-        const sourceList = (mkVerifikatorMap[sourceMkId] || [])
-            .filter((id) => {
-                const d = dosenAll.find((item) => item.id === id);
-                return isDosenTetap(d);
-            })
-            .slice(0, 5);
-        if (sourceList.length === 0) return;
-
-        setMkVerifikatorMap((prev) => {
-            const updated = { ...prev };
-            selectedMkIds.forEach((mkId) => {
-                const koorList = mkCoordinatorMap[mkId] || [];
-                // Exclude this MK's coordinators from the copied verifier list
-                // Also exclude active coordinators from other groups on this MK
-                updated[mkId] = sourceList.filter((id) => {
-                    if (koorList.includes(id)) return false;
-                    const isDbActiveKoor = activeKoordinatorList.some(
-                        (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === id
-                    );
-                    return !isDbActiveKoor;
-                });
-            });
-            return updated;
-        });
-
-        setCopyNotification('Verifikator berhasil disalin ke seluruh Mata Kuliah!');
-        setTimeout(() => setCopyNotification(''), 3000);
-    };
-
     // Copy Coordinators from one MK to all other selected MKs
     const handleCopyCoordinatorsToAll = (sourceMkId) => {
         const sourceList = (mkCoordinatorMap[sourceMkId] || []).slice(0, 3);
@@ -272,11 +158,8 @@ export default function Create({
         setMkCoordinatorMap((prev) => {
             const updated = { ...prev };
             selectedMkIds.forEach((mkId) => {
-                const verifList = mkVerifikatorMap[mkId] || [];
-                // Exclude this MK's verifiers from the copied coordinator list
-                // Also exclude active verifikators from other groups on this MK
+                // Exclude active verifikators from other groups on this MK
                 updated[mkId] = sourceList.filter((id) => {
-                    if (verifList.includes(id)) return false;
                     const isDbActiveVerif = activeVerifikatorList.some(
                         (item) => item.periode_id === periodeId && item.mata_kuliah_id === mkId && item.dosen_id === id
                     );
@@ -293,41 +176,14 @@ export default function Create({
     // Dynamic options for Koordinator dropdown on a specific MK
     const getKoordinatorOptionsForMk = (currentMkId) => {
         const thisMkCoors = mkCoordinatorMap[currentMkId] || [];
-        const thisMkVerifs = mkVerifikatorMap[currentMkId] || [];
 
         return dosenAll.map((d) => {
             const isThisMkKoor = thisMkCoors.includes(d.id);
-            const isThisMkVerif = thisMkVerifs.includes(d.id);
             const isDbActiveVerif = activeVerifikatorList.some(
                 (item) => item.periode_id === periodeId && item.mata_kuliah_id === currentMkId && item.dosen_id === d.id
             );
 
-            const isDisabled = isThisMkKoor || isThisMkVerif || isDbActiveVerif;
-
-            return {
-                value: d.id,
-                label: `${d.kode_dosen} – ${d.nama_lengkap}`,
-                disabled: isDisabled,
-            };
-        });
-    };
-
-    // Get dynamic options for Verifikator dropdown on a specific MK (Khusus Dosen Tetap)
-    const getVerifikatorOptionsForMk = (currentMkId) => {
-        const thisMkCoors = mkCoordinatorMap[currentMkId] || [];
-        const thisMkVerifs = mkVerifikatorMap[currentMkId] || [];
-
-        // Hanya Dosen Tetap yang berhak menjadi Verifikator Soal
-        const dosenTetapList = dosenAll.filter(isDosenTetap);
-
-        return dosenTetapList.map((d) => {
-            const isThisMkKoor = thisMkCoors.includes(d.id);
-            const isThisMkVerif = thisMkVerifs.includes(d.id);
-            const isDbActiveKoor = activeKoordinatorList.some(
-                (item) => item.periode_id === periodeId && item.mata_kuliah_id === currentMkId && item.dosen_id === d.id
-            );
-
-            const isDisabled = isThisMkVerif || isThisMkKoor || isDbActiveKoor;
+            const isDisabled = isThisMkKoor || isDbActiveVerif;
 
             return {
                 value: d.id,
@@ -342,15 +198,12 @@ export default function Create({
         if (step === 1) return Boolean(periodeId) && !existingPeriodeIds.includes(periodeId);
         if (step === 2) return selectedMkIds.length > 0;
         if (step === 3) {
-            // Every selected MK must have 1-3 coordinators, 1-5 verifikators, and no overlap between them
+            // Setiap MK wajib memiliki 1-3 koordinator
             return selectedMkIds.length > 0 && selectedMkIds.every((id) => {
                 const koors = mkCoordinatorMap[id] || [];
-                const verifs = mkVerifikatorMap[id] || [];
-                const hasOverlap = koors.some((kId) => verifs.includes(kId));
-                return koors.length >= 1 && koors.length <= 3 && verifs.length >= 1 && verifs.length <= 5 && !hasOverlap;
+                return koors.length >= 1 && koors.length <= 3;
             });
         }
-        if (step === 4) return namaKelompok.trim().length > 0;
         return true;
     };
 
@@ -359,15 +212,15 @@ export default function Create({
         if (step === 1 && !namaKelompok && selectedPeriode) {
             setNamaKelompok(`Kelompok Verifikasi - ${selectedPeriode.nama}`);
         }
-        setStep((s) => Math.min(s + 1, 4));
+        setStep((s) => Math.min(s + 1, 3));
     };
 
     const handlePrev = () => {
         setStep((s) => Math.max(s - 1, 1));
     };
 
-    // Submit Group (DRAFT or ACTIVE)
-    const handleSubmit = async (statusSubmit = 'ACTIVE') => {
+    // Submit Group (langsung status MENUNGGU_VERIFIKATOR — verifikator ditentukan koordinator)
+    const handleSubmit = async () => {
         if (!namaKelompok.trim()) {
             showAlert({
                 title: 'Data Belum Lengkap',
@@ -377,11 +230,10 @@ export default function Create({
             return;
         }
 
-        // Validate that every selected MK has at least 1 coordinator & 1-5 verifikators
+        // Validasi setiap MK wajib punya koordinator (verifikator tidak diperlukan di sini)
         for (const mkId of selectedMkIds) {
             const mk = mkAll.find((m) => m.id === mkId);
             const koors = mkCoordinatorMap[mkId] || [];
-            const verifs = mkVerifikatorMap[mkId] || [];
 
             if (koors.length === 0) {
                 showAlert({
@@ -399,58 +251,17 @@ export default function Create({
                 });
                 return;
             }
-            if (verifs.length === 0) {
-                showAlert({
-                    title: 'Verifikator Belum Ditentukan',
-                    text: `Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} belum memiliki tim dosen verifikator.`,
-                    icon: 'warning',
-                });
-                return;
-            }
-            if (verifs.length > 5) {
-                showAlert({
-                    title: 'Verifikator Melebihi Batas',
-                    text: `Mata kuliah ${mk?.kode_mk} - ${mk?.nama_mk} memiliki lebih dari 5 verifikator.`,
-                    icon: 'warning',
-                });
-                return;
-            }
-
-            // Validasi Dosen tidak bisa menjadi verifikator dan koordinator pada mata kuliah yang sama
-            const overlap = koors.filter((id) => verifs.includes(id));
-            if (overlap.length > 0) {
-                const conflictingDosen = dosenAll.find((d) => d.id === overlap[0]);
-                showAlert({
-                    title: 'Konflik Peran Dosen',
-                    text: `Dosen ${conflictingDosen?.nama_lengkap || 'terpilih'} tidak dapat menjadi Koordinator sekaligus Verifikator pada mata kuliah ${mk?.nama_mk || mk?.kode_mk}.`,
-                    icon: 'error',
-                });
-                return;
-            }
-
-            // Validasi Verifikator wajib Dosen Tetap
-            for (const vId of verifs) {
-                const vObj = dosenAll.find((d) => d.id === vId);
-                if (vObj && !isDosenTetap(vObj)) {
-                    showAlert({
-                        title: 'Verifikator Tidak Valid',
-                        text: `Dosen ${vObj?.nama_lengkap || vId} (${vObj?.kode_dosen || '-'}) bukan Dosen Tetap pada mata kuliah ${mk?.nama_mk || mkId}. Verifikator Soal hanya boleh Dosen Tetap.`,
-                        icon: 'error',
-                    });
-                    return;
-                }
-            }
         }
 
         const payload = {
             nama: namaKelompok,
             periode_id: periodeId,
             keterangan: keterangan,
-            status: statusSubmit,
+            // Status tidak perlu dikirim — backend akan otomatis set MENUNGGU_VERIFIKATOR
             mata_kuliah: selectedMkIds.map((id) => ({
                 mata_kuliah_id: id,
                 koordinator_ids: mkCoordinatorMap[id] || [],
-                verifikator_ids: mkVerifikatorMap[id] || [],
+                // verifikator_ids tidak dikirim — akan ditentukan koordinator MK
             })),
         };
 
@@ -506,7 +317,7 @@ export default function Create({
                                 Buat Kelompok Verifikasi Baru
                             </h1>
                             <p className="text-xs text-gray-500 mt-1">
-                                Integrasikan Periode, Mata Kuliah, Koordinator MK (Maks 3), dan Tim Verifikator (Maks 5) dalam satu alur terpadu.
+                                Buat kelompok penugasan untuk Periode, Mata Kuliah, dan Koordinator MK. Verifikator akan ditentukan oleh Koordinator MK masing-masing.
                             </p>
                         </div>
                     </div>
@@ -518,8 +329,7 @@ export default function Create({
                         {[
                             { num: 1, title: 'Periode', desc: 'Pilih Periode' },
                             { num: 2, title: 'Mata Kuliah', desc: 'Target MK' },
-                            { num: 3, title: 'Penugasan MK', desc: 'Koor & Verifikator' },
-                            { num: 4, title: 'Review & Simpan', desc: 'Aktivasi Kelompok' },
+                            { num: 3, title: 'Koordinator & Simpan', desc: 'Tugaskan Koordinator MK' },
                         ].map((s, idx, arr) => {
                             const isDone = step > s.num;
                             const isCurrent = step === s.num;
@@ -786,14 +596,42 @@ export default function Create({
                         </div>
                     )}
 
-                    {/* ================= STEP 3: PENETAPAN KOORDINATOR & VERIFIKATOR PER MK ================= */}
+                    {/* ================= STEP 3: PENETAPAN KOORDINATOR PER MK + NAMA KELOMPOK ================= */}
                     {step === 3 && (
                         <div className="space-y-5">
+                            {/* Nama & Keterangan di atas */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-gray-200/70">
+                                <div className="space-y-1.5 md:col-span-2">
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                        Nama Kelompok Verifikasi <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={namaKelompok}
+                                        onChange={(e) => setNamaKelompok(e.target.value)}
+                                        placeholder="Contoh: Kelompok Sistem Informasi - UTS Ganjil 2026"
+                                        className="w-full p-2.5 text-xs font-bold text-gray-900 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28]"
+                                    />
+                                </div>
+                                <div className="space-y-1.5 md:col-span-2">
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                        Keterangan (Opsional)
+                                    </label>
+                                    <textarea
+                                        rows={2}
+                                        value={keterangan}
+                                        onChange={(e) => setKeterangan(e.target.value)}
+                                        placeholder="Catatan tambahan untuk kelompok ini..."
+                                        className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] resize-none"
+                                    />
+                                </div>
+                            </div>
+
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
-                                    <h2 className="text-base font-extrabold text-gray-900">Langkah 3: Penetapan per Mata Kuliah</h2>
+                                    <h2 className="text-base font-extrabold text-gray-900">Penetapan Koordinator per Mata Kuliah</h2>
                                     <p className="text-xs text-gray-500 mt-0.5">
-                                        Tentukan Koordinator MK (1-3 Dosen) dan Tim Verifikator (1-5 Dosen) untuk setiap mata kuliah terpilih.
+                                        Tugaskan Koordinator MK (1-3 Dosen) untuk setiap mata kuliah terpilih. Verifikator akan ditentukan oleh koordinator setelah kelompok disimpan.
                                     </p>
                                 </div>
 
@@ -810,7 +648,6 @@ export default function Create({
                                 {selectedMkIds.map((mkId, idx) => {
                                     const mk = mkAll.find((m) => m.id === mkId);
                                     const currentCoordinatorList = mkCoordinatorMap[mkId] || [];
-                                    const currentVerifikatorList = mkVerifikatorMap[mkId] || [];
 
                                     return (
                                         <div
@@ -852,180 +689,83 @@ export default function Create({
                                                 </div>
                                             </div>
 
-                                                {/* Conflict Alert Banner if any overlap */}
-                                            {currentCoordinatorList.some((id) => currentVerifikatorList.includes(id)) && (
-                                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
-                                                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                                                    <span className="font-semibold">
-                                                        Perhatian: Dosen tidak dapat menjadi Koordinator sekaligus Verifikator pada mata kuliah yang sama.
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {/* Two Columns Grid for Koordinator (Max 3) & Verifikator (Max 5) */}
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-                                                {/* 1. KOORDINATOR PICKER (Searchable, Max 3) */}
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <label className="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
-                                                                Dosen Koordinator MK <span className="text-red-500">*</span>
-                                                            </label>
-                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                                currentCoordinatorList.length >= 3
-                                                                    ? 'bg-amber-100 text-amber-800 font-extrabold'
-                                                                    : currentCoordinatorList.length > 0
-                                                                    ? 'bg-blue-100 text-blue-800'
-                                                                    : 'bg-gray-100 text-gray-500'
-                                                            }`}>
-                                                                {currentCoordinatorList.length}/3 Dosen
-                                                            </span>
-                                                        </div>
-                                                        {selectedMkIds.length > 1 && currentCoordinatorList.length > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleCopyCoordinatorsToAll(mkId)}
-                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#9E1B28] hover:text-[#681219] hover:underline cursor-pointer"
-                                                                title="Salin koordinator MK ini ke semua MK lainnya"
-                                                            >
-                                                                <Copy className="w-3 h-3" /> Terapkan ke Semua MK
-                                                            </button>
-                                                        )}
+                                            {/* KOORDINATOR PICKER (Searchable, Max 3) */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <label className="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
+                                                            Dosen Koordinator MK <span className="text-red-500">*</span>
+                                                        </label>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                            currentCoordinatorList.length >= 3
+                                                                ? 'bg-amber-100 text-amber-800 font-extrabold'
+                                                                : currentCoordinatorList.length > 0
+                                                                ? 'bg-blue-100 text-blue-800'
+                                                                : 'bg-gray-100 text-gray-500'
+                                                        }`}>
+                                                            {currentCoordinatorList.length}/3 Dosen
+                                                        </span>
                                                     </div>
-
-                                                    {/* Dropdown to add coordinator if under 3 */}
-                                                    {currentCoordinatorList.length < 3 ? (
-                                                        <SearchableSelect
-                                                            options={getKoordinatorOptionsForMk(mkId)}
-                                                            value=""
-                                                            onChange={(val) => {
-                                                                if (val) handleToggleCoordinator(mkId, val);
-                                                            }}
-                                                            placeholder="+ Tambah Dosen Koordinator..."
-                                                            searchPlaceholder="Cari dosen untuk ditambahkan sebagai koordinator..."
-                                                        />
-                                                    ) : (
-                                                        <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs font-bold text-emerald-800 flex items-center justify-center gap-1.5">
-                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                                            Batas maksimal 3 koordinator telah terpenuhi
-                                                        </div>
+                                                    {selectedMkIds.length > 1 && currentCoordinatorList.length > 0 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleCopyCoordinatorsToAll(mkId)}
+                                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#9E1B28] hover:text-[#681219] hover:underline cursor-pointer"
+                                                            title="Salin koordinator MK ini ke semua MK lainnya"
+                                                        >
+                                                            <Copy className="w-3 h-3" /> Terapkan ke Semua MK
+                                                        </button>
                                                     )}
-
-                                                    {/* Selected Coordinator Chips */}
-                                                    <div className="min-h-[38px] p-2 bg-slate-50 border border-slate-200/80 rounded-xl flex flex-wrap gap-1.5 items-center">
-                                                        {currentCoordinatorList.length > 0 ? (
-                                                            currentCoordinatorList.map((kId) => {
-                                                                const kObj = dosenAll.find((d) => d.id === kId);
-                                                                return (
-                                                                    <span
-                                                                        key={kId}
-                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#9E1B28] border border-red-200 rounded-lg text-xs font-bold animate-in fade-in duration-100"
-                                                                    >
-                                                                        <GraduationCap className="w-3 h-3 text-[#9E1B28] shrink-0" />
-                                                                        <span className="truncate max-w-[200px]">
-                                                                            {kObj?.kode_dosen} - {kObj?.nama_lengkap}
-                                                                        </span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleToggleCoordinator(mkId, kId)}
-                                                                            className="text-red-400 hover:text-red-700 rounded-full transition-colors cursor-pointer"
-                                                                        >
-                                                                            <X className="w-3 h-3" />
-                                                                        </button>
-                                                                    </span>
-                                                                );
-                                                            })
-                                                        ) : (
-                                                            <span className="text-[11px] text-amber-700 italic flex items-center gap-1">
-                                                                <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                                                                Pilih minimal 1 dosen koordinator (maks 3)
-                                                            </span>
-                                                        )}
-                                                    </div>
                                                 </div>
 
-                                                {/* 2. VERIFIKATOR PICKER (Per MK, Max 5) */}
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <label className="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
-                                                                Tim Verifikator MK <span className="text-red-500">*</span>
-                                                            </label>
-                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                                Khusus Dosen Tetap
-                                                            </span>
-                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                                currentVerifikatorList.length >= 5
-                                                                    ? 'bg-amber-100 text-amber-800 font-extrabold'
-                                                                    : currentVerifikatorList.length > 0
-                                                                    ? 'bg-blue-100 text-blue-800'
-                                                                    : 'bg-gray-100 text-gray-500'
-                                                            }`}>
-                                                                {currentVerifikatorList.length}/5 Dosen
-                                                            </span>
-                                                        </div>
-                                                        {selectedMkIds.length > 1 && currentVerifikatorList.length > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleCopyVerifikatorsToAll(mkId)}
-                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#9E1B28] hover:text-[#681219] hover:underline cursor-pointer"
-                                                                title="Salin daftar verifikator MK ini ke semua MK lainnya"
-                                                            >
-                                                                <Copy className="w-3 h-3" /> Terapkan ke Semua MK
-                                                            </button>
-                                                        )}
+                                                {/* Dropdown to add coordinator if under 3 */}
+                                                {currentCoordinatorList.length < 3 ? (
+                                                    <SearchableSelect
+                                                        options={getKoordinatorOptionsForMk(mkId)}
+                                                        value=""
+                                                        onChange={(val) => {
+                                                            if (val) handleToggleCoordinator(mkId, val);
+                                                        }}
+                                                        placeholder="+ Tambah Dosen Koordinator..."
+                                                        searchPlaceholder="Cari dosen untuk ditambahkan sebagai koordinator..."
+                                                    />
+                                                ) : (
+                                                    <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs font-bold text-emerald-800 flex items-center justify-center gap-1.5">
+                                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                                        Batas maksimal 3 koordinator telah terpenuhi
                                                     </div>
+                                                )}
 
-                                                    {/* Dropdown to add verifikator if under 5 */}
-                                                    {currentVerifikatorList.length < 5 ? (
-                                                        <SearchableSelect
-                                                            options={getVerifikatorOptionsForMk(mkId)}
-                                                            value=""
-                                                            onChange={(val) => {
-                                                                if (val) handleToggleVerifikator(mkId, val);
-                                                            }}
-                                                            placeholder="+ Tambah Dosen Verifikator (Khusus Dosen Tetap)..."
-                                                            searchPlaceholder="Cari dosen tetap untuk ditambahkan..."
-                                                        />
-                                                    ) : (
-                                                        <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs font-bold text-emerald-800 flex items-center justify-center gap-1.5">
-                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                                            Batas maksimal 5 verifikator telah terpenuhi
-                                                        </div>
-                                                    )}
-
-                                                    {/* Selected Verifikator Chips */}
-                                                    <div className="min-h-[38px] p-2 bg-slate-50 border border-slate-200/80 rounded-xl flex flex-wrap gap-1.5 items-center">
-                                                        {currentVerifikatorList.length > 0 ? (
-                                                            currentVerifikatorList.map((vId) => {
-                                                                const vObj = dosenAll.find((d) => d.id === vId);
-                                                                return (
-                                                                    <span
-                                                                        key={vId}
-                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg text-xs font-bold animate-in fade-in duration-100"
-                                                                    >
-                                                                        <Shield className="w-3 h-3 text-blue-600 shrink-0" />
-                                                                        <span className="truncate max-w-[200px]">
-                                                                            {vObj?.kode_dosen} - {vObj?.nama_lengkap}
-                                                                        </span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleToggleVerifikator(mkId, vId)}
-                                                                            className="text-blue-400 hover:text-red-500 rounded-full transition-colors cursor-pointer"
-                                                                        >
-                                                                            <X className="w-3 h-3" />
-                                                                        </button>
+                                                {/* Selected Coordinator Chips */}
+                                                <div className="min-h-[38px] p-2 bg-slate-50 border border-slate-200/80 rounded-xl flex flex-wrap gap-1.5 items-center">
+                                                    {currentCoordinatorList.length > 0 ? (
+                                                        currentCoordinatorList.map((kId) => {
+                                                            const kObj = dosenAll.find((d) => d.id === kId);
+                                                            return (
+                                                                <span
+                                                                    key={kId}
+                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#9E1B28] border border-red-200 rounded-lg text-xs font-bold animate-in fade-in duration-100"
+                                                                >
+                                                                    <GraduationCap className="w-3 h-3 text-[#9E1B28] shrink-0" />
+                                                                    <span className="truncate max-w-[200px]">
+                                                                        {kObj?.kode_dosen} - {kObj?.nama_lengkap}
                                                                     </span>
-                                                                );
-                                                            })
-                                                        ) : (
-                                                            <span className="text-[11px] text-amber-700 italic flex items-center gap-1">
-                                                                <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                                                                Pilih minimal 1 dosen verifikator untuk MK ini
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleToggleCoordinator(mkId, kId)}
+                                                                        className="text-red-400 hover:text-red-700 rounded-full transition-colors cursor-pointer"
+                                                                    >
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                                </span>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <span className="text-[11px] text-amber-700 italic flex items-center gap-1">
+                                                            <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                                                            Pilih minimal 1 dosen koordinator (maks 3)
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1122,110 +862,6 @@ export default function Create({
                         </div>
                     )}
 
-                    {/* ================= STEP 4: REVIEW & SIMPAN ================= */}
-                    {step === 4 && (
-                        <div className="space-y-6">
-                            <div>
-                                <h2 className="text-base font-extrabold text-gray-900">Langkah 4: Review & Simpan Kelompok</h2>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                    Periksa kembali nama kelompok dan pembagian koordinator serta verifikator per mata kuliah.
-                                </p>
-                            </div>
-
-                            {/* Group Information Fields */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4.5 rounded-2xl border border-gray-200/70">
-                                <div className="space-y-1.5 md:col-span-2">
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                        Nama Kelompok Verifikasi <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={namaKelompok}
-                                        onChange={(e) => setNamaKelompok(e.target.value)}
-                                        placeholder="Contoh: Kelompok Sistem Informasi - UTS Ganjil 2026"
-                                        className="w-full p-2.5 text-xs font-bold text-gray-900 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28]"
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5 md:col-span-2">
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                        Keterangan / Catatan Tambahan (Opsional)
-                                    </label>
-                                    <textarea
-                                        rows={2}
-                                        value={keterangan}
-                                        onChange={(e) => setKeterangan(e.target.value)}
-                                        placeholder="Tambahkan catatan khusus untuk kelompok penugasan ini..."
-                                        className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] resize-none"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Detailed per-MK Review Cards */}
-                            <div className="space-y-3">
-                                <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider">
-                                    Ringkasan Penugasan per Mata Kuliah ({selectedMkIds.length})
-                                </h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
-                                    {selectedMkIds.map((mkId, idx) => {
-                                        const mk = mkAll.find((m) => m.id === mkId);
-                                        const koorList = (mkCoordinatorMap[mkId] || []).map((kId) => dosenAll.find((d) => d.id === kId)).filter(Boolean);
-                                        const vList = (mkVerifikatorMap[mkId] || []).map((vId) => dosenAll.find((d) => d.id === vId)).filter(Boolean);
-
-                                        return (
-                                            <div key={mkId} className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200/80 space-y-2.5">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-extrabold text-xs text-gray-900">
-                                                        {mk?.kode_mk} - {mk?.nama_mk}
-                                                    </span>
-                                                    <span className="text-[10px] font-bold text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded-full">
-                                                        {mk?.sks} SKS
-                                                    </span>
-                                                </div>
-
-                                                <div className="space-y-2 text-xs">
-                                                    <div>
-                                                        <span className="text-[10px] font-bold text-gray-400 block uppercase mb-1">
-                                                            Koordinator ({koorList.length}/3):
-                                                        </span>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {koorList.map((k) => (
-                                                                <span
-                                                                    key={k.id}
-                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-50 text-[#9E1B28] border border-red-200"
-                                                                >
-                                                                    <GraduationCap className="w-2.5 h-2.5" />
-                                                                    {k.kode_dosen} - {k.nama_lengkap}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="pt-1">
-                                                        <span className="text-[10px] font-bold text-gray-400 block uppercase mb-1">
-                                                            Verifikator ({vList.length}/5):
-                                                        </span>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {vList.map((v) => (
-                                                                <span
-                                                                    key={v.id}
-                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"
-                                                                >
-                                                                    <Shield className="w-2.5 h-2.5" />
-                                                                    {v.kode_dosen} - {v.nama_lengkap}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     {/* STEP NAVIGATION BUTTONS */}
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
@@ -1241,7 +877,7 @@ export default function Create({
                         ) : <div />}
 
                         <div className="flex items-center gap-3">
-                            {step < 4 ? (
+                            {step < 3 ? (
                                 <button
                                     type="button"
                                     onClick={handleNext}
@@ -1255,25 +891,14 @@ export default function Create({
                                     Lanjut <ArrowRight className="w-3.5 h-3.5" />
                                 </button>
                             ) : (
-                                <>
-                                    <button
-                                        type="button"
-                                        disabled={loading || !namaKelompok.trim()}
-                                        onClick={() => handleSubmit('DRAFT')}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
-                                    >
-                                        <Save className="w-3.5 h-3.5" /> Simpan Draf
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        disabled={loading || !namaKelompok.trim()}
-                                        onClick={() => handleSubmit('ACTIVE')}
-                                        className="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
-                                    >
-                                        <Play className="w-3.5 h-3.5" /> Simpan & Aktifkan Kelompok
-                                    </button>
-                                </>
+                                <button
+                                    type="button"
+                                    disabled={loading || !namaKelompok.trim() || !canAdvance()}
+                                    onClick={() => handleSubmit()}
+                                    className="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#681219] rounded-xl shadow-md shadow-[#9E1B28]/20 transition-all cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                >
+                                    <Save className="w-3.5 h-3.5" /> Simpan Kelompok
+                                </button>
                             )}
                         </div>
                     </div>

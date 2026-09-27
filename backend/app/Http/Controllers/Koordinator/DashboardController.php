@@ -63,22 +63,57 @@ class DashboardController extends Controller
                 ->get()
             : collect();
 
+        $kelompokButuhVerifikator = collect();
+        if ($dosen) {
+            $myKelompokIds = \App\Models\KelompokKoordinator::where('dosen_id', $dosen->id)
+                ->pluck('kelompok_id')
+                ->unique();
+
+            $kelompokButuhVerifikator = \App\Models\KelompokVerifikasi::whereIn('id', $myKelompokIds)
+                ->whereIn('status', [\App\Models\KelompokVerifikasi::STATUS_DRAFT, 'MENUNGGU_VERIFIKATOR'])
+                ->with(['periode'])
+                ->get()
+                ->map(function ($k) use ($dosen) {
+                    $myMkIds = \App\Models\KelompokKoordinator::where('kelompok_id', $k->id)
+                        ->where('dosen_id', $dosen->id)
+                        ->pluck('mata_kuliah_id');
+
+                    $assignedMkIds = \App\Models\KelompokVerifikator::where('kelompok_id', $k->id)
+                        ->whereIn('mata_kuliah_id', $myMkIds)
+                        ->pluck('mata_kuliah_id')
+                        ->unique();
+
+                    $unassignedCount = $myMkIds->diff($assignedMkIds)->count();
+
+                    return [
+                        'id'               => $k->id,
+                        'nama'             => $k->nama,
+                        'periode_nama'     => $k->periode?->nama,
+                        'unassigned_count' => $unassignedCount,
+                    ];
+                })
+                ->filter(fn ($k) => $k['unassigned_count'] > 0)
+                ->values();
+        }
+
         $hasActiveKoor = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
         $hasActiveVerif = $dosen && PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
-        $noAssignmentMessage = ($dosen && !$hasActiveKoor && !$hasActiveVerif)
+        $hasWaitingKelompok = $kelompokButuhVerifikator->isNotEmpty();
+        $noAssignmentMessage = ($dosen && !$hasActiveKoor && !$hasActiveVerif && !$hasWaitingKelompok)
             ? 'Akun Anda (' . ($dosen->nama_lengkap ?? $user->name) . ') saat ini belum diberikan penugasan aktif (Koordinator/Verifikator). Silakan hubungi Super Admin.'
             : null;
 
         return Inertia::render('Koordinator/Dashboard', [
-            'activePeriod'        => $activePeriod,
-            'deadline'            => $this->buildDeadlineInfo($activePeriod),
-            'stats'               => $this->buildStats($assignments, $soalList),
-            'mataKuliahList'      => $this->buildMataKuliahList($assignments, $soalList),
-            'attention'           => $this->buildAttentionList($soalList),
-            'verifikators'        => $this->buildVerifikatorList($verifikatorAssignments, $soalList),
-            'cloPloOverview'      => $this->buildCloPloOverview($assignments),
-            'activity'            => $this->buildActivity($user->id),
-            'noAssignmentMessage' => $noAssignmentMessage,
+            'activePeriod'             => $activePeriod,
+            'deadline'                 => $this->buildDeadlineInfo($activePeriod),
+            'stats'                    => $this->buildStats($assignments, $soalList),
+            'mataKuliahList'           => $this->buildMataKuliahList($assignments, $soalList),
+            'attention'                => $this->buildAttentionList($soalList),
+            'verifikators'             => $this->buildVerifikatorList($verifikatorAssignments, $soalList),
+            'cloPloOverview'           => $this->buildCloPloOverview($assignments),
+            'activity'                 => $this->buildActivity($user->id),
+            'noAssignmentMessage'      => $noAssignmentMessage,
+            'kelompokButuhVerifikator' => $kelompokButuhVerifikator,
         ]);
     }
 

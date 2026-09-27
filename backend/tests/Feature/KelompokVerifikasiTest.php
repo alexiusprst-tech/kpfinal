@@ -27,6 +27,7 @@ class KelompokVerifikasiTest extends TestCase
     protected User $superAdmin;
     protected User $koordinatorUser;
     protected User $verifikatorUser;
+    protected User $dosen3User;
     protected PeriodeVerifikasi $periode;
     protected MataKuliah $mk1;
     protected MataKuliah $mk2;
@@ -84,7 +85,7 @@ class KelompokVerifikasiTest extends TestCase
             'status'      => 'ACTIVE',
         ]);
 
-        $dosen3User = User::create([
+        $this->dosen3User = User::create([
             'id'       => (string) Str::uuid(),
             'name'     => 'Dr. Dosen Tiga',
             'email'    => 'dosen3@test.com',
@@ -98,7 +99,7 @@ class KelompokVerifikasiTest extends TestCase
             'kode_dosen'  => 'DSN3',
             'nama_lengkap'=> 'Dr. Dosen Tiga',
             'email'       => 'dosen3@test.com',
-            'user_id'     => $dosen3User->id,
+            'user_id'     => $this->dosen3User->id,
             'status'      => 'ACTIVE',
         ]);
 
@@ -197,13 +198,12 @@ class KelompokVerifikasiTest extends TestCase
         $payload = [
             'nama'        => 'Kelompok SI Aktif - UTS Ganjil 2026',
             'periode_id'  => $this->periode->id,
-            'keterangan'  => 'Kelompok langsung aktif',
-            'status'      => 'ACTIVE',
+            'keterangan'  => 'Kelompok langsung aktif setelah verifikator lengkap',
+            'status'      => 'DRAFT',
             'mata_kuliah' => [
-                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id, 'verifikator_ids' => [$this->dosen2->id]],
-                ['mata_kuliah_id' => $this->mk2->id, 'koordinator_id' => $this->dosen3->id, 'verifikator_ids' => [$this->dosen2->id]],
+                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id],
+                ['mata_kuliah_id' => $this->mk2->id, 'koordinator_id' => $this->dosen3->id],
             ],
-            'verifikator' => [$this->dosen2->id],
         ];
 
         $this->actingAs($this->superAdmin)
@@ -211,6 +211,36 @@ class KelompokVerifikasiTest extends TestCase
 
         $kelompok = KelompokVerifikasi::where('nama', 'Kelompok SI Aktif - UTS Ganjil 2026')->first();
         $this->assertNotNull($kelompok);
+        $this->assertEquals('DRAFT', $kelompok->status);
+
+        // Koordinator 1 menentukan verifikator untuk MK1
+        $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
+
+        // Status masih DRAFT karena MK2 belum memiliki verifikator
+        $kelompok->refresh();
+        $this->assertEquals('DRAFT', $kelompok->status);
+
+        // Koordinator 2 menentukan verifikator untuk MK2
+        $this->actingAs($this->dosen3User)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk2->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
+
+        // Sekarang semua MK sudah memiliki verifikator -> status berubah menjadi ACTIVE otomatis
+        $kelompok->refresh();
         $this->assertEquals('ACTIVE', $kelompok->status);
 
         // Check operational PenugasanKoordinator created (2 MKs -> 2 Coordinators)
@@ -290,17 +320,15 @@ class KelompokVerifikasiTest extends TestCase
             'nama'        => 'Kelompok SI Per MK - UTS Ganjil 2026',
             'periode_id'  => $this->periode->id,
             'keterangan'  => 'Uji coba pembagian verifikator per MK',
-            'status'      => 'ACTIVE',
+            'status'      => 'DRAFT',
             'mata_kuliah' => [
                 [
                     'mata_kuliah_id'  => $this->mk1->id,
                     'koordinator_ids' => [$this->dosen1->id],
-                    'verifikator_ids' => [$this->dosen2->id],
                 ],
                 [
                     'mata_kuliah_id'  => $this->mk2->id,
                     'koordinator_ids' => [$this->dosen3->id],
-                    'verifikator_ids' => [$d4->id, $d5->id],
                 ],
             ],
         ];
@@ -310,6 +338,28 @@ class KelompokVerifikasiTest extends TestCase
 
         $kelompok = KelompokVerifikasi::where('nama', 'Kelompok SI Per MK - UTS Ganjil 2026')->first();
         $this->assertNotNull($kelompok);
+
+        // Koordinator 1 determines Verifikator Dosen 2 for MK1
+        $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
+
+        // Koordinator 2 determines Verifikators D4 and D5 for MK2
+        $this->actingAs($this->dosen3User)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk2->id,
+                        'verifikator_ids' => [$d4->id, $d5->id],
+                    ],
+                ],
+            ]);
 
         // Check MK1 has Verifikator Dosen 2
         $this->assertDatabaseHas('kelompok_verifikator', [
@@ -333,6 +383,28 @@ class KelompokVerifikasiTest extends TestCase
 
     public function test_validation_rejects_more_than_5_verifikators_per_mk(): void
     {
+        $kelompok = KelompokVerifikasi::create([
+            'id'         => (string) Str::uuid(),
+            'nama'       => 'Kelompok Overlimit Verifikator',
+            'periode_id' => $this->periode->id,
+            'status'     => 'DRAFT',
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        KelompokMataKuliah::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'koordinator_id' => $this->dosen1->id,
+        ]);
+
+        KelompokKoordinator::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+        ]);
+
         // Create 6 dosens
         $dosenIds = [];
         for ($i = 4; $i <= 9; $i++) {
@@ -346,43 +418,48 @@ class KelompokVerifikasiTest extends TestCase
             $dosenIds[] = $d->id;
         }
 
+        $response = $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => $dosenIds, // 6 verifiers
+                    ],
+                ],
+            ]);
+
+        $response->assertSessionHasErrors(['mata_kuliah_assignments.0.verifikator_ids']);
+    }
+
+    public function test_superadmin_can_revoke_dosen_assignments(): void
+    {
+        // 1. Create group and assign verifikator so it activates
         $payload = [
-            'nama'        => 'Kelompok Overlimit Verifikator',
+            'nama'        => 'Kelompok Untuk Uji Revoke',
             'periode_id'  => $this->periode->id,
             'status'      => 'DRAFT',
             'mata_kuliah' => [
                 [
                     'mata_kuliah_id' => $this->mk1->id,
                     'koordinator_id' => $this->dosen1->id,
-                    'verifikator_ids'=> $dosenIds, // 6 verifiers
-                ],
-            ],
-        ];
-
-        $response = $this->actingAs($this->superAdmin)
-            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
-
-        $response->assertSessionHasErrors(['mata_kuliah.0.verifikator_ids']);
-    }
-
-    public function test_superadmin_can_revoke_dosen_assignments(): void
-    {
-        // 1. Create and activate a group
-        $payload = [
-            'nama'        => 'Kelompok Untuk Uji Revoke',
-            'periode_id'  => $this->periode->id,
-            'status'      => 'ACTIVE',
-            'mata_kuliah' => [
-                [
-                    'mata_kuliah_id' => $this->mk1->id,
-                    'koordinator_id' => $this->dosen1->id,
-                    'verifikator_ids'=> [$this->dosen2->id],
                 ],
             ],
         ];
 
         $this->actingAs($this->superAdmin)
             ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
+
+        $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Untuk Uji Revoke')->first();
+
+        $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
 
         // Verify active assignments exist
         $this->assertDatabaseHas('penugasan_koordinator', [
@@ -419,23 +496,40 @@ class KelompokVerifikasiTest extends TestCase
 
     public function test_validation_rejects_coordinator_as_verifikator_on_same_course(): void
     {
-        $payload = [
-            'nama'        => 'Kelompok Conflict Koor Verif',
-            'periode_id'  => $this->periode->id,
-            'status'      => 'DRAFT',
-            'mata_kuliah' => [
-                [
-                    'mata_kuliah_id'  => $this->mk1->id,
-                    'koordinator_ids' => [$this->dosen1->id],
-                    'verifikator_ids' => [$this->dosen1->id], // Same lecturer as coordinator
+        $kelompok = KelompokVerifikasi::create([
+            'id'         => (string) Str::uuid(),
+            'nama'       => 'Kelompok Conflict Koor Verif',
+            'periode_id' => $this->periode->id,
+            'status'     => 'DRAFT',
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        KelompokMataKuliah::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'koordinator_id' => $this->dosen1->id,
+        ]);
+
+        KelompokKoordinator::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+        ]);
+
+        // Koordinator tries to assign himself as verifikator on same course
+        $response = $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$this->dosen1->id],
+                    ],
                 ],
-            ],
-        ];
+            ]);
 
-        $response = $this->actingAs($this->superAdmin)
-            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
-
-        $response->assertSessionHasErrors(['mata_kuliah']);
+        $response->assertSessionHasErrors(['mata_kuliah_assignments']);
     }
 
     public function test_validation_rejects_non_dosen_tetap_as_verifikator(): void
@@ -450,25 +544,43 @@ class KelompokVerifikasiTest extends TestCase
             'status'         => 'ACTIVE',
         ]);
 
-        $payload = [
-            'nama'        => 'Kelompok Verifikator Non Tetap',
-            'periode_id'  => $this->periode->id,
-            'status'      => 'DRAFT',
-            'mata_kuliah' => [
-                [
-                    'mata_kuliah_id'  => $this->mk1->id,
-                    'koordinator_ids' => [$this->dosen1->id],
-                    'verifikator_ids' => [$dosenLB->id], // LB lecturer assigned as verifikator
+        $kelompok = KelompokVerifikasi::create([
+            'id'         => (string) Str::uuid(),
+            'nama'       => 'Kelompok Verifikator Non Tetap',
+            'periode_id' => $this->periode->id,
+            'status'     => 'DRAFT',
+            'created_by' => $this->superAdmin->id,
+        ]);
+
+        KelompokMataKuliah::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'koordinator_id' => $this->dosen1->id,
+        ]);
+
+        KelompokKoordinator::create([
+            'id'             => (string) Str::uuid(),
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen1->id,
+        ]);
+
+        // Attempt to assign LB lecturer as verifikator
+        $response = $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$dosenLB->id],
+                    ],
                 ],
-            ],
-        ];
+            ]);
 
-        $response = $this->actingAs($this->superAdmin)
-            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
-
-        $response->assertSessionHasErrors(['mata_kuliah']);
-        $this->assertDatabaseMissing('kelompok_verifikasi', [
-            'nama' => 'Kelompok Verifikator Non Tetap',
+        $response->assertSessionHasErrors(['mata_kuliah_assignments']);
+        $this->assertDatabaseMissing('kelompok_verifikator', [
+            'kelompok_id' => $kelompok->id,
+            'dosen_id'    => $dosenLB->id,
         ]);
     }
 
@@ -505,17 +617,15 @@ class KelompokVerifikasiTest extends TestCase
         $payload = [
             'nama'        => 'Kelompok Multi MK Assignment',
             'periode_id'  => $this->periode->id,
-            'status'      => 'ACTIVE',
+            'status'      => 'DRAFT',
             'mata_kuliah' => [
                 [
                     'mata_kuliah_id'  => $this->mk1->id,
                     'koordinator_ids' => [$this->dosen1->id],
-                    'verifikator_ids' => [$this->dosen2->id, $this->dosen3->id],
                 ],
                 [
                     'mata_kuliah_id'  => $this->mk2->id,
                     'koordinator_ids' => [$this->dosen1->id, $this->dosen3->id], // dosen1 & dosen3 coordinating MK2
-                    'verifikator_ids' => [$this->dosen2->id],                    // dosen2 verifying MK2 as well
                 ],
             ],
         ];
@@ -527,6 +637,28 @@ class KelompokVerifikasiTest extends TestCase
 
         $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Multi MK Assignment')->first();
         $this->assertNotNull($kelompok);
+
+        // Koordinator 1 determines verifikators for MK1: dosen2 and dosen3
+        $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$this->dosen2->id, $this->dosen3->id],
+                    ],
+                ],
+            ]);
+
+        // Koordinator 2 determines verifikator for MK2: dosen2
+        $this->actingAs($this->dosen3User)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk2->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
 
         // Check dosen1 is Koordinator for both MK1 and MK2
         $this->assertDatabaseHas('penugasan_koordinator', [
@@ -658,16 +790,15 @@ class KelompokVerifikasiTest extends TestCase
 
     public function test_revoking_dosen_in_manajemen_dosen_removes_from_kelompok_verifikasi(): void
     {
-        // Create an active group with dosen1 as koordinator and dosen2 as verifikator
+        // Create group with dosen1 as koordinator, then assign verifikator dosen2 so it activates
         $payload = [
             'nama'        => 'Kelompok Uji Synced Revoke',
             'periode_id'  => $this->periode->id,
-            'status'      => 'ACTIVE',
+            'status'      => 'DRAFT',
             'mata_kuliah' => [
                 [
                     'mata_kuliah_id' => $this->mk1->id,
                     'koordinator_id' => $this->dosen1->id,
-                    'verifikator_ids'=> [$this->dosen2->id],
                 ],
             ],
         ];
@@ -677,6 +808,16 @@ class KelompokVerifikasiTest extends TestCase
 
         $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Uji Synced Revoke')->first();
         $this->assertNotNull($kelompok);
+
+        $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
 
         // Verify initial state: dosen1 is koordinator in group, dosen2 is verifikator in group
         $this->assertDatabaseHas('kelompok_koordinator', [
@@ -1081,4 +1222,220 @@ class KelompokVerifikasiTest extends TestCase
         $errors = session('errors')->get('periode_id');
         $this->assertStringContainsString('Target periode sudah memiliki kelompok verifikasi', $errors[0]);
     }
+
+    public function test_koordinator_can_view_assigned_kelompok_verifikasi(): void
+    {
+        $payload = [
+            'nama'        => 'Kelompok Index Koordinator Test',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'DRAFT',
+            'mata_kuliah' => [
+                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id],
+                ['mata_kuliah_id' => $this->mk2->id, 'koordinator_id' => $this->dosen3->id],
+            ],
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
+
+        $response = $this->actingAs($this->koordinatorUser)
+            ->get(route('koordinator.kelompok-verifikasi.index'));
+
+        $response->assertStatus(200);
+        $props = $response->inertiaPage()['props'];
+        $this->assertNotEmpty($props['kelompokList']);
+        $kelompokItem = $props['kelompokList'][0];
+        $this->assertEquals('Kelompok Index Koordinator Test', $kelompokItem['nama']);
+        // Koordinator 1 only sees MK1 in mk_saya
+        $this->assertEquals(1, count($kelompokItem['mk_saya']));
+        $this->assertEquals($this->mk1->id, $kelompokItem['mk_saya'][0]['mata_kuliah_id']);
+    }
+
+    public function test_koordinator_cannot_assign_verifikators_for_unassigned_course(): void
+    {
+        $payload = [
+            'nama'        => 'Kelompok Unauthorized Assignment Test',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'DRAFT',
+            'mata_kuliah' => [
+                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id],
+                ['mata_kuliah_id' => $this->mk2->id, 'koordinator_id' => $this->dosen3->id],
+            ],
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
+
+        $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Unauthorized Assignment Test')->first();
+
+        // Koordinator 1 tries to assign verifikator for MK2 (which belongs to dosen3)
+        $response = $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk2->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
+
+        $response->assertSessionHasErrors(['mata_kuliah_assignments']);
+    }
+
+    public function test_superadmin_can_reset_active_group_to_draft(): void
+    {
+        $payload = [
+            'nama'        => 'Kelompok Reset Test',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'DRAFT',
+            'mata_kuliah' => [
+                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id],
+            ],
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
+
+        $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Reset Test')->first();
+
+        // Koordinator assigns verifikator -> group becomes ACTIVE
+        $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
+
+        $kelompok->refresh();
+        $this->assertEquals('ACTIVE', $kelompok->status);
+        $this->assertDatabaseHas('penugasan_verifikator', ['kelompok_id' => $kelompok->id, 'status' => 'ACTIVE']);
+
+        // Super Admin resets group
+        $response = $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.reset-verifikator', $kelompok->id));
+
+        $response->assertRedirect();
+        $kelompok->refresh();
+        $this->assertEquals('DRAFT', $kelompok->status);
+        $this->assertEquals(0, KelompokVerifikator::where('kelompok_id', $kelompok->id)->count());
+        $this->assertEquals(0, PenugasanVerifikator::where('kelompok_id', $kelompok->id)->count());
+    }
+
+    public function test_adding_course_preserves_existing_course_verifikators(): void
+    {
+        // 1. Create a group with MK1
+        $payload = [
+            'nama'        => 'Kelompok Preservasi Verifikator',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'DRAFT',
+            'mata_kuliah' => [
+                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id],
+            ],
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
+
+        $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Preservasi Verifikator')->first();
+
+        // 2. Koordinator 1 determines Verifikator Dosen 2 for MK1 -> group becomes ACTIVE
+        $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
+
+        $this->assertDatabaseHas('kelompok_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+        $this->assertDatabaseHas('penugasan_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+            'status'         => 'ACTIVE',
+        ]);
+
+        // 3. SuperAdmin updates group by adding MK2 (without providing verifikator_ids for existing MK)
+        $updatePayload = [
+            'nama'        => 'Kelompok Preservasi Verifikator',
+            'periode_id'  => $this->periode->id,
+            'mata_kuliah' => [
+                [
+                    'mata_kuliah_id'  => $this->mk1->id,
+                    'koordinator_ids' => [$this->dosen1->id],
+                ],
+                [
+                    'mata_kuliah_id'  => $this->mk2->id,
+                    'koordinator_ids' => [$this->dosen3->id],
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->put(route('superadmin.kelompok-verifikasi.update', $kelompok->id), $updatePayload);
+
+        $response->assertSessionHasNoErrors();
+
+        // 4. Assert: MK1's verifikator (Dosen 2) MUST NOT be deleted!
+        $this->assertDatabaseHas('kelompok_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+        $this->assertDatabaseHas('penugasan_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+            'status'         => 'ACTIVE',
+        ]);
+
+        // 5. Assert: MK2 is added and has koordinator dosen3
+        $this->assertDatabaseHas('kelompok_mata_kuliah', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk2->id,
+        ]);
+        $this->assertDatabaseHas('kelompok_koordinator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk2->id,
+            'dosen_id'       => $this->dosen3->id,
+        ]);
+
+        // 6. Assert: Koordinator Dosen 3 can now assign verifikators to the newly added MK2
+        $kelompok->refresh();
+        $this->assertTrue($kelompok->canAssignVerifikator());
+
+        $assignResponse = $this->actingAs($this->dosen3User)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk2->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
+
+        $assignResponse->assertSessionHasNoErrors();
+
+        // Assert both MK1 and MK2 have their verifiers
+        $this->assertDatabaseHas('kelompok_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+        $this->assertDatabaseHas('kelompok_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk2->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+    }
 }
+

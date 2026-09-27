@@ -39,7 +39,8 @@ class CheckRole
         $dosen = $user->dosen;
         if ($dosen) {
             $hasActiveVerif = \App\Models\PenugasanVerifikator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
-            $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();
+            $hasActiveKoor = \App\Models\PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists()
+                || \App\Models\KelompokKoordinator::where('dosen_id', $dosen->id)->exists();
 
             if (in_array('VERIFIKATOR', $roles) && $hasActiveVerif) {
                 return $next($request);

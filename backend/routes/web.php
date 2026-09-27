@@ -116,6 +116,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
         Route::post('kelompok-verifikasi/{kelompok_verifikasi}/deactivate', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'deactivate'])->name('kelompok-verifikasi.deactivate');
         Route::post('kelompok-verifikasi/{kelompok_verifikasi}/remove-koordinator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'removeKoordinator'])->name('kelompok-verifikasi.remove-koordinator');
         Route::post('kelompok-verifikasi/{kelompok_verifikasi}/remove-verifikator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'removeVerifikator'])->name('kelompok-verifikasi.remove-verifikator');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/reset-verifikator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'resetToMenungguVerifikator'])->name('kelompok-verifikasi.reset-verifikator');
         Route::resource('kelompok-verifikasi', \App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class);
     });
 
@@ -138,6 +139,10 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':KOORDINATOR
         // Registered after the resource so the literal "soal/create" route above still wins that match.
         Route::get('soal/{soal}',      [\App\Http\Controllers\Koordinator\SoalController::class, 'show'])->name('soal.show');
         Route::get('soal/{soal}/edit', [\App\Http\Controllers\Koordinator\SoalController::class, 'edit'])->name('soal.edit');
+
+        // Kelompok Verifikasi — koordinator menentukan verifikator soal
+        Route::get('kelompok-verifikasi', [\App\Http\Controllers\Koordinator\KelompokVerifikasiController::class, 'index'])->name('kelompok-verifikasi.index');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/tentukan-verifikator', [\App\Http\Controllers\Koordinator\KelompokVerifikasiController::class, 'tentukanVerifikator'])->name('kelompok-verifikasi.tentukan-verifikator');
 
         // Upload Revisi
         Route::post('revisi/{soal}', [\App\Http\Controllers\Koordinator\RevisiController::class, 'store'])->name('revisi.store')->middleware('throttle:30,1');

@@ -24,7 +24,8 @@ import { showConfirm } from '@/Utils/sweetalert';
 import { formatDate } from '@/Utils/date';
 
 const STATUS_CONFIG = {
-    DRAFT:    { label: 'Draf',      bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200/60', dot: 'bg-amber-500' },
+    MENUNGGU_VERIFIKATOR: { label: 'Menunggu Verifikator', bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200/60', dot: 'bg-orange-500' },
+    DRAFT:    { label: 'Draf',      bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200/60', dot: 'bg-amber-400' },
     ACTIVE:   { label: 'Aktif',     bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200/60', dot: 'bg-emerald-500' },
     INACTIVE: { label: 'Nonaktif',  bg: 'bg-gray-100',   text: 'text-gray-600',    border: 'border-gray-200/60', dot: 'bg-gray-400' },
     CLOSED:   { label: 'Selesai',   bg: 'bg-slate-100',  text: 'text-slate-600',   border: 'border-slate-300/60', dot: 'bg-slate-500' },
@@ -58,7 +59,7 @@ function StatCard({ icon: Icon, iconBg, iconColor, value, label, sublabel }) {
 export default function KelompokVerifikasiIndex({
     list = { data: [], current_page: 1, per_page: 10, total: 0, last_page: 1, links: [] }, 
     kelompokList, 
-    stats = { total: 0, active: 0, draft: 0, inactive: 0, closed: 0 }, 
+    stats = { total: 0, active: 0, menunggu_verifikator: 0, draft: 0, inactive: 0, closed: 0 }, 
     periodeAll = [], 
     periodeList = [], 
     tahunAjaranAll = [], 
@@ -173,6 +174,18 @@ export default function KelompokVerifikasiIndex({
             if (result.isConfirmed) {
                 router.post(`/superadmin/kelompok-verifikasi/${item.id}/deactivate`, {}, { preserveScroll: true });
             }
+        } else if (type === 'reset-verifikator') {
+            const result = await showConfirm({
+                title: 'Reset Verifikator?',
+                text: `Reset kelompok "${item.nama}" kembali ke status Menunggu Verifikator? Semua data verifikator akan dihapus dan koordinator MK harus menentukan ulang.`,
+                icon: 'warning',
+                confirmButtonText: 'Ya, Reset',
+                confirmButtonColor: '#d97706',
+            });
+            if (result.isConfirmed) {
+                setOpenMenuId(null);
+                router.post(`/superadmin/kelompok-verifikasi/${item.id}/reset-verifikator`, {}, { preserveScroll: true });
+            }
         }
 
     };
@@ -226,11 +239,11 @@ export default function KelompokVerifikasiIndex({
                     />
                     <StatCard
                         icon={Clock}
-                        iconBg="bg-amber-50"
-                        iconColor="text-amber-600"
-                        value={stats?.draft}
-                        label="DRAF"
-                        sublabel="Belum Diaktifkan"
+                        iconBg="bg-orange-50"
+                        iconColor="text-orange-500"
+                        value={(stats?.menunggu_verifikator ?? 0) + (stats?.draft ?? 0)}
+                        label="MENUNGGU VERIFIKATOR"
+                        sublabel="Koordinator Belum Submit"
                     />
                     <StatCard
                         icon={Lock}
@@ -290,10 +303,11 @@ export default function KelompokVerifikasiIndex({
                                 className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all bg-gray-50/50 hover:bg-white cursor-pointer"
                             >
                                 <option value="">Semua Status</option>
-                                <option value="DRAFT">Draf</option>
+                                <option value="MENUNGGU_VERIFIKATOR">Menunggu Verifikator</option>
                                 <option value="ACTIVE">Aktif</option>
                                 <option value="INACTIVE">Nonaktif</option>
                                 <option value="CLOSED">Selesai (Closed)</option>
+                                <option value="DRAFT">Draf (Lama)</option>
                             </select>
                         </div>
                     </div>
@@ -397,7 +411,12 @@ export default function KelompokVerifikasiIndex({
 
                                                 {/* Verifikator */}
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
-                                                    {verifikatorCount === 0 ? (
+                                                    {item.status === 'MENUNGGU_VERIFIKATOR' ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 text-orange-600 font-bold rounded-lg text-[11px] border border-orange-100 whitespace-nowrap">
+                                                            <Clock className="w-3.5 h-3.5 shrink-0" />
+                                                            <span>Menunggu Koordinator</span>
+                                                        </span>
+                                                    ) : verifikatorCount === 0 ? (
                                                         <span className="text-gray-400 italic">0 Orang</span>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg text-[11px] border border-blue-100 whitespace-nowrap">
@@ -523,6 +542,20 @@ export default function KelompokVerifikasiIndex({
                                     <Pencil className="w-3.5 h-3.5 text-gray-500" />
                                     Ubah Kelompok
                                 </Link>
+                            </>
+                        )}
+
+                        {/* Reset Verifikator — hanya untuk ACTIVE */}
+                        {activeItem.status === 'ACTIVE' && (
+                            <>
+                                <div className="my-1 border-t border-gray-100" />
+                                <button
+                                    onClick={() => { handleAction(activeItem, 'reset-verifikator'); }}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-orange-600 hover:bg-orange-50 transition-colors cursor-pointer"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    Reset Verifikator
+                                </button>
                             </>
                         )}
                     </div>,

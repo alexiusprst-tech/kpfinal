@@ -16,7 +16,8 @@ import {
     Save,
     Shield,
     X,
-    AlertCircle
+    AlertCircle,
+    RotateCcw
 } from 'lucide-react';
 
 import SearchableSelect from '@/Components/SearchableSelect';
@@ -419,6 +420,17 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
             if (result.isConfirmed) {
                 router.post(`/superadmin/kelompok-verifikasi/${kelompok.id}/deactivate`, {}, { preserveScroll: true });
             }
+        } else if (type === 'reset-verifikator') {
+            const result = await showConfirm({
+                title: 'Reset Verifikator?',
+                text: `Reset kelompok "${kelompok.nama}" kembali ke status Menunggu Verifikator? Semua data verifikator akan dihapus dan koordinator MK harus menentukan ulang.`,
+                icon: 'warning',
+                confirmButtonText: 'Ya, Reset',
+                confirmButtonColor: '#d97706',
+            });
+            if (result.isConfirmed) {
+                router.post(`/superadmin/kelompok-verifikasi/${kelompok.id}/reset-verifikator`, {}, { preserveScroll: true });
+            }
         }
     };
 
@@ -506,6 +518,13 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-md shadow-amber-600/20 transition-all cursor-pointer"
                                 >
                                     <PowerOff className="w-3.5 h-3.5" /> Nonaktifkan
+                                </button>
+                                <button
+                                    onClick={() => handleAction('reset-verifikator')}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 text-xs font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
+                                    title="Reset verifikator dan kembalikan ke status Menunggu Verifikator"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5" /> Reset Verifikator
                                 </button>
                             </>
                         )}

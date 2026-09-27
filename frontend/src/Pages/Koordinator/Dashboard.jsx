@@ -15,7 +15,8 @@ import {
     Activity as ActivityIcon,
     ShieldCheck,
     Calendar,
-    Clock
+    Clock,
+    FolderKanban
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import StatCard from '@/Components/StatCard';
@@ -59,7 +60,7 @@ function relativeTime(dateStr) {
 
 const PER_PAGE = 6;
 
-export default function KoordinatorDashboard({ activePeriod, deadline, stats, mataKuliahList = [], attention = [], verifikators = [], cloPloOverview = [], activity = [], noAssignmentMessage }) {
+export default function KoordinatorDashboard({ activePeriod, deadline, stats, mataKuliahList = [], attention = [], verifikators = [], cloPloOverview = [], activity = [], noAssignmentMessage, kelompokButuhVerifikator = [] }) {
     const { auth, notifications } = usePage().props;
     const notifCount = notifications?.count || 0;
     const userName = auth?.user?.name || 'Koordinator';
@@ -180,6 +181,35 @@ export default function KoordinatorDashboard({ activePeriod, deadline, stats, ma
                         </div>
                     </div>
                 </div>
+
+                {/* Banner Kelompok Butuh Verifikator */}
+                {kelompokButuhVerifikator && kelompokButuhVerifikator.length > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-start gap-3.5">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-700">
+                                <FolderKanban className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-sm font-black text-amber-900">Perhatian: Penentuan Tim Verifikator Soal</h3>
+                                    <span className="px-2 py-0.5 rounded-full bg-amber-200/70 text-amber-800 text-[10px] font-extrabold animate-pulse">
+                                        {kelompokButuhVerifikator.length} Kelompok
+                                    </span>
+                                </div>
+                                <p className="text-xs text-amber-800/90 font-medium mt-0.5">
+                                    Anda ditugaskan sebagai Koordinator MK pada {kelompokButuhVerifikator.length} kelompok verifikasi yang membutuhkan penentuan verifikator soal. Segera tentukan verifikator agar kelompok dapat aktif.
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            href="/koordinator/kelompok-verifikasi"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer flex-shrink-0 self-start sm:self-auto"
+                        >
+                            <span>Tentukan Verifikator</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                )}
 
                 {/* Summary Cards (5 Cards Grid - Status & Progress Only) */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
