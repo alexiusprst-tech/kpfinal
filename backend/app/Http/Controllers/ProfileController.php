@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -110,6 +111,8 @@ class ProfileController extends Controller
             Setting::set('kaprodi_nama', trim($validated['kaprodi_nama']));
         }
 
+        AuditLog::record($user->id, 'UPDATE_PROFILE', 'User', $user->id, null, ['name' => $validated['name']]);
+
         return back()->with('success', 'Profil berhasil diperbarui.');
     }
 
@@ -140,6 +143,8 @@ class ProfileController extends Controller
             'password'             => Hash::make($validated['password']),
             'must_change_password' => false,
         ]);
+
+        AuditLog::record($user->id, 'CHANGE_PASSWORD', 'User', $user->id);
 
         if ($isEnforced) {
             return redirect('/dashboard')->with('success', 'Password berhasil diperbarui. Selamat datang di portal Sistem Verifikasi Soal!');
@@ -190,6 +195,8 @@ class ProfileController extends Controller
                 Setting::set('kaprodi_nama', trim($request->input('kaprodi_nama')));
             }
 
+            AuditLog::record($user->id, 'UPDATE_SIGNATURE', 'KaProdi', $user->id);
+
             return back()->with('success', 'Tanda tangan Ka. Prodi berhasil disimpan.');
         }
 
@@ -205,6 +212,8 @@ class ProfileController extends Controller
         // Store new
         $path = $request->file('tanda_tangan')->store('tanda-tangan', 'public');
         $dosen->update(['tanda_tangan' => $path]);
+
+        AuditLog::record($user->id, 'UPDATE_SIGNATURE', 'Dosen', $dosen->id);
 
         return back()->with('success', 'Tanda tangan berhasil diperbarui.');
     }
@@ -233,6 +242,8 @@ class ProfileController extends Controller
 
             Setting::set('kaprodi_tanda_tangan', null);
 
+            AuditLog::record($user->id, 'DELETE_SIGNATURE', 'KaProdi', $user->id);
+
             return back()->with('success', 'Tanda tangan Ka. Prodi berhasil dihapus.');
         }
 
@@ -245,6 +256,8 @@ class ProfileController extends Controller
         }
 
         $dosen->update(['tanda_tangan' => null]);
+
+        AuditLog::record($user->id, 'DELETE_SIGNATURE', 'Dosen', $dosen->id);
 
         return back()->with('success', 'Tanda tangan berhasil dihapus.');
     }
@@ -277,6 +290,8 @@ class ProfileController extends Controller
 
         $user->update(['avatar' => $path]);
 
+        AuditLog::record($user->id, 'UPDATE_AVATAR', 'User', $user->id);
+
         return back()->with('success', 'Foto profil berhasil diperbarui.');
     }
 
@@ -293,6 +308,8 @@ class ProfileController extends Controller
         }
 
         $user->update(['avatar' => null]);
+
+        AuditLog::record($user->id, 'DELETE_AVATAR', 'User', $user->id);
 
         return back()->with('success', 'Foto profil berhasil dihapus.');
     }

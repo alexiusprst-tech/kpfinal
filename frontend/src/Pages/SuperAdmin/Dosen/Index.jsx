@@ -98,7 +98,7 @@ export default function Index({ dosenList, filters }) {
     const handleEditOpen = (dosen) => {
         setEditDosen(dosen);
         editForm.setData({
-            kode_dosen: dosen.kode_dosen,
+            kode_dosen: dosen.kode_dosen || '',
             nip: dosen.nip || '',
             nama_lengkap: dosen.nama_lengkap,
             email: dosen.email || '',
@@ -141,7 +141,7 @@ export default function Index({ dosenList, filters }) {
         if (!dosen) return;
         const result = await showConfirm({
             title: 'Hapus Data Dosen?',
-            text: `Apakah Anda yakin ingin menghapus data dosen "${dosen?.nama_lengkap}" (${dosen?.kode_dosen})? Semua riwayat penugasan juga akan terhapus.`,
+            text: `Apakah Anda yakin ingin menghapus data dosen "${dosen?.nama_lengkap}"${dosen?.kode_dosen ? ` (${dosen.kode_dosen})` : ''}? Semua riwayat penugasan juga akan terhapus.`,
             icon: 'warning',
             confirmButtonText: 'Ya, Hapus Data',
             confirmButtonColor: '#CD202E',
@@ -184,117 +184,101 @@ export default function Index({ dosenList, filters }) {
 
             {/* Header Banner */}
             <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10 mb-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
-                            <Users className="w-3.5 h-3.5" />
-                            <span>Data Master Dosen</span>
-                        </div>
-                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Manajemen Dosen</h1>
-                        <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
-                            Kelola data master dosen, hak akses penugasan, dan pencabutan peran secara real-time.
-                        </p>
+                <div className="space-y-1">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Data Master Dosen</span>
                     </div>
-                    <button
-                        onClick={() => setIsCreateOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white text-[#9E1B28] rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer hover:bg-rose-50 shrink-0"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>Tambah Dosen</span>
-                    </button>
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Manajemen Dosen</h1>
+                    <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                        Kelola data master dosen, hak akses penugasan, dan pencabutan peran secara real-time.
+                    </p>
                 </div>
             </div>
 
             {/* Flash Messages */}
 
             {/* Filter & Real-Time Search Bar */}
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/70 shadow-sm mb-6 space-y-3">
-                <div className="flex flex-col md:flex-row gap-3 justify-between items-center">
-                    {/* Real-Time Search Input */}
-                    <div className="relative w-full md:w-96">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Cari nama, kode dosen, atau email secara real-time..."
-                            className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] transition-all font-medium"
-                        />
-                        {search && (
-                            <button
-                                onClick={() => setSearch('')}
-                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 transition-colors"
-                                title="Bersihkan pencarian"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Filter Badges & Reset Button */}
-                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold mr-1">
-                            <Filter className="w-3.5 h-3.5 text-[#9E1B28]" />
-                            <span>Filter:</span>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200/70 shadow-sm mb-6 space-y-3">
+                <div className="flex flex-col lg:flex-row gap-3 justify-between items-stretch lg:items-center">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 flex-1">
+                        {/* Real-Time Search Input */}
+                        <div className="relative flex-1 min-w-[200px] max-w-sm">
+                            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Cari nama, kode dosen, atau email secara real-time..."
+                                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] transition-all font-medium"
+                            />
+                            {search && (
+                                <button
+                                    onClick={() => setSearch('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                                    title="Bersihkan pencarian"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
 
-                        {/* Kategori Filter */}
-                        <div className="inline-flex bg-slate-100 p-1 rounded-xl gap-1">
-                            <button
-                                onClick={() => setKategori('')}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${!kategori ? 'bg-white text-[#9E1B28] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                        {/* Kategori Filter Dropdown */}
+                        <div className="min-w-[140px]">
+                            <select
+                                value={kategori}
+                                onChange={(e) => setKategori(e.target.value)}
+                                className={`w-full px-3 py-2.5 bg-slate-50 border rounded-xl text-xs font-bold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] ${
+                                    kategori
+                                        ? 'border-[#9E1B28] text-[#9E1B28] bg-rose-50/40'
+                                        : 'border-slate-200 text-slate-700 hover:bg-slate-100/70'
+                                }`}
                             >
-                                Semua Kategori
-                            </button>
-                            <button
-                                onClick={() => setKategori('Dosen Tetap')}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${kategori === 'Dosen Tetap' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-                            >
-                                Dosen Tetap
-                            </button>
-                            <button
-                                onClick={() => setKategori('LB')}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${kategori === 'LB' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-                            >
-                                LB
-                            </button>
+                                <option value="">Semua Kategori</option>
+                                <option value="Dosen Tetap">Dosen Tetap</option>
+                                <option value="LB">LB (Luar Biasa)</option>
+                            </select>
                         </div>
 
-                        {/* Status Filter */}
-                        <div className="inline-flex bg-slate-100 p-1 rounded-xl gap-1">
-                            <button
-                                onClick={() => setStatus('')}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${!status ? 'bg-white text-[#9E1B28] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                        {/* Status Filter Dropdown */}
+                        <div className="min-w-[130px]">
+                            <select
+                                value={status}
+                                onChange={(e) => setStatus(e.target.value)}
+                                className={`w-full px-3 py-2.5 bg-slate-50 border rounded-xl text-xs font-bold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] ${
+                                    status
+                                        ? 'border-[#9E1B28] text-[#9E1B28] bg-rose-50/40'
+                                        : 'border-slate-200 text-slate-700 hover:bg-slate-100/70'
+                                }`}
                             >
-                                Semua Status
-                            </button>
-                            <button
-                                onClick={() => setStatus('ACTIVE')}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${status === 'ACTIVE' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-                            >
-                                Aktif
-                            </button>
-                            <button
-                                onClick={() => setStatus('INACTIVE')}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${status === 'INACTIVE' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-                            >
-                                Nonaktif
-                            </button>
+                                <option value="">Semua Status</option>
+                                <option value="ACTIVE">Aktif</option>
+                                <option value="INACTIVE">Nonaktif</option>
+                            </select>
                         </div>
 
                         {(search || kategori || status) && (
                             <button
                                 onClick={handleResetFilters}
-                                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors cursor-pointer"
+                                className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors cursor-pointer shrink-0"
                             >
                                 Reset Filter
                             </button>
                         )}
                     </div>
+
+                    {/* Action Button: Tambah Dosen */}
+                    <button
+                        onClick={() => setIsCreateOpen(true)}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-bold shadow-sm shadow-red-900/10 transition-all cursor-pointer shrink-0"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Tambah Dosen</span>
+                    </button>
                 </div>
 
                 {/* Active Filter Indicators & Total Count */}
-                <div className="flex items-center justify-between text-xs text-slate-500 font-semibold pt-1 border-t border-slate-100">
+                <div className="flex items-center justify-between text-xs text-slate-500 font-semibold pt-2 border-t border-slate-100">
                     <div>
                         Menampilkan <strong className="text-[#9E1B28] font-extrabold">{dosenList.from || 0} - {dosenList.to || 0}</strong> dari <strong className="text-slate-800 font-extrabold">{dosenList.total}</strong> data dosen
                         {(search || kategori || status) && <span className="text-slate-400 font-normal"> (hasil filter)</span>}
@@ -326,7 +310,9 @@ export default function Index({ dosenList, filters }) {
                                     return (
                                         <tr key={dosen.id} className="hover:bg-slate-50/80 transition-colors">
                                             <td className="p-4 whitespace-nowrap">
-                                                <div className="font-bold text-[#9E1B28] text-xs">{dosen.kode_dosen}</div>
+                                                <div className="font-bold text-[#9E1B28] text-xs">
+                                                    {dosen.kode_dosen || <span className="text-slate-400 font-normal italic">Belum ada kode</span>}
+                                                </div>
                                                 {dosen.nip ? (
                                                     <div className="text-[11px] text-slate-400 font-medium tracking-tight">NIP: {dosen.nip}</div>
                                                 ) : (
@@ -477,20 +463,24 @@ export default function Index({ dosenList, filters }) {
 
                         <form onSubmit={handleCreateSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">Kode Dosen</label>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    Kode Dosen <span className="text-slate-400 font-normal">(Opsional)</span>
+                                </label>
                                 <input
                                     type="text"
                                     value={createForm.data.kode_dosen}
                                     onChange={(e) => createForm.setData('kode_dosen', e.target.value)}
                                     placeholder="Contoh: DSN006"
-                                    required
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {createForm.errors.kode_dosen && <p className="text-[10px] text-red-600 mt-1">{createForm.errors.kode_dosen}</p>}
+                                <p className="text-[10px] text-slate-400 mt-1">Dapat dikosongkan jika belum tersedia untuk dosen baru.</p>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">NIP (Nomor Induk Pegawai)</label>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    NIP (Nomor Induk Pegawai) <span className="text-slate-400 font-normal">(Opsional)</span>
+                                </label>
                                 <input
                                     type="text"
                                     value={createForm.data.nip}
@@ -499,7 +489,7 @@ export default function Index({ dosenList, filters }) {
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {createForm.errors.nip && <p className="text-[10px] text-red-600 mt-1">{createForm.errors.nip}</p>}
-                                <p className="text-[10px] text-slate-400 mt-1">Digunakan sebagai kata sandi login awal akun dosen.</p>
+                                <p className="text-[10px] text-slate-400 mt-1">Dapat dikosongkan jika belum tersedia. Jika diisi, akan menjadi kata sandi login awal akun.</p>
                             </div>
 
                             <div>
@@ -553,7 +543,7 @@ export default function Index({ dosenList, filters }) {
                                 {createForm.data.create_user && (
                                     <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2 animate-in fade-in duration-200">
                                         <p className="text-[11px] text-slate-600">
-                                            Password awal login: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[#9E1B28] font-bold">{createForm.data.nip ? createForm.data.nip : 'NIP Dosen (atau "password" jika NIP kosong)'}</code>
+                                            Password awal login: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[#9E1B28] font-bold">{createForm.data.nip ? createForm.data.nip : (createForm.data.kode_dosen ? createForm.data.kode_dosen : 'password')}</code>
                                         </p>
                                         <div className="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
                                             <strong>Aktivasi Pertama:</strong> Dosen baru akan langsung dialihkan ke form perubahan kata sandi saat pertama kali login.
@@ -604,19 +594,23 @@ export default function Index({ dosenList, filters }) {
 
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">Kode Dosen</label>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    Kode Dosen <span className="text-slate-400 font-normal">(Opsional)</span>
+                                </label>
                                 <input
                                     type="text"
                                     value={editForm.data.kode_dosen}
                                     onChange={(e) => editForm.setData('kode_dosen', e.target.value)}
-                                    required
+                                    placeholder="Contoh: DSN006"
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#9E1B28]"
                                 />
                                 {editForm.errors.kode_dosen && <p className="text-[10px] text-red-600 mt-1">{editForm.errors.kode_dosen}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">NIP (Nomor Induk Pegawai)</label>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    NIP (Nomor Induk Pegawai) <span className="text-slate-400 font-normal">(Opsional)</span>
+                                </label>
                                 <input
                                     type="text"
                                     value={editForm.data.nip}
@@ -721,7 +715,7 @@ export default function Index({ dosenList, filters }) {
                             <div>
                                 <h3 className="text-base font-extrabold text-[#1E293B]">Konfirmasi Hapus Dosen</h3>
                                 <p className="text-xs text-[#64748B] mt-1 leading-relaxed">
-                                    Apakah Anda yakin ingin menghapus data dosen <strong className="text-slate-800 font-bold">{deleteDosen.nama_lengkap}</strong> ({deleteDosen.kode_dosen})? Akun autentikasi terkait juga akan dinonaktifkan.
+                                    Apakah Anda yakin ingin menghapus data dosen <strong className="text-slate-800 font-bold">{deleteDosen.nama_lengkap}</strong>{deleteDosen.kode_dosen ? ` (${deleteDosen.kode_dosen})` : ''}? Akun autentikasi terkait juga akan dinonaktifkan.
                                 </p>
                             </div>
                         </div>
@@ -776,7 +770,7 @@ export default function Index({ dosenList, filters }) {
                         <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
                             <div>
                                 <span className="font-extrabold text-sm text-[#9E1B28] block">
-                                    {revokeDosen.kode_dosen}
+                                    {revokeDosen.kode_dosen || <span className="text-slate-400 font-normal italic text-xs">Tanpa Kode</span>}
                                 </span>
                                 <span className="text-xs font-bold text-gray-800">
                                     {revokeDosen.nama_lengkap}
@@ -940,7 +934,7 @@ export default function Index({ dosenList, filters }) {
                                 <div>
                                     <h2 className="text-base font-extrabold text-[#1E293B]">Ubah Password Dosen</h2>
                                     <p className="text-xs text-slate-500 font-medium">
-                                        {passwordDosen.nama_lengkap} ({passwordDosen.kode_dosen})
+                                        {passwordDosen.nama_lengkap}{passwordDosen.kode_dosen ? ` (${passwordDosen.kode_dosen})` : ''}
                                     </p>
                                     {passwordDosen.nip && (
                                         <p className="text-[11px] text-blue-600 font-semibold mt-0.5">

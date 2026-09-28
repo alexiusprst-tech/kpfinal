@@ -153,6 +153,10 @@ class SoalController extends Controller
             return redirect()->back()->with('error', 'Setiap PLO harus memiliki minimal satu CLO sebelum mengunggah soal.');
         }
 
+        if ($weightError = $this->validatePloCloWeights($ploCloData)) {
+            return redirect()->back()->with('error', $weightError);
+        }
+
         // Validate assignment: koordinator must actually be assigned to this MK for this periode.
         $assigned = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)
             ->where('mata_kuliah_id', $request->mata_kuliah_id)
@@ -344,7 +348,17 @@ class SoalController extends Controller
 
         if ($request->filled('plo_clo_data')) {
             $ploCloRaw = $request->input('plo_clo_data');
-            $data['plo_clo_data'] = is_string($ploCloRaw) ? json_decode($ploCloRaw, true) : $ploCloRaw;
+            $ploCloData = is_string($ploCloRaw) ? json_decode($ploCloRaw, true) : $ploCloRaw;
+
+            if (empty($ploCloData['plo']) || !is_array($ploCloData['plo'])) {
+                return redirect()->back()->with('error', 'Konfigurasi PLO & CLO tidak valid. Minimal tambahkan satu PLO dan satu CLO.');
+            }
+
+            if ($weightError = $this->validatePloCloWeights($ploCloData)) {
+                return redirect()->back()->with('error', $weightError);
+            }
+
+            $data['plo_clo_data'] = $ploCloData;
         }
 
         $soal->update($data);
@@ -510,6 +524,33 @@ class SoalController extends Controller
         }
 
         return $query->lockForUpdate()->exists();
+    }
+
+    /**
+     * Validate that, for every PLO with at least one mapped CLO, the CLO
+     * weights (bobot_lo) sum to exactly 100%. Returns an error message if
+     * invalid, or null if the weights are valid (or there's nothing to check).
+     */
+    private function validatePloCloWeights(array $ploCloData): ?string
+    {
+        foreach ($ploCloData['plo'] ?? [] as $ploItem) {
+            $ploCode = $ploItem['kode'] ?? 'PLO';
+            $cloList = $ploItem['clo'] ?? [];
+            if (empty($cloList)) {
+                continue;
+            }
+
+            $ploWeight = 0;
+            foreach ($cloList as $cloItem) {
+                $ploWeight += isset($cloItem['bobot_lo']) ? (int) str_replace('%', '', $cloItem['bobot_lo']) : 0;
+            }
+
+            if ($ploWeight !== 100) {
+                return "Total bobot LO untuk {$ploCode} harus tepat 100%. Saat ini: {$ploWeight}%.";
+            }
+        }
+
+        return null;
     }
 
     private function isAssignedKoordinator(?object $dosen, Soal $soal): bool

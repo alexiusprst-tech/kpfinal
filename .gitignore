@@ -21,6 +21,7 @@
 
 /frontend/node_modules
 /frontend/dist
+/backend/public/build
 /frontend/.env
 /frontend/.env.local
 /frontend/.env.*.local
@@ -36,3 +37,6 @@ node_modules/
 .phpunit.result.cache
 .DS_Store
 Thumbs.db
+AUDIT_*.md
+*.log
+

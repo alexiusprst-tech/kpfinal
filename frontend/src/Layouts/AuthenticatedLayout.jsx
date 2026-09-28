@@ -191,19 +191,6 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
         return () => clearInterval(interval);
     }, [user?.id, user?.role]);
 
-    const handleLogout = async (e) => {
-        e.preventDefault();
-        const result = await showConfirm({
-            title: "Konfirmasi Keluar",
-            text: "Apakah Anda yakin ingin keluar dari sistem verifikasi?",
-            icon: "question",
-            confirmButtonText: "Ya, Keluar",
-            cancelButtonText: "Batal",
-            confirmButtonColor: "#9E1B28",
-        });
-        if (result.isConfirmed) window.location.href = "/logout";
-    };
-
     const pathname = typeof window !== "undefined" ? window.location.pathname : "";
     const navSections = getNavSections(user, pathname);
     const homeItem = navSections.find((item) => item.type === "item") || navSections[0];
@@ -302,7 +289,7 @@ export default function AuthenticatedLayout({ children, title = "Beranda" }) {
             </aside>
 
             {/* MAIN CONTENT */}
-            <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            <main className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${user?.must_change_password_enforced ? 'overflow-hidden pointer-events-none select-none' : 'overflow-y-auto'}`}>
                 {children}
             </main>
 

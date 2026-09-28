@@ -298,7 +298,61 @@ class KelompokVerifikasiTest extends TestCase
 
         $kelompok->refresh();
         $this->assertEquals('INACTIVE', $kelompok->status);
-        $this->assertEquals(0, PenugasanKoordinator::where('kelompok_id', $kelompok->id)->count());
+        // History is preserved (RULES.md #8/#30) — the assignment row still exists, just no longer ACTIVE.
+        $this->assertEquals(0, PenugasanKoordinator::where('kelompok_id', $kelompok->id)->where('status', 'ACTIVE')->count());
+        $this->assertEquals(1, PenugasanKoordinator::where('kelompok_id', $kelompok->id)->where('status', 'ENDED')->count());
+    }
+
+    public function test_replacing_koordinator_preserves_old_assignment_as_history_instead_of_deleting_it(): void
+    {
+        $payload = [
+            'nama'        => 'Kelompok Ganti Koordinator',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'DRAFT',
+            'mata_kuliah' => [
+                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_id' => $this->dosen1->id],
+            ],
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
+
+        $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Ganti Koordinator')->first();
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.activate', $kelompok->id));
+
+        $originalAssignment = PenugasanKoordinator::where('kelompok_id', $kelompok->id)
+            ->where('dosen_id', $this->dosen1->id)
+            ->where('mata_kuliah_id', $this->mk1->id)
+            ->first();
+        $this->assertNotNull($originalAssignment);
+        $this->assertEquals('ACTIVE', $originalAssignment->status);
+
+        // Replace dosen1 with dosen3 as koordinator for the same MK
+        $updatePayload = [
+            'nama'        => 'Kelompok Ganti Koordinator',
+            'periode_id'  => $this->periode->id,
+            'mata_kuliah' => [
+                ['mata_kuliah_id' => $this->mk1->id, 'koordinator_ids' => [$this->dosen3->id]],
+            ],
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->put(route('superadmin.kelompok-verifikasi.update', $kelompok->id), $updatePayload);
+        $response->assertSessionHasNoErrors();
+
+        // The old assignment row must still exist (RULES.md #8/#30 — never hard-delete
+        // penugasan history), just no longer ACTIVE, instead of being deleted outright.
+        $originalAssignment->refresh();
+        $this->assertEquals('ENDED', $originalAssignment->status);
+
+        $this->assertDatabaseHas('penugasan_koordinator', [
+            'kelompok_id'    => $kelompok->id,
+            'dosen_id'       => $this->dosen3->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'status'         => 'ACTIVE',
+        ]);
     }
 
     public function test_superadmin_can_create_group_with_per_mk_verifikator_assignment(): void
@@ -1321,7 +1375,9 @@ class KelompokVerifikasiTest extends TestCase
         $kelompok->refresh();
         $this->assertEquals('DRAFT', $kelompok->status);
         $this->assertEquals(0, KelompokVerifikator::where('kelompok_id', $kelompok->id)->count());
-        $this->assertEquals(0, PenugasanVerifikator::where('kelompok_id', $kelompok->id)->count());
+        // History is preserved (RULES.md #8/#30) — the assignment row still exists, just no longer ACTIVE.
+        $this->assertEquals(0, PenugasanVerifikator::where('kelompok_id', $kelompok->id)->where('status', 'ACTIVE')->count());
+        $this->assertEquals(1, PenugasanVerifikator::where('kelompok_id', $kelompok->id)->where('status', 'ENDED')->count());
     }
 
     public function test_adding_course_preserves_existing_course_verifikators(): void
@@ -1435,6 +1491,89 @@ class KelompokVerifikasiTest extends TestCase
             'kelompok_id'    => $kelompok->id,
             'mata_kuliah_id' => $this->mk2->id,
             'dosen_id'       => $this->dosen2->id,
+        ]);
+    }
+
+    public function test_koordinator_can_edit_verifikators_on_active_kelompok(): void
+    {
+        $d4 = Dosen::create([
+            'id' => (string) Str::uuid(),
+            'kode_dosen' => 'D04',
+            'nama_lengkap' => 'Dosen Empat',
+            'email' => 'dosen4@test.com',
+            'status' => 'ACTIVE',
+        ]);
+
+        $payload = [
+            'nama'        => 'Kelompok Edit Verifikator Active',
+            'periode_id'  => $this->periode->id,
+            'status'      => 'DRAFT',
+            'mata_kuliah' => [
+                [
+                    'mata_kuliah_id'  => $this->mk1->id,
+                    'koordinator_ids' => [$this->dosen1->id],
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->superAdmin)
+            ->post(route('superadmin.kelompok-verifikasi.store'), $payload);
+
+        $kelompok = KelompokVerifikasi::where('nama', 'Kelompok Edit Verifikator Active')->first();
+
+        // Initial assignment with dosen2
+        $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$this->dosen2->id],
+                    ],
+                ],
+            ]);
+
+        $kelompok->refresh();
+        $this->assertEquals('ACTIVE', $kelompok->status);
+        $this->assertTrue($kelompok->canAssignVerifikator());
+
+        // Now edit verifikator to d4
+        $response = $this->actingAs($this->koordinatorUser)
+            ->post(route('koordinator.kelompok-verifikasi.tentukan-verifikator', $kelompok->id), [
+                'mata_kuliah_assignments' => [
+                    [
+                        'mata_kuliah_id'  => $this->mk1->id,
+                        'verifikator_ids' => [$d4->id],
+                    ],
+                ],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('koordinator.kelompok-verifikasi.index'));
+
+        // Check that verifikator in DB is updated to d4 and dosen2 is removed
+        $this->assertDatabaseHas('kelompok_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $d4->id,
+        ]);
+        $this->assertDatabaseMissing('kelompok_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+        ]);
+
+        // Check operational assignments are synced
+        $this->assertDatabaseHas('penugasan_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $d4->id,
+            'status'         => 'ACTIVE',
+        ]);
+        $this->assertDatabaseMissing('penugasan_verifikator', [
+            'kelompok_id'    => $kelompok->id,
+            'mata_kuliah_id' => $this->mk1->id,
+            'dosen_id'       => $this->dosen2->id,
+            'status'         => 'ACTIVE',
         ]);
     }
 }

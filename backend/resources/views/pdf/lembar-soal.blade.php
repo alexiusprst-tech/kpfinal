@@ -5,12 +5,15 @@
     <title>Lembar Soal</title>
     <style>
         @page {
-            margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+            margin-top: 1.5cm;
+            margin-left: 1.5cm;
+            margin-right: 1.5cm;
+            margin-bottom: 2.2cm;
         }
         body {
             font-family: 'Arial', 'Helvetica', sans-serif;
             color: #000;
-            line-height: 1.3;
+            line-height: 1.35;
             margin: 0;
             padding: 0;
             background-color: #ffffff;
@@ -28,6 +31,7 @@
             border-collapse: collapse;
             border: 1.5px solid #000000;
             margin-bottom: 12px;
+            page-break-inside: avoid;
         }
         .header-table td {
             border: 1.5px solid #000000;
@@ -77,6 +81,7 @@
             border-collapse: collapse;
             border: 1.5px solid #000000;
             margin-top: 10px;
+            page-break-inside: avoid;
         }
         .block-table td {
             border: 1.5px solid #000000;
@@ -101,6 +106,7 @@
             border-collapse: collapse;
             border: 1.5px solid #000000;
             margin-top: 10px;
+            page-break-inside: avoid;
         }
         .clo-table th {
             border: 1.5px solid #000000;
@@ -126,11 +132,19 @@
             font-weight: bold;
         }
 
+        /* CLO Header container */
+        .clo-header-block {
+            page-break-inside: avoid;
+            page-break-after: avoid;
+        }
+
         /* Soal Title */
         .soal-title-container {
             text-align: center;
             margin-top: 12px;
             margin-bottom: 12px;
+            page-break-after: avoid;
+            page-break-inside: avoid;
         }
         .soal-title-badge {
             background-color: #FFFF00;
@@ -142,28 +156,26 @@
         }
 
         /* Area Soal Box */
-        .area-soal-table {
-            width: 100%;
-            border-collapse: collapse;
-            border: 1.5px solid #000000;
-            margin-bottom: 15px;
-        }
-        .area-soal-td {
-            min-height: 120px;
+        .area-soal-box {
             border: 1.5px solid #000000;
             background-color: #ffffff;
-            vertical-align: top;
-            text-align: left;
             padding: 10px 12px;
             font-size: 11px;
             line-height: 1.5;
+            min-height: 100px;
+            margin-bottom: 15px;
+            page-break-inside: auto;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
-        /* Keep blocks together, avoid splitting CLO details and its area */
-        .clo-group {
-            page-break-inside: avoid;
+        .area-soal-content {
+            font-size: 11px;
+            line-height: 1.55;
+            text-align: justify;
         }
-        
+
+        /* PLO block */
         .plo-group {
             page-break-inside: avoid;
         }
@@ -171,17 +183,23 @@
         /* Footer positioning */
         .footer {
             position: fixed;
-            bottom: -1.2cm;
+            bottom: -1.4cm;
             left: 0;
             right: 0;
-            height: 1cm;
+            height: 0.8cm;
             font-size: 9.5px;
             color: #000000;
             font-family: 'Arial', sans-serif;
+            background-color: transparent;
         }
     </style>
 </head>
 <body>
+
+    <!-- Fixed Footer rendered on every page -->
+    <div class="footer">
+        Fakultas Rekayasa Industri – S1 Sistem Informasi
+    </div>
 
     <!-- Header info Form No -->
     <div class="form-no">Form No : {{ $form_no }}</div>
@@ -252,52 +270,45 @@
 
         <!-- Loop CLOs in PLO -->
         @foreach($ploItem['clo'] as $cloItem)
-            <div class="clo-group">
-                <!-- CLO Header Table -->
-                <table class="clo-table">
-                    <thead>
-                        <tr>
-                            <th>Course Learning outcomes</th>
-                            <th class="weight-col">Bobot LO</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span class="clo-code">{{ $cloItem['kode'] }}</span>
-                                <span>{{ $cloItem['deskripsi'] }}</span>
-                            </td>
-                            <td class="weight-col">{{ $cloItem['bobot_lo'] }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="clo-item">
+                <div class="clo-header-block">
+                    <!-- CLO Header Table -->
+                    <table class="clo-table">
+                        <thead>
+                            <tr>
+                                <th>Course Learning outcomes</th>
+                                <th class="weight-col">Bobot LO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <span class="clo-code">{{ $cloItem['kode'] }}</span>
+                                    <span>{{ $cloItem['deskripsi'] }}</span>
+                                </td>
+                                <td class="weight-col">{{ $cloItem['bobot_lo'] }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
 
-                <!-- Soal LOx Badge -->
-                <div class="soal-title-container">
-                    <div class="soal-title-badge">Soal LO{{ $question_number }}</div>
+                    <!-- Soal LOx Badge -->
+                    <div class="soal-title-container">
+                        <div class="soal-title-badge">Soal LO{{ $question_number }}</div>
+                    </div>
                 </div>
 
                 <!-- Area Soal Box -->
-                <table class="area-soal-table">
-                    <tr>
-                        <td class="area-soal-td">
-                            @if(!empty($cloItem['soal']))
-                                {!! nl2br(e($cloItem['soal'])) !!}
-                            @else
-                                &nbsp;
-                            @endif
-                        </td>
-                    </tr>
-                </table>
+                <div class="area-soal-box">
+                    @if(!empty($cloItem['soal']))
+                        <div class="area-soal-content">{!! nl2br(e($cloItem['soal'])) !!}</div>
+                    @else
+                        <div style="min-height: 100px;">&nbsp;</div>
+                    @endif
+                </div>
             </div>
             @php $question_number++; @endphp
         @endforeach
     @endforeach
-
-    <!-- Footer -->
-    <div class="footer">
-        Fakultas Rekayasa Industri – S1 Sistem Informasi
-    </div>
 
 </body>
 </html>

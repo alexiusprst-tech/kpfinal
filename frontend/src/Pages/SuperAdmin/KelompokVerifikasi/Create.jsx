@@ -187,7 +187,7 @@ export default function Create({
 
             return {
                 value: d.id,
-                label: `${d.kode_dosen} – ${d.nama_lengkap}`,
+                label: d.kode_dosen ? `${d.kode_dosen} – ${d.nama_lengkap}` : d.nama_lengkap,
                 disabled: isDisabled,
             };
         });
@@ -748,7 +748,7 @@ export default function Create({
                                                                 >
                                                                     <GraduationCap className="w-3 h-3 text-[#9E1B28] shrink-0" />
                                                                     <span className="truncate max-w-[200px]">
-                                                                        {kObj?.kode_dosen} - {kObj?.nama_lengkap}
+                                                                        {kObj?.kode_dosen ? `${kObj.kode_dosen} - ` : ''}{kObj?.nama_lengkap}
                                                                     </span>
                                                                     <button
                                                                         type="button"
@@ -861,6 +861,7 @@ export default function Create({
                             )}
                         </div>
                     )}
+
 
 
                     {/* STEP NAVIGATION BUTTONS */}

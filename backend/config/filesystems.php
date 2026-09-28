@@ -33,7 +33,11 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Shares its root with the 'private' disk below (used for all soal/
+            // revisi files) — 'serve' must stay false here too, otherwise
+            // Laravel auto-registers unauthenticated GET/PUT /storage/{path}
+            // routes directly on top of confidential exam documents.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

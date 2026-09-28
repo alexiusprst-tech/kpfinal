@@ -126,14 +126,16 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
     const handleAdd = (e) => {
         e.preventDefault(); setProcessing(true);
         router.post('/superadmin/kategori-soal', form, {
-            onFinish: () => { setProcessing(false); setShowAdd(false); setForm({ nama: '', deskripsi: '', status: 'ACTIVE' }); }
+            onSuccess: () => { setShowAdd(false); setForm({ nama: '', deskripsi: '', status: 'ACTIVE' }); },
+            onFinish: () => setProcessing(false),
         });
     };
 
     const handleEdit = (e) => {
         e.preventDefault(); setProcessing(true);
         router.put(`/superadmin/kategori-soal/${editItem.id}`, form, {
-            onFinish: () => { setProcessing(false); setEditItem(null); }
+            onSuccess: () => setEditItem(null),
+            onFinish: () => setProcessing(false),
         });
     };
 
@@ -147,8 +149,10 @@ export default function KategoriSoalIndex({ list, stats, filters, selectedKatego
             confirmButtonColor: '#CD202E',
         });
         if (result.isConfirmed) {
+            setProcessing(true);
             router.delete(`/superadmin/kategori-soal/${item.id}`, {
-                onFinish: () => { setDeleteItem(null); },
+                onSuccess: () => setDeleteItem(null),
+                onFinish: () => setProcessing(false),
             });
         }
     };

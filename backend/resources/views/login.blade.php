@@ -7,27 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Inter"', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        telkom: {
-                            red: '#CD202E',
-                            pink: '#DD586F',
-                            pinkHover: '#C9485F',
-                            dark: '#1E293B',
-                            maroon: '#9E1B28',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    @vite(['src/css/app.css'])
     <style>
         body {
             font-family: 'Inter', system-ui, sans-serif;
@@ -232,23 +212,7 @@
         </div>
     </div>
 
-    <!-- Toggle Password Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const passwordInput = document.getElementById('password');
-            const togglePasswordBtn = document.getElementById('togglePassword');
-            const eyeIcon = document.getElementById('eyeIcon');
-            const eyeOffIcon = document.getElementById('eyeOffIcon');
-
-            if (togglePasswordBtn && passwordInput) {
-                togglePasswordBtn.addEventListener('click', function () {
-                    const isPassword = passwordInput.getAttribute('type') === 'password';
-                    passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
-                    eyeIcon.classList.toggle('hidden', isPassword);
-                    eyeOffIcon.classList.toggle('hidden', !isPassword);
-                });
-            }
-        });
-    </script>
+    <!-- Toggle Password Script (moved to a same-origin file so it satisfies script-src 'self' in the CSP) -->
+    <script src="{{ asset('js/login.js') }}"></script>
 </body>
 </html>

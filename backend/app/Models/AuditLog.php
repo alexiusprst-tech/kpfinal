@@ -190,6 +190,12 @@ class AuditLog extends Model
                     'UPDATE_CLO'                   => $cloKode ? "Memperbarui CLO {$cloKode}" : "Memperbarui data CLO",
                     'DELETE_CLO'                   => $cloKode ? "Menghapus CLO {$cloKode}" : "Menghapus data CLO",
                     'CHANGE_PASSWORD'              => "Mengubah kata sandi akun",
+                    'RESET_DOSEN_PASSWORD'         => "Mereset kata sandi dosen",
+                    'UPDATE_PROFILE'               => "Memperbarui profil pengguna",
+                    'UPDATE_SIGNATURE'             => "Memperbarui tanda tangan digital",
+                    'DELETE_SIGNATURE'             => "Menghapus tanda tangan digital",
+                    'UPDATE_AVATAR'                => "Memperbarui foto profil",
+                    'DELETE_AVATAR'                => "Menghapus foto profil",
                     default                        => ucfirst(strtolower(str_replace('_', ' ', $action))),
                 };
             }

@@ -110,7 +110,7 @@ export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) 
                 forceFormData: true,
                 onError: (errs) => {
                     const msg = Object.values(errs)[0] || 'Gagal mengunggah berkas revisi.';
-                    showAlert('error', 'Gagal', msg);
+                    showAlert({ title: 'Gagal', text: msg, icon: 'error' });
                 }
             });
         }

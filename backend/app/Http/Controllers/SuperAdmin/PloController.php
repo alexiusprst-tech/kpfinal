@@ -217,8 +217,10 @@ class PloController extends Controller
     {
         $request->validate([
             'rows'              => ['required', 'array', 'min:1'],
-            'rows.*.kode_plo'   => ['required', 'string', 'max:50'],
-            'rows.*.deskripsi'  => ['required', 'string'],
+            'rows.*.kode_plo'   => ['nullable', 'string', 'max:50'],
+            'rows.*.deskripsi'  => ['nullable', 'string'],
+            // replace_missing: jika true, PLO di DB yang tidak ada di file ini akan di-soft-delete
+            'replace_missing'   => ['sometimes', 'boolean'],
         ]);
 
         $importLog = ImportLog::create([
@@ -263,12 +265,15 @@ class PloController extends Controller
                 $successCount++;
             }
 
-            // Soft-delete any PLOs that are NOT in the imported list
-            $plosToDelete = Plo::whereNotIn('kode_plo', $importedKodes)->get();
-            foreach ($plosToDelete as $plo) {
-                $oldValues = $plo->toArray();
-                $plo->delete();
-                AuditLog::record($request->user()->id, 'DELETE_PLO', 'Plo', $plo->id, $oldValues, null);
+            // Opsional full-replace: soft-delete PLO yang TIDAK ada di file import
+            // Hanya dilakukan jika replace_missing=true (opt-in, default: false agar import parsial aman)
+            if ($request->boolean('replace_missing', false)) {
+                $plosToDelete = Plo::whereNotIn('kode_plo', $importedKodes)->get();
+                foreach ($plosToDelete as $plo) {
+                    $oldValues = $plo->toArray();
+                    $plo->delete();
+                    AuditLog::record($request->user()->id, 'DELETE_PLO', 'Plo', $plo->id, $oldValues, null);
+                }
             }
 
             DB::commit();

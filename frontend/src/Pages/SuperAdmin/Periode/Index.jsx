@@ -25,7 +25,7 @@ import {
     Clock
 } from 'lucide-react';
 
-import { showConfirm } from '@/Utils/sweetalert';
+import { showAlert, showConfirm } from '@/Utils/sweetalert';
 import { formatDate as fmt, formatDateTime as fmtDT } from '@/Utils/date';
 
 // ─── Stat Card Widget (Kotak-kotak) ─────────────────────────────────────────
@@ -129,6 +129,7 @@ function PeriodeForm({ form, setForm, onSubmit, processing, isEdit }) {
                 </Field>
                 <Field label="Tanggal Selesai" required>
                     <input type="date" value={form.tanggal_selesai}
+                        min={form.tanggal_mulai || undefined}
                         onChange={e => setForm(f => ({ ...f, tanggal_selesai: e.target.value }))}
                         className={inputCls} required />
                 </Field>
@@ -209,9 +210,19 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
     const openAddModal = () => { setForm(emptyForm()); setShowAdd(true); };
 
     const handleAdd = (e) => {
-        e.preventDefault(); setProcessing(true);
+        e.preventDefault();
+        if (form.tanggal_selesai && form.tanggal_mulai && form.tanggal_selesai <= form.tanggal_mulai) {
+            showAlert({
+                title: 'Rentang Tanggal Tidak Valid',
+                text: 'Tanggal selesai harus setelah tanggal mulai periode.',
+                icon: 'warning',
+            });
+            return;
+        }
+        setProcessing(true);
         router.post('/superadmin/periode', form, {
-            onFinish: () => { setProcessing(false); setShowAdd(false); },
+            onSuccess: () => setShowAdd(false),
+            onFinish: () => setProcessing(false),
         });
     };
 
@@ -227,14 +238,23 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
     };
 
     const handleEdit = (e) => {
-        e.preventDefault(); setProcessing(true);
+        e.preventDefault();
+        if (form.tanggal_selesai && form.tanggal_mulai && form.tanggal_selesai <= form.tanggal_mulai) {
+            showAlert({
+                title: 'Rentang Tanggal Tidak Valid',
+                text: 'Tanggal selesai harus setelah tanggal mulai periode.',
+                icon: 'warning',
+            });
+            return;
+        }
+        setProcessing(true);
         router.put(`/superadmin/periode/${editItem.id}`, form, {
-            onFinish: () => {
-                setProcessing(false);
+            onSuccess: () => {
                 setEditItem(null);
                 if (viewItem?.periode?.id === editItem.id)
                     setViewItem(prev => ({ ...prev, periode: { ...prev.periode, ...form } }));
             },
+            onFinish: () => setProcessing(false),
         });
     };
 
@@ -305,23 +325,15 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
 
                 {/* ─── Header Banner ───────────────────────────────────────── */}
                 <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
-                                <Clock className="w-3.5 h-3.5" />
-                                <span>Periode Verifikasi</span>
-                            </div>
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Periode Verifikasi</h1>
-                            <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
-                                Kelola periode verifikasi soal pada setiap semester dan tahun ajaran.
-                            </p>
+                    <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Periode Verifikasi</span>
                         </div>
-                        <button
-                            onClick={openAddModal}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-white text-[#9E1B28] rounded-xl text-xs font-bold hover:bg-rose-50 transition-colors cursor-pointer flex-shrink-0 self-start sm:self-auto shadow-sm"
-                        >
-                            <Plus className="w-3.5 h-3.5" /> Tambah Periode
-                        </button>
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Periode Verifikasi</h1>
+                        <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                            Kelola periode verifikasi soal pada setiap semester dan tahun ajaran.
+                        </p>
                     </div>
                 </div>
 
@@ -333,28 +345,36 @@ export default function PeriodeIndex({ list, stats, filters, selectedPeriode }) 
                     <StatCard label="Selesai" value={stats.selesai} icon={Lock} badgeBg="bg-blue-600" />
                 </div>
 
-                {/* ─── Filters ────────────────────────────────────────────── */}
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="relative flex-1 min-w-[180px]">
-                        <Search className="w-3.5 h-3.5 text-gray-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        <input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Cari periode verifikasi..."
-                            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/10 focus:border-[#9E1B28]/30 text-gray-700 placeholder-gray-300"
-                        />
+                {/* ─── Filters & Action ───────────────────────────────────── */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+                        <div className="relative flex-1 min-w-[180px]">
+                            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="Cari periode verifikasi..."
+                                className="w-full pl-9 pr-3 py-2.5 text-xs border border-gray-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/10 focus:border-[#9E1B28]/30 text-gray-700 placeholder-gray-400"
+                            />
+                        </div>
+                        <select
+                            value={filters?.status || ''}
+                            onChange={e => applyFilters({ status: e.target.value })}
+                            className="text-xs border border-gray-200 bg-white rounded-xl px-3 py-2.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/10 cursor-pointer"
+                        >
+                            <option value="">Semua Status</option>
+                            <option value="DRAFT">Akan Datang</option>
+                            <option value="ACTIVE">Aktif</option>
+                            <option value="CLOSED">Selesai</option>
+                            <option value="INACTIVE">Nonaktif</option>
+                        </select>
                     </div>
-                    <select
-                        value={filters?.status || ''}
-                        onChange={e => applyFilters({ status: e.target.value })}
-                        className="text-sm border border-gray-200 bg-white rounded-xl px-3 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/10"
+                    <button
+                        onClick={openAddModal}
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-red-900/10 cursor-pointer shrink-0"
                     >
-                        <option value="">Semua Status</option>
-                        <option value="DRAFT">Akan Datang</option>
-                        <option value="ACTIVE">Aktif</option>
-                        <option value="CLOSED">Selesai</option>
-                        <option value="INACTIVE">Nonaktif</option>
-                    </select>
+                        <Plus className="w-3.5 h-3.5" /> Tambah Periode
+                    </button>
                 </div>
 
                 {/* ─── Table ──────────────────────────────────────────────── */}

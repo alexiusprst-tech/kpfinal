@@ -308,8 +308,33 @@ class SoalGeneratorController extends Controller
         $section->addTextBreak(1);
 
         // 4. Questions Body Area
-        $section->addText('NASKAH SOAL UJIAN:', ['bold' => true, 'size' => 9.5]);
-        $section->addTextBreak(2);
+        $section->addText('NASKAH SOAL UJIAN:', ['bold' => true, 'size' => 10]);
+        $section->addTextBreak(1);
+
+        $qNum = 1;
+        foreach ($plo as $pItem) {
+            foreach ($pItem['clo'] ?? [] as $cItem) {
+                $qTable = $section->addTable('ExamBlockTable');
+                $qTable->addRow();
+                $qHeaderCell = $qTable->addCell(9000, ['bgColor' => 'F2F2F2', 'valign' => 'center']);
+                $qHeaderCell->addText("Soal LO{$qNum} (" . ($cItem['kode'] ?? 'CLO') . " - Bobot: " . ($cItem['bobot_lo'] ?? '0%') . ")", ['bold' => true, 'size' => 9]);
+
+                $qTable->addRow();
+                $qBodyCell = $qTable->addCell(9000, ['valign' => 'top']);
+                if (!empty($cItem['soal'])) {
+                    $lines = explode("\n", $cItem['soal']);
+                    foreach ($lines as $line) {
+                        $qBodyCell->addText(rtrim($line), ['size' => 9]);
+                    }
+                } else {
+                    $qBodyCell->addText('[ AREA SOAL ]', ['color' => '888888', 'size' => 9]);
+                    $qBodyCell->addTextBreak(2);
+                }
+
+                $section->addTextBreak(1);
+                $qNum++;
+            }
+        }
 
         // Save to temporary file and stream as native .docx
         $tempFile = tempnam(sys_get_temp_dir(), 'lembar_soal_') . '.docx';

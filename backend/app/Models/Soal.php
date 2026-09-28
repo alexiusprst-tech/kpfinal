@@ -34,6 +34,10 @@ class Soal extends Model
         'plo_clo_data' => 'array',
     ];
 
+    protected $hidden = [
+        'file_path',
+    ];
+
     // ─── Status constants ───────────────────────────────────────────────────────
 
     const STATUS_DRAFT       = 'DRAFT';

@@ -301,11 +301,10 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
     }, [search, selectedPlo]);
 
     const handlePloSelect = (ploCode) => {
-        const newPlo = selectedPlo === ploCode ? '' : ploCode;
-        setSelectedPlo(newPlo);
+        setSelectedPlo(ploCode);
         const params = {};
         if (search.trim()) params.search = search.trim();
-        if (newPlo) params.plo = newPlo;
+        if (ploCode) params.plo = ploCode;
         router.get('/superadmin/clo', params, { preserveState: true, replace: true });
     };
     const [showAddModal, setShowAddModal] = useState(false);
@@ -364,7 +363,8 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
         e.preventDefault();
         setProcessing(true);
         router.post('/superadmin/clo', form, {
-            onFinish: () => { setProcessing(false); setShowAddModal(false); setForm({ kode_clo: '', deskripsi: '', bloom: '', plo_ids: [], mk_ids: [] }); }
+            onSuccess: () => { setShowAddModal(false); setForm({ kode_clo: '', deskripsi: '', bloom: '', plo_ids: [], mk_ids: [] }); },
+            onFinish: () => setProcessing(false),
         });
     };
 
@@ -372,14 +372,16 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
         e.preventDefault();
         setProcessing(true);
         router.put(`/superadmin/clo/${editItem.id}`, form, {
-            onFinish: () => { setProcessing(false); setEditItem(null); }
+            onSuccess: () => setEditItem(null),
+            onFinish: () => setProcessing(false),
         });
     };
 
     const handleDelete = () => {
         setProcessing(true);
         router.delete(`/superadmin/clo/${deleteItem.id}`, {
-            onFinish: () => { setProcessing(false); setDeleteItem(null); }
+            onSuccess: () => setDeleteItem(null),
+            onFinish: () => setProcessing(false),
         });
     };
 
@@ -538,32 +540,15 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
             <div className="space-y-6">
                 {/* Header Banner */}
                 <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
-                                <Activity className="w-3.5 h-3.5" />
-                                <span>Course Learning Outcomes</span>
-                            </div>
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Master CLO</h1>
-                            <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
-                                Kelola Course Learning Outcomes (CLO), Bloom Taxonomy, dan mapping ke PLO &amp; Mata Kuliah.
-                            </p>
+                    <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                            <Activity className="w-3.5 h-3.5" />
+                            <span>Course Learning Outcomes</span>
                         </div>
-                        <div className="flex gap-2 flex-wrap shrink-0">
-                            <a href="/superadmin/clo/template?v=4" className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white hover:bg-white/20 transition-all">
-                                <Download className="w-3.5 h-3.5" /> Template
-                            </a>
-                            <button onClick={openImportWizard} className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white cursor-pointer hover:bg-white/20 transition-all">
-                                <Upload className="w-3.5 h-3.5" /> Impor
-                            </button>
-                            <a href="/superadmin/clo/export" className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white hover:bg-white/20 transition-all">
-                                <Download className="w-3.5 h-3.5" /> Ekspor
-                            </a>
-                            <button onClick={() => { setForm({ kode_clo: '', deskripsi: '', bloom: '', plo_ids: [], mk_ids: [] }); setShowAddModal(true); }}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-white text-[#9E1B28] rounded-xl text-xs font-bold hover:bg-rose-50 transition-all shadow-sm">
-                                <Plus className="w-3.5 h-3.5" /> Tambah CLO
-                            </button>
-                        </div>
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Master CLO</h1>
+                        <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                            Kelola Course Learning Outcomes (CLO), Bloom Taxonomy, dan mapping ke PLO &amp; Mata Kuliah.
+                        </p>
                     </div>
                 </div>
 
@@ -598,61 +583,82 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
                     </div>
                 </div>
 
-                {/* Filter Bar & Quick PLO Pills */}
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-3">
-                    {/* Search Input */}
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Cari kode CLO, deskripsi, atau kata kunci..."
-                            className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] focus:bg-white outline-none transition-all"
-                        />
-                        {search && (
-                            <button
-                                type="button"
-                                onClick={() => setSearch('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
-                    </div>
+                {/* Filter & Action Bar */}
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs">
+                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+                        {/* Search & Filter PLO Dropdown */}
+                        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 flex-1">
+                            {/* Search Input */}
+                            <div className="relative w-full sm:w-80">
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    placeholder="Cari kode CLO, deskripsi, atau kata kunci..."
+                                    className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] focus:bg-white outline-none transition-all font-medium"
+                                />
+                                {search && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearch('')}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                        title="Bersihkan pencarian"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
 
-                    {/* Quick-Filter Horizontal Pills for PLO */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-100 scrollbar-thin">
-                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1 flex-shrink-0">
-                            <Layers className="w-3.5 h-3.5 text-[#9E1B28]" /> Filter PLO:
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => handlePloSelect('')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                                !selectedPlo
-                                    ? 'bg-[#9E1B28] text-white shadow-sm shadow-red-900/20'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
-                        >
-                            Semua ({totalMappings > 0 ? (totalMappings === cloList.total ? cloList.total : 37) : 37})
-                        </button>
-                        {allPlo.map(plo => {
-                            const isActive = selectedPlo === plo.kode_plo;
-                            return (
-                                <button
-                                    key={plo.id}
-                                    type="button"
-                                    onClick={() => handlePloSelect(plo.kode_plo)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
-                                        isActive
-                                            ? 'bg-[#9E1B28] text-white shadow-sm shadow-red-900/20'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            {/* Dropdown Filter PLO */}
+                            <div className="relative w-full sm:w-60">
+                                <select
+                                    value={selectedPlo}
+                                    onChange={e => handlePloSelect(e.target.value)}
+                                    className={`w-full px-3 py-2.5 bg-slate-50 border rounded-xl text-xs font-bold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] ${
+                                        selectedPlo
+                                            ? 'border-[#9E1B28] text-[#9E1B28] bg-rose-50/40'
+                                            : 'border-gray-200 text-slate-700 hover:bg-slate-100/70'
                                     }`}
                                 >
-                                    <span>{plo.kode_plo}</span>
+                                    <option value="">Semua PLO ({allPlo.length || 0})</option>
+                                    {allPlo.map(plo => (
+                                        <option key={plo.id} value={plo.kode_plo}>
+                                            {plo.kode_plo} {plo.deskripsi ? `- ${plo.deskripsi.length > 35 ? plo.deskripsi.substring(0, 35) + '...' : plo.deskripsi}` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Reset Filter Button */}
+                            {(search || selectedPlo) && (
+                                <button
+                                    onClick={() => {
+                                        setSearch('');
+                                        handlePloSelect('');
+                                    }}
+                                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors cursor-pointer shrink-0"
+                                >
+                                    Reset Filter
                                 </button>
-                            );
-                        })}
+                            )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2 flex-wrap shrink-0">
+                            <a href="/superadmin/clo/template?v=4" className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 border border-gray-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition-all shadow-xs" title="Unduh Template">
+                                <Download className="w-3.5 h-3.5 text-slate-500" /> Template
+                            </a>
+                            <button onClick={openImportWizard} className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 border border-gray-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer" title="Impor CLO">
+                                <Upload className="w-3.5 h-3.5 text-slate-500" /> Impor
+                            </button>
+                            <a href="/superadmin/clo/export" className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 border border-gray-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition-all shadow-xs" title="Ekspor CLO">
+                                <Download className="w-3.5 h-3.5 text-slate-500" /> Ekspor
+                            </a>
+                            <button onClick={() => { setForm({ kode_clo: '', deskripsi: '', bloom: '', plo_ids: [], mk_ids: [] }); setShowAddModal(true); }}
+                                className="flex items-center gap-1.5 px-4 py-2.5 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-red-900/10 cursor-pointer">
+                                <Plus className="w-3.5 h-3.5" /> Tambah CLO
+                            </button>
+                        </div>
                     </div>
                 </div>
 

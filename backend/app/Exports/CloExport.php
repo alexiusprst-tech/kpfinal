@@ -2,17 +2,21 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\SanitizesFormulaInjection;
 use App\Models\Clo;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class CloExport implements FromCollection, WithHeadings, WithStyles, ShouldAutoSize
+class CloExport implements FromCollection, WithHeadings, WithStyles, ShouldAutoSize, WithCustomValueBinder
 {
+    use SanitizesFormulaInjection;
+
     public function collection()
     {
         $clos = Clo::with(['plo', 'mataKuliah'])->orderBy('kode_clo', 'asc')->get();

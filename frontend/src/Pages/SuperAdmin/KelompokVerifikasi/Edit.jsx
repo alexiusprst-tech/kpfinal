@@ -199,7 +199,7 @@ export default function KelompokVerifikasiEdit({
 
             return {
                 value: d.id,
-                label: `${d.kode_dosen} – ${d.nama_lengkap}`,
+                label: d.kode_dosen ? `${d.kode_dosen} – ${d.nama_lengkap}` : d.nama_lengkap,
                 disabled: isDisabled,
             };
         });
@@ -358,19 +358,22 @@ export default function KelompokVerifikasiEdit({
 
                             <div className="space-y-1.5">
                                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                    Status Kelompok <span className="text-red-500">*</span>
+                                    Status Kelompok
                                 </label>
-                                <select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value)}
-                                    className="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] font-bold"
-                                    required
-                                >
-                                    <option value="DRAFT">DRAF (Belum diterbitkan ke dosen)</option>
-                                    <option value="ACTIVE">AKTIF (Penugasan aktif & berjalan)</option>
-                                    <option value="INACTIVE">NONAKTIF (Penugasan dinonaktifkan)</option>
-                                    <option value="CLOSED">SELESAI (Penugasan ditutup / selesai)</option>
-                                </select>
+                                <div className="flex items-center gap-2 p-2.5 text-xs border border-gray-200 rounded-xl bg-gray-50 font-bold text-gray-700">
+                                    <span className={`w-2.5 h-2.5 rounded-full ${
+                                        status === 'ACTIVE' ? 'bg-emerald-500' :
+                                        status === 'DRAFT' ? 'bg-amber-500' :
+                                        status === 'INACTIVE' ? 'bg-gray-400' : 'bg-red-500'
+                                    }`} />
+                                    <span>
+                                        {status === 'DRAFT' && 'DRAF (Belum diterbitkan ke dosen)'}
+                                        {status === 'ACTIVE' && 'AKTIF (Penugasan aktif & berjalan)'}
+                                        {status === 'INACTIVE' && 'NONAKTIF (Penugasan dinonaktifkan)'}
+                                        {status === 'CLOSED' && 'SELESAI (Penugasan ditutup / selesai)'}
+                                    </span>
+                                </div>
+                                <p className="text-[10px] text-gray-400">Status dikelola melalui tombol aksi di halaman detail kelompok.</p>
                             </div>
 
                             <div className="space-y-1.5 md:col-span-2">
@@ -559,7 +562,7 @@ export default function KelompokVerifikasiEdit({
                                                                 >
                                                                     <GraduationCap className="w-3 h-3 text-[#9E1B28] shrink-0" />
                                                                     <span className="truncate max-w-[200px]">
-                                                                        {kObj?.kode_dosen} - {kObj?.nama_lengkap}
+                                                                        {kObj?.kode_dosen ? `${kObj.kode_dosen} - ` : ''}{kObj?.nama_lengkap}
                                                                     </span>
                                                                     <button
                                                                         type="button"
@@ -604,7 +607,7 @@ export default function KelompokVerifikasiEdit({
                                                                 >
                                                                     <Shield className="w-3 h-3 shrink-0 text-blue-600" />
                                                                     <span className="truncate max-w-[200px]">
-                                                                        {vObj?.kode_dosen} - {vObj?.nama_lengkap}
+                                                                        {vObj?.kode_dosen ? `${vObj.kode_dosen} - ` : ''}{vObj?.nama_lengkap}
                                                                     </span>
                                                                 </span>
                                                             );

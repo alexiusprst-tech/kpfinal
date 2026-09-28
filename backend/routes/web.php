@@ -66,18 +66,19 @@ Route::get('/dashboard', function () {
     return redirect()->route('koordinator.dashboard');
 })->middleware('auth')->name('dashboard');
 
+
 // ─── SuperAdmin Routes ────────────────────────────────────────────────────────
 Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN'])
     ->prefix('superadmin')
     ->name('superadmin.')
     ->group(function () {
         Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/dashboard/export-laporan', [SuperAdminDashboardController::class, 'exportLaporan'])->name('dashboard.export-laporan');
+        Route::get('/dashboard/export-laporan', [SuperAdminDashboardController::class, 'exportLaporan'])->name('dashboard.export-laporan')->middleware('throttle:10,1');
         Route::get('/aktivitas', [\App\Http\Controllers\SuperAdmin\AktivitasController::class, 'index'])->name('aktivitas.index');
 
-        // Dosen
-        Route::post('dosen/{dosen}/cabut-penugasan', [\App\Http\Controllers\SuperAdmin\DosenController::class, 'cabutPenugasan'])->name('dosen.cabut-penugasan');
-        Route::post('dosen/{dosen}/reset-password', [\App\Http\Controllers\SuperAdmin\DosenController::class, 'resetPassword'])->name('dosen.reset-password');
+        // Dosen (action sensitif throttled lebih ketat)
+        Route::post('dosen/{dosen}/cabut-penugasan', [\App\Http\Controllers\SuperAdmin\DosenController::class, 'cabutPenugasan'])->name('dosen.cabut-penugasan')->middleware('throttle:20,1');
+        Route::post('dosen/{dosen}/reset-password', [\App\Http\Controllers\SuperAdmin\DosenController::class, 'resetPassword'])->name('dosen.reset-password')->middleware('throttle:10,1');
         Route::resource('dosen', \App\Http\Controllers\SuperAdmin\DosenController::class)->except(['create', 'edit', 'show']);
 
         // Mata Kuliah
@@ -87,16 +88,16 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
         Route::get('plo/export',     [\App\Http\Controllers\SuperAdmin\PloController::class, 'export'])->name('plo.export');
         Route::get('plo/template',   [\App\Http\Controllers\SuperAdmin\PloController::class, 'template'])->name('plo.template');
         Route::post('plo/import',    [\App\Http\Controllers\SuperAdmin\PloController::class, 'import'])->name('plo.import')->middleware('throttle:15,1');
-        Route::post('plo/preview',   [\App\Http\Controllers\SuperAdmin\PloController::class, 'preview'])->name('plo.preview');
-        Route::post('plo/confirm',   [\App\Http\Controllers\SuperAdmin\PloController::class, 'confirmImport'])->name('plo.confirm');
+        Route::post('plo/preview',   [\App\Http\Controllers\SuperAdmin\PloController::class, 'preview'])->name('plo.preview')->middleware('throttle:15,1');
+        Route::post('plo/confirm',   [\App\Http\Controllers\SuperAdmin\PloController::class, 'confirmImport'])->name('plo.confirm')->middleware('throttle:15,1');
         Route::resource('plo', \App\Http\Controllers\SuperAdmin\PloController::class)->except(['create', 'edit', 'show']);
 
         // CLO
         Route::get('clo/export',     [\App\Http\Controllers\SuperAdmin\CloController::class, 'export'])->name('clo.export');
         Route::get('clo/template',   [\App\Http\Controllers\SuperAdmin\CloController::class, 'template'])->name('clo.template');
         Route::post('clo/import',    [\App\Http\Controllers\SuperAdmin\CloController::class, 'import'])->name('clo.import')->middleware('throttle:15,1');
-        Route::post('clo/preview',   [\App\Http\Controllers\SuperAdmin\CloController::class, 'preview'])->name('clo.preview');
-        Route::post('clo/confirm',   [\App\Http\Controllers\SuperAdmin\CloController::class, 'confirmImport'])->name('clo.confirm');
+        Route::post('clo/preview',   [\App\Http\Controllers\SuperAdmin\CloController::class, 'preview'])->name('clo.preview')->middleware('throttle:15,1');
+        Route::post('clo/confirm',   [\App\Http\Controllers\SuperAdmin\CloController::class, 'confirmImport'])->name('clo.confirm')->middleware('throttle:15,1');
         Route::resource('clo', \App\Http\Controllers\SuperAdmin\CloController::class)->except(['create', 'edit', 'show']);
 
         // Kategori Soal
@@ -106,17 +107,17 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':SUPER_ADMIN
         // Tahun Ajaran deprecated — redirect to Periode Verifikasi
         Route::any('tahun-ajaran/{any?}', fn () => redirect()->route('periode.index'))->where('any', '.*');
 
-        Route::post('periode/{periode}/activate',  [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'activate'])->name('periode.activate');
-        Route::post('periode/{periode}/close',     [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'close'])->name('periode.close');
+        Route::post('periode/{periode}/activate',  [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'activate'])->name('periode.activate')->middleware('throttle:10,1');
+        Route::post('periode/{periode}/close',     [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'close'])->name('periode.close')->middleware('throttle:10,1');
         Route::resource('periode', \App\Http\Controllers\SuperAdmin\PeriodeController::class)->except(['create', 'edit', 'show', 'destroy']);
         Route::get('periode/{periode}', [\App\Http\Controllers\SuperAdmin\PeriodeController::class, 'show'])->name('periode.show');
 
         // Kelompok Verifikasi (Unified Assignment)
-        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/activate', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'activate'])->name('kelompok-verifikasi.activate');
-        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/deactivate', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'deactivate'])->name('kelompok-verifikasi.deactivate');
-        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/remove-koordinator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'removeKoordinator'])->name('kelompok-verifikasi.remove-koordinator');
-        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/remove-verifikator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'removeVerifikator'])->name('kelompok-verifikasi.remove-verifikator');
-        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/reset-verifikator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'resetToMenungguVerifikator'])->name('kelompok-verifikasi.reset-verifikator');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/activate', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'activate'])->name('kelompok-verifikasi.activate')->middleware('throttle:20,1');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/deactivate', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'deactivate'])->name('kelompok-verifikasi.deactivate')->middleware('throttle:20,1');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/remove-koordinator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'removeKoordinator'])->name('kelompok-verifikasi.remove-koordinator')->middleware('throttle:20,1');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/remove-verifikator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'removeVerifikator'])->name('kelompok-verifikasi.remove-verifikator')->middleware('throttle:20,1');
+        Route::post('kelompok-verifikasi/{kelompok_verifikasi}/reset-verifikator', [\App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class, 'resetToMenungguVerifikator'])->name('kelompok-verifikasi.reset-verifikator')->middleware('throttle:20,1');
         Route::resource('kelompok-verifikasi', \App\Http\Controllers\SuperAdmin\KelompokVerifikasiController::class);
     });
 
@@ -182,15 +183,15 @@ Route::middleware(['auth', \App\Http\Middleware\CheckRole::class . ':VERIFIKATOR
 Route::middleware(['auth'])->group(function () {
     Route::put('password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])->name('password.update')->middleware('throttle:6,1');
     Route::post('notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'read'])->name('notifications.read');
-    Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'readAll'])->name('notifications.read-all')->middleware('throttle:30,1');
 
     // Profile
     Route::get('profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::put('profile', [\App\Http\Controllers\ProfileController::class, 'updateProfile'])->name('profile.update');
-    Route::post('profile/photo', [\App\Http\Controllers\ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
+    Route::post('profile/photo', [\App\Http\Controllers\ProfileController::class, 'updatePhoto'])->name('profile.photo.update')->middleware('throttle:15,1');
     Route::delete('profile/photo', [\App\Http\Controllers\ProfileController::class, 'deletePhoto'])->name('profile.photo.delete');
     Route::post('profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password')->middleware('throttle:6,1');
-    Route::post('profile/signature', [\App\Http\Controllers\ProfileController::class, 'updateSignature'])->name('profile.signature');
+    Route::post('profile/signature', [\App\Http\Controllers\ProfileController::class, 'updateSignature'])->name('profile.signature')->middleware('throttle:15,1');
     Route::delete('profile/signature', [\App\Http\Controllers\ProfileController::class, 'deleteSignature'])->name('profile.signature.delete');
 });
 

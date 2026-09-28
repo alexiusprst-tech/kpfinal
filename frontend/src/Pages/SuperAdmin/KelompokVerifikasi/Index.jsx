@@ -198,24 +198,15 @@ export default function KelompokVerifikasiIndex({
                 
                 {/* Header Banner */}
                 <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
-                                <FolderKanban className="w-3.5 h-3.5" />
-                                <span>Penugasan</span>
-                            </div>
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Kelompok Verifikasi</h1>
-                            <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
-                                Kelola target mata kuliah, koordinator MK, dan tim verifikator dalam satu kelompok penugasan terpadu.
-                            </p>
+                    <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                            <FolderKanban className="w-3.5 h-3.5" />
+                            <span>Penugasan</span>
                         </div>
-                        <Link
-                            href="/superadmin/kelompok-verifikasi/create"
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white text-[#9E1B28] rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer hover:bg-rose-50 flex-shrink-0 self-start sm:self-auto"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Buat Kelompok</span>
-                        </Link>
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Kelompok Verifikasi</h1>
+                        <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                            Kelola target mata kuliah, koordinator MK, dan tim verifikator dalam satu kelompok penugasan terpadu.
+                        </p>
                     </div>
                 </div>
 
@@ -255,73 +246,94 @@ export default function KelompokVerifikasiIndex({
                     />
                 </div>
 
-                {/* Filter Bar */}
+                {/* Filter & Action Bar */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        
-                        {/* Search Input */}
-                        <div className="relative lg:col-span-2">
-                            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Cari nama kelompok, MK, atau dosen..."
-                                className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all bg-gray-50/50 hover:bg-white"
-                            />
-                            {search && (
-                                <button
-                                    onClick={() => setSearch('')}
-                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+                        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 flex-1">
+                            {/* Search Input */}
+                            <div className="relative flex-1 min-w-[200px] max-w-sm">
+                                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari nama kelompok, MK, atau dosen..."
+                                    className="w-full pl-9 pr-8 py-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all bg-gray-50/50 hover:bg-white"
+                                />
+                                {search && (
+                                    <button
+                                        onClick={() => setSearch('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Periode Filter */}
+                            <div className="min-w-[160px]">
+                                <select
+                                    value={filters?.periode_id || ''}
+                                    onChange={(e) => applyFilters({ periode_id: e.target.value })}
+                                    className={`w-full py-2.5 px-3 text-xs border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all cursor-pointer ${
+                                        filters?.periode_id
+                                            ? 'border-[#9E1B28] text-[#9E1B28] bg-rose-50/40'
+                                            : 'border-gray-200 text-slate-700 bg-gray-50/50 hover:bg-white'
+                                    }`}
                                 >
-                                    <X className="w-3.5 h-3.5" />
+                                    <option value="">Semua Periode</option>
+                                    {periodes.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.nama} ({p.status})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Status Filter */}
+                            <div className="min-w-[130px]">
+                                <select
+                                    value={filters?.status || ''}
+                                    onChange={(e) => applyFilters({ status: e.target.value })}
+                                    className={`w-full py-2.5 px-3 text-xs border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all cursor-pointer ${
+                                        filters?.status
+                                            ? 'border-[#9E1B28] text-[#9E1B28] bg-rose-50/40'
+                                            : 'border-gray-200 text-slate-700 bg-gray-50/50 hover:bg-white'
+                                    }`}
+                                >
+                                    <option value="">Semua Status</option>
+                                    <option value="DRAFT">Draf</option>
+                                    <option value="ACTIVE">Aktif</option>
+                                    <option value="INACTIVE">Nonaktif</option>
+                                    <option value="CLOSED">Selesai (Closed)</option>
+                                </select>
+                            </div>
+
+                            {/* Reset Button */}
+                            {(filters?.periode_id || filters?.status || filters?.tahun_ajaran_id || search) && (
+                                <button
+                                    onClick={resetFilters}
+                                    className="inline-flex items-center gap-1 text-xs text-[#9E1B28] hover:underline font-bold cursor-pointer ml-1"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5" /> Reset Filter
                                 </button>
                             )}
-                        </div>
 
-                        {/* Periode Filter */}
-                        <div>
-                            <select
-                                value={filters?.periode_id || ''}
-                                onChange={(e) => applyFilters({ periode_id: e.target.value })}
-                                className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all bg-gray-50/50 hover:bg-white cursor-pointer"
+                            {/* Buat Kelompok Button */}
+                            <Link
+                                href="/superadmin/kelompok-verifikasi/create"
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-bold shadow-sm shadow-red-900/10 transition-all cursor-pointer shrink-0 ml-auto"
                             >
-                                <option value="">Semua Periode</option>
-                                {periodes.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.nama} ({p.status})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Status Filter */}
-                        <div>
-                            <select
-                                value={filters?.status || ''}
-                                onChange={(e) => applyFilters({ status: e.target.value })}
-                                className="w-full py-2 px-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9E1B28]/15 focus:border-[#9E1B28] transition-all bg-gray-50/50 hover:bg-white cursor-pointer"
-                            >
-                                <option value="">Semua Status</option>
-                                <option value="MENUNGGU_VERIFIKATOR">Menunggu Verifikator</option>
-                                <option value="ACTIVE">Aktif</option>
-                                <option value="INACTIVE">Nonaktif</option>
-                                <option value="CLOSED">Selesai (Closed)</option>
-                                <option value="DRAFT">Draf (Lama)</option>
-                            </select>
+                                <Plus className="w-4 h-4" />
+                                <span>Buat Kelompok</span>
+                            </Link>
                         </div>
                     </div>
 
-                    {/* Active filter count & reset */}
+                    {/* Active filter count info */}
                     {(filters?.periode_id || filters?.status || filters?.tahun_ajaran_id || search) && (
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-[11px] text-gray-500">
-                            <span>Menampilkan hasil terfilter</span>
-                            <button
-                                onClick={resetFilters}
-                                className="inline-flex items-center gap-1 text-[#9E1B28] hover:underline font-bold cursor-pointer"
-                            >
-                                <RotateCcw className="w-3 h-3" /> Reset Semua Filter
-                            </button>
+                        <div className="text-[11px] text-gray-500 font-medium pt-2 border-t border-gray-100">
+                            Menampilkan hasil terfilter
                         </div>
                     )}
                 </div>

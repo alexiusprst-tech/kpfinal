@@ -56,7 +56,7 @@ class DosenController extends Controller
             $query->where('kategori_dosen', $request->kategori);
         }
 
-        $dosenList = $query->orderBy('kode_dosen', 'asc')->paginate(10)->withQueryString();
+        $dosenList = $query->orderByRaw('kode_dosen ASC NULLS LAST')->orderBy('nama_lengkap', 'asc')->paginate(10)->withQueryString();
 
         return Inertia::render('SuperAdmin/Dosen/Index', [
             'dosenList' => $dosenList,
@@ -67,7 +67,7 @@ class DosenController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kode_dosen'     => ['required', 'string', 'max:50', 'unique:dosen,kode_dosen'],
+            'kode_dosen'     => ['nullable', 'string', 'max:50', 'unique:dosen,kode_dosen'],
             'nip'            => ['nullable', 'string', 'max:50'],
             'nama_lengkap'   => ['required', 'string', 'max:150'],
             'email'          => ['nullable', 'email', 'max:150'],
@@ -97,7 +97,7 @@ class DosenController extends Controller
                     $userId = $existingUser->id;
                 }
             } else {
-                $initialPassword = !empty($validated['nip']) ? trim($validated['nip']) : 'password';
+                $initialPassword = !empty($validated['nip']) ? trim($validated['nip']) : (!empty($validated['kode_dosen']) ? trim($validated['kode_dosen']) : 'password');
                 $createdUser = User::create([
                     'name'                 => $validated['nama_lengkap'],
                     'email'                => $validated['email'],
@@ -110,10 +110,13 @@ class DosenController extends Controller
             }
         }
 
+        $kodeDosen = !empty($validated['kode_dosen']) ? trim($validated['kode_dosen']) : null;
+        $nip = !empty($validated['nip']) ? trim($validated['nip']) : null;
+
         $dosen = Dosen::create([
             'id'             => (string) Str::uuid(),
-            'kode_dosen'     => $validated['kode_dosen'],
-            'nip'            => $validated['nip'] ?? null,
+            'kode_dosen'     => $kodeDosen,
+            'nip'            => $nip,
             'nama_lengkap'   => $validated['nama_lengkap'],
             'email'          => $validated['email'] ?? null,
             'kategori_dosen' => $validated['kategori_dosen'] ?? 'Dosen Tetap',
@@ -136,7 +139,7 @@ class DosenController extends Controller
     public function update(Request $request, Dosen $dosen)
     {
         $validated = $request->validate([
-            'kode_dosen'     => ['required', 'string', 'max:50', 'unique:dosen,kode_dosen,' . $dosen->id],
+            'kode_dosen'     => ['nullable', 'string', 'max:50', 'unique:dosen,kode_dosen,' . $dosen->id],
             'nip'            => ['nullable', 'string', 'max:50'],
             'nama_lengkap'   => ['required', 'string', 'max:150'],
             'email'          => ['nullable', 'email', 'max:150'],
@@ -157,9 +160,12 @@ class DosenController extends Controller
         }
 
         $oldValues = $dosen->toArray();
+        $kodeDosen = !empty($validated['kode_dosen']) ? trim($validated['kode_dosen']) : null;
+        $nip = !empty($validated['nip']) ? trim($validated['nip']) : null;
+
         $dosenData = [
-            'kode_dosen'     => $validated['kode_dosen'],
-            'nip'            => $validated['nip'] ?? null,
+            'kode_dosen'     => $kodeDosen,
+            'nip'            => $nip,
             'nama_lengkap'   => $validated['nama_lengkap'],
             'email'          => $validated['email'] ?? null,
             'kategori_dosen' => $validated['kategori_dosen'] ?? 'Dosen Tetap',

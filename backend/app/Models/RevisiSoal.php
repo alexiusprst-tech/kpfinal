@@ -33,6 +33,10 @@ class RevisiSoal extends Model
         'uploaded_at' => 'datetime',
     ];
 
+    protected $hidden = [
+        'file_path',
+    ];
+
     public function soal()
     {
         return $this->belongsTo(Soal::class, 'soal_id');

@@ -32,14 +32,22 @@ class LoginController extends Controller
 
         // Look up by email, kode_dosen, or nip (case-insensitive)
         $dosen = \App\Models\Dosen::whereRaw('LOWER(email) = ?', [strtolower($input)])
-            ->orWhereRaw('LOWER(kode_dosen) = ?', [strtolower($input)])
-            ->orWhere('nip', $input)
+            ->orWhere(function ($q) use ($input) {
+                $q->whereNotNull('kode_dosen')
+                  ->where('kode_dosen', '!=', '')
+                  ->whereRaw('LOWER(kode_dosen) = ?', [strtolower($input)]);
+            })
+            ->orWhere(function ($q) use ($input) {
+                $q->whereNotNull('nip')
+                  ->where('nip', '!=', '')
+                  ->where('nip', $input);
+            })
             ->first();
 
         $emailToAuth = $input;
 
         if ($dosen) {
-            $emailToAuth = $dosen->email ?: strtolower($dosen->kode_dosen) . '@telkomuniversity.ac.id';
+            $emailToAuth = $dosen->email ?: (!empty($dosen->kode_dosen) ? strtolower($dosen->kode_dosen) . '@telkomuniversity.ac.id' : $input);
 
             // Auto-provision user account if not created yet
             if (!$dosen->user_id || !\App\Models\User::where('id', $dosen->user_id)->exists()) {
@@ -53,7 +61,7 @@ class LoginController extends Controller
                     $initialRole = 'VERIFIKATOR';
                 }
 
-                $initialPassword = !empty($dosen->nip) ? trim($dosen->nip) : 'password';
+                $initialPassword = !empty($dosen->nip) ? trim($dosen->nip) : (!empty($dosen->kode_dosen) ? trim($dosen->kode_dosen) : 'password');
                 $user = \App\Models\User::firstOrCreate(
                     ['email' => $emailToAuth],
                     [

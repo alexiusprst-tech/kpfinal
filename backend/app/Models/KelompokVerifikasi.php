@@ -65,22 +65,12 @@ class KelompokVerifikasi extends Model
     }
 
     /**
-     * Apakah koordinator masih bisa menentukan verifikator pada kelompok ini.
-     * Valid untuk status DRAFT atau jika kelompok ACTIVE namun masih ada MK yang belum memiliki verifikator.
+     * Apakah koordinator masih bisa menentukan atau mengedit verifikator pada kelompok ini.
+     * Valid untuk status DRAFT atau ACTIVE (asalkan belum CLOSED atau INACTIVE).
      */
     public function canAssignVerifikator(): bool
     {
-        if ($this->isDraft()) {
-            return true;
-        }
-
-        if ($this->isActive()) {
-            $allMkIds = $this->mataKuliah()->pluck('mata_kuliah_id')->toArray();
-            $mkWithVerif = $this->verifikator()->distinct('mata_kuliah_id')->pluck('mata_kuliah_id')->toArray();
-            return !empty(array_diff($allMkIds, $mkWithVerif));
-        }
-
-        return false;
+        return $this->isDraft() || $this->isActive();
     }
 
     // ─── Relationships ─────────────────────────────────────────────────────────

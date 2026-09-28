@@ -69,31 +69,41 @@ class DashboardController extends Controller
                 ->pluck('kelompok_id')
                 ->unique();
 
-            $kelompokButuhVerifikator = \App\Models\KelompokVerifikasi::whereIn('id', $myKelompokIds)
-                ->whereIn('status', [\App\Models\KelompokVerifikasi::STATUS_DRAFT, 'MENUNGGU_VERIFIKATOR'])
-                ->with(['periode'])
-                ->get()
-                ->map(function ($k) use ($dosen) {
-                    $myMkIds = \App\Models\KelompokKoordinator::where('kelompok_id', $k->id)
-                        ->where('dosen_id', $dosen->id)
-                        ->pluck('mata_kuliah_id');
+            if ($myKelompokIds->isNotEmpty()) {
+                // Bulk-load koordinator dan verifikator assignments untuk semua kelompok sekaligus (fix N+1)
+                $koordinatorRows = \App\Models\KelompokKoordinator::whereIn('kelompok_id', $myKelompokIds)
+                    ->where('dosen_id', $dosen->id)
+                    ->get()
+                    ->groupBy('kelompok_id');
 
-                    $assignedMkIds = \App\Models\KelompokVerifikator::where('kelompok_id', $k->id)
-                        ->whereIn('mata_kuliah_id', $myMkIds)
-                        ->pluck('mata_kuliah_id')
-                        ->unique();
+                $verifikatorRows = \App\Models\KelompokVerifikator::whereIn('kelompok_id', $myKelompokIds)
+                    ->get()
+                    ->groupBy('kelompok_id');
 
-                    $unassignedCount = $myMkIds->diff($assignedMkIds)->count();
+                $kelompokButuhVerifikator = \App\Models\KelompokVerifikasi::whereIn('id', $myKelompokIds)
+                    ->whereIn('status', [\App\Models\KelompokVerifikasi::STATUS_DRAFT, 'MENUNGGU_VERIFIKATOR'])
+                    ->with(['periode'])
+                    ->get()
+                    ->map(function ($k) use ($koordinatorRows, $verifikatorRows) {
+                        $myMkIds = ($koordinatorRows->get($k->id) ?? collect())->pluck('mata_kuliah_id');
 
-                    return [
-                        'id'               => $k->id,
-                        'nama'             => $k->nama,
-                        'periode_nama'     => $k->periode?->nama,
-                        'unassigned_count' => $unassignedCount,
-                    ];
-                })
-                ->filter(fn ($k) => $k['unassigned_count'] > 0)
-                ->values();
+                        $assignedMkIds = ($verifikatorRows->get($k->id) ?? collect())
+                            ->whereIn('mata_kuliah_id', $myMkIds->all())
+                            ->pluck('mata_kuliah_id')
+                            ->unique();
+
+                        $unassignedCount = $myMkIds->diff($assignedMkIds)->count();
+
+                        return [
+                            'id'               => $k->id,
+                            'nama'             => $k->nama,
+                            'periode_nama'     => $k->periode?->nama,
+                            'unassigned_count' => $unassignedCount,
+                        ];
+                    })
+                    ->filter(fn ($k) => $k['unassigned_count'] > 0)
+                    ->values();
+            }
         }
 
         $hasActiveKoor = $dosen && PenugasanKoordinator::where('dosen_id', $dosen->id)->where('status', 'ACTIVE')->exists();

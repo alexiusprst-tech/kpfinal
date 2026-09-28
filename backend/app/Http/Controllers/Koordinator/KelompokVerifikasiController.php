@@ -157,9 +157,9 @@ class KelompokVerifikasiController extends Controller
             abort(403, 'Akses ditolak. Anda bukan koordinator kelompok verifikasi ini.');
         }
 
-        // ─── Gate #3: Status kelompok harus MENUNGGU_VERIFIKATOR ─────────────
+        // ─── Gate #3: Status kelompok harus MENUNGGU_VERIFIKATOR atau ACTIVE ─────────────
         if (!$kelompokVerifikasi->canAssignVerifikator()) {
-            return back()->with('error', 'Penentuan verifikator hanya dapat dilakukan pada kelompok berstatus Menunggu Verifikator.');
+            return back()->with('error', 'Penentuan atau perubahan verifikator hanya dapat dilakukan pada kelompok berstatus Menunggu Verifikator atau Aktif.');
         }
 
         // ─── Validasi input ───────────────────────────────────────────────────
@@ -181,6 +181,7 @@ class KelompokVerifikasiController extends Controller
             ->toArray();
 
         $periode = $kelompokVerifikasi->periode;
+        $wasActive = $kelompokVerifikasi->isActive();
 
         // ─── Validasi per MK ──────────────────────────────────────────────────
         foreach ($validated['mata_kuliah_assignments'] as $mkItem) {
@@ -228,7 +229,7 @@ class KelompokVerifikasiController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($validated, $kelompokVerifikasi, $dosen, $user, $periode) {
+            DB::transaction(function () use ($validated, $kelompokVerifikasi, $dosen, $user, $periode, $wasActive) {
                 $newVerifikatorsByMk = collect($validated['mata_kuliah_assignments'])->keyBy('mata_kuliah_id');
 
                 // Simpan verifikator per MK yang ditugaskan koordinator ini
@@ -274,15 +275,17 @@ class KelompokVerifikasiController extends Controller
                     $superAdminController = new \App\Http\Controllers\SuperAdmin\KelompokVerifikasiController();
                     $superAdminController->syncOperationalAssignmentsPublic($kelompokVerifikasi, $user->id);
 
-                    // Notifikasi Super Admin
-                    $superAdmins = User::where('role', 'SUPER_ADMIN')->get();
-                    foreach ($superAdmins as $admin) {
-                        Notification::create([
-                            'id'      => (string) Str::uuid(),
-                            'user_id' => $admin->id,
-                            'title'   => 'Kelompok Verifikasi Aktif',
-                            'message' => "Koordinator {$dosen->nama_lengkap} telah menentukan verifikator untuk kelompok \"{$kelompokVerifikasi->nama}\". Status kelompok berubah menjadi Aktif.",
-                        ]);
+                    // Notifikasi Super Admin jika baru aktif pertama kali
+                    if (!$wasActive) {
+                        $superAdmins = User::where('role', 'SUPER_ADMIN')->get();
+                        foreach ($superAdmins as $admin) {
+                            Notification::create([
+                                'id'      => (string) Str::uuid(),
+                                'user_id' => $admin->id,
+                                'title'   => 'Kelompok Verifikasi Aktif',
+                                'message' => "Koordinator {$dosen->nama_lengkap} telah menentukan verifikator untuk kelompok \"{$kelompokVerifikasi->nama}\". Status kelompok berubah menjadi Aktif.",
+                            ]);
+                        }
                     }
                 } else {
                     // Baru sebagian MK yang punya verifikator — update timestamp updated_at
@@ -316,16 +319,18 @@ class KelompokVerifikasiController extends Controller
                 // Catat ke audit log
                 AuditLog::record(
                     $user->id,
-                    'TENTUKAN_VERIFIKATOR',
+                    $wasActive ? 'UPDATE_VERIFIKATOR' : 'TENTUKAN_VERIFIKATOR',
                     'KelompokVerifikasi',
                     $kelompokVerifikasi->id,
-                    ['status' => KelompokVerifikasi::STATUS_MENUNGGU_VERIFIKATOR],
+                    ['status' => $kelompokVerifikasi->status],
                     [
                         'status'           => $kelompokVerifikasi->fresh()->status,
                         'verifikator_ids'  => $newVerifikatorDosenIds->toArray(),
                         'koordinator_id'   => $dosen->id,
                         'koordinator_nama' => $dosen->nama_lengkap,
-                        'description'      => "Koordinator {$dosen->nama_lengkap} menentukan verifikator untuk kelompok {$kelompokVerifikasi->nama}",
+                        'description'      => $wasActive
+                            ? "Koordinator {$dosen->nama_lengkap} memperbarui verifikator untuk kelompok {$kelompokVerifikasi->nama}"
+                            : "Koordinator {$dosen->nama_lengkap} menentukan verifikator untuk kelompok {$kelompokVerifikasi->nama}",
                     ]
                 );
             });
@@ -334,9 +339,11 @@ class KelompokVerifikasiController extends Controller
         }
 
         $freshStatus = $kelompokVerifikasi->fresh()->status;
-        $successMsg = $freshStatus === KelompokVerifikasi::STATUS_ACTIVE
-            ? 'Verifikator berhasil ditentukan! Kelompok verifikasi sekarang aktif.'
-            : 'Verifikator berhasil ditentukan untuk mata kuliah Anda. Menunggu koordinator MK lain menyelesaikan penugasan.';
+        $successMsg = $wasActive
+            ? 'Dosen verifikator berhasil diperbarui.'
+            : ($freshStatus === KelompokVerifikasi::STATUS_ACTIVE
+                ? 'Verifikator berhasil ditentukan! Kelompok verifikasi sekarang aktif.'
+                : 'Verifikator berhasil ditentukan untuk mata kuliah Anda. Menunggu koordinator MK lain menyelesaikan penugasan.');
 
         return redirect()->route('koordinator.kelompok-verifikasi.index')
             ->with('success', $successMsg);

@@ -70,7 +70,7 @@ class KelompokVerifikasiController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $dosenList = Dosen::where('status', 'ACTIVE')->orderBy('kode_dosen')->get();
+        $dosenList = Dosen::where('status', 'ACTIVE')->orderByRaw('kode_dosen ASC NULLS LAST')->orderBy('nama_lengkap', 'asc')->get();
         $tahunAjaranList = \App\Models\TahunAjaran::all();
 
         // Statistics Cards Data
@@ -107,7 +107,8 @@ class KelompokVerifikasiController extends Controller
             ->get();
 
         $dosenList = Dosen::where('status', 'ACTIVE')
-            ->orderBy('kode_dosen')
+            ->orderByRaw('kode_dosen ASC NULLS LAST')
+            ->orderBy('nama_lengkap', 'asc')
             ->get();
 
         $activeKoordinatorList = PenugasanKoordinator::where('status', 'ACTIVE')
@@ -463,7 +464,7 @@ class KelompokVerifikasiController extends Controller
 
         $formattedActivities = AuditLog::formatLogs($recentActivities);
 
-        $dosenAll = Dosen::where('status', 'ACTIVE')->orderBy('kode_dosen')->get();
+        $dosenAll = Dosen::where('status', 'ACTIVE')->orderByRaw('kode_dosen ASC NULLS LAST')->orderBy('nama_lengkap', 'asc')->get();
 
         return Inertia::render('SuperAdmin/KelompokVerifikasi/Show', [
             'kelompok'              => $kelompokVerifikasi,
@@ -505,7 +506,7 @@ class KelompokVerifikasiController extends Controller
             ->get();
 
         $mkAll = MataKuliah::orderBy('kode_mk')->get();
-        $dosenAll = Dosen::where('status', 'ACTIVE')->orderBy('kode_dosen')->get();
+        $dosenAll = Dosen::where('status', 'ACTIVE')->orderByRaw('kode_dosen ASC NULLS LAST')->orderBy('nama_lengkap', 'asc')->get();
 
         $activeKoordinatorList = PenugasanKoordinator::where('status', 'ACTIVE')
             ->where('kelompok_id', '!=', $kelompokVerifikasi->id)
@@ -633,16 +634,16 @@ class KelompokVerifikasiController extends Controller
                         $kelompokVerifikasi->update(['status' => KelompokVerifikasi::STATUS_ACTIVE]);
                         $this->syncOperationalAssignments($kelompokVerifikasi, $request->user()->id);
                     } else {
-                        // Sebagian MK belum punya verifikator — bersihkan penugasan lama saja
-                        PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-                        PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+                        // Sebagian MK belum punya verifikator — akhiri penugasan lama (histori tetap tersimpan)
+                        PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
+                        PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
                         $this->syncAffectedDosenRoles();
                         $this->syncAffectedMataKuliahStatus();
                     }
                 } else {
-                    // INACTIVE: bersihkan semua penugasan
-                    PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-                    PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+                    // INACTIVE: akhiri semua penugasan (histori tetap tersimpan)
+                    PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
+                    PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
                     $this->syncAffectedDosenRoles();
                     $this->syncAffectedMataKuliahStatus();
                 }
@@ -777,8 +778,8 @@ class KelompokVerifikasiController extends Controller
             $kelompokVerifikasi->update(['status' => 'INACTIVE']);
 
             // Remove active assignments for this group (avoids UNIQUE constraint on status)
-            PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-            PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+            PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
+            PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
             $this->syncAffectedDosenRoles();
             $this->syncAffectedMataKuliahStatus();
 
@@ -802,8 +803,8 @@ class KelompokVerifikasiController extends Controller
             $kelompokVerifikasi->update(['status' => 'CLOSED']);
 
             // Remove active assignments for this group (avoids UNIQUE constraint on status)
-            PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
-            PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+            PenugasanKoordinator::where('kelompok_id', $kelompokVerifikasi->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
+            PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
             $this->syncAffectedDosenRoles();
             $this->syncAffectedMataKuliahStatus();
 
@@ -851,8 +852,8 @@ class KelompokVerifikasiController extends Controller
 
                 KelompokVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
 
-                // Hapus penugasan operasional verifikator
-                PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->delete();
+                // Akhiri penugasan operasional verifikator (histori tetap tersimpan)
+                PenugasanVerifikator::where('kelompok_id', $kelompokVerifikasi->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
 
                 // Reset status kelompok
                 $kelompokVerifikasi->update([
@@ -1003,19 +1004,20 @@ class KelompokVerifikasiController extends Controller
         $periodeId = $kelompok->periode_id;
 
         // 1. Process Koordinator Assignments per MK
-        // Delete existing assignments for this kelompok to avoid UNIQUE constraint conflicts
-        PenugasanKoordinator::where('kelompok_id', $kelompok->id)->delete();
+        // End existing assignments for this kelompok (history preserved) to avoid UNIQUE constraint conflicts
+        PenugasanKoordinator::where('kelompok_id', $kelompok->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
 
         $koordinators = KelompokKoordinator::where('kelompok_id', $kelompok->id)->with('dosen.user', 'mataKuliah')->get();
         if ($koordinators->isEmpty()) {
             // Fallback for legacy kelompok_mata_kuliah.koordinator_id
             $kmks = KelompokMataKuliah::where('kelompok_id', $kelompok->id)->whereNotNull('koordinator_id')->with('koordinator.user', 'mataKuliah')->get();
             foreach ($kmks as $kmk) {
-                // Delete any conflicting ACTIVE records from other kelompok for same (dosen, mk, periode)
+                // End any conflicting ACTIVE records from other kelompok for same (dosen, mk, periode)
                 PenugasanKoordinator::where('dosen_id', $kmk->koordinator_id)
                     ->where('mata_kuliah_id', $kmk->mata_kuliah_id)
                     ->where('periode_id', $periodeId)
-                    ->delete();
+                    ->where('status', 'ACTIVE')
+                    ->update(['status' => 'ENDED']);
 
                 PenugasanKoordinator::create([
                     'id'             => (string) Str::uuid(),
@@ -1029,11 +1031,12 @@ class KelompokVerifikasiController extends Controller
             }
         } else {
             foreach ($koordinators as $k) {
-                // Delete any conflicting records from other kelompok for same (dosen, mk, periode)
+                // End any conflicting records from other kelompok for same (dosen, mk, periode)
                 PenugasanKoordinator::where('dosen_id', $k->dosen_id)
                     ->where('mata_kuliah_id', $k->mata_kuliah_id)
                     ->where('periode_id', $periodeId)
-                    ->delete();
+                    ->where('status', 'ACTIVE')
+                    ->update(['status' => 'ENDED']);
 
                 PenugasanKoordinator::create([
                     'id'             => (string) Str::uuid(),
@@ -1057,16 +1060,17 @@ class KelompokVerifikasiController extends Controller
         }
 
         // 2. Process Verifikator Assignments per MK
-        // Delete existing assignments for this kelompok to avoid UNIQUE constraint conflicts
-        PenugasanVerifikator::where('kelompok_id', $kelompok->id)->delete();
+        // End existing assignments for this kelompok (history preserved) to avoid UNIQUE constraint conflicts
+        PenugasanVerifikator::where('kelompok_id', $kelompok->id)->where('status', 'ACTIVE')->update(['status' => 'ENDED']);
 
         $verifikators = KelompokVerifikator::where('kelompok_id', $kelompok->id)->with('dosen.user', 'mataKuliah')->get();
         foreach ($verifikators as $kv) {
-            // Delete any conflicting records from other kelompok for same (dosen, mk, periode)
+            // End any conflicting records from other kelompok for same (dosen, mk, periode)
             PenugasanVerifikator::where('dosen_id', $kv->dosen_id)
                 ->where('mata_kuliah_id', $kv->mata_kuliah_id)
                 ->where('periode_id', $periodeId)
-                ->delete();
+                ->where('status', 'ACTIVE')
+                ->update(['status' => 'ENDED']);
 
             PenugasanVerifikator::create([
                 'id'             => (string) Str::uuid(),
@@ -1216,6 +1220,7 @@ class KelompokVerifikasiController extends Controller
             $mkName = $mkObj ? $mkObj->nama_mk : 'MK';
 
             $kList = $mk['koordinator_ids'] ?? (isset($mk['koordinator_id']) ? [$mk['koordinator_id']] : []);
+            $vList = $mk['verifikator_ids'] ?? [];
 
             if (empty($kList)) {
                 return back()->withErrors(['mata_kuliah' => 'Setiap mata kuliah wajib memiliki minimal 1 koordinator.'])->withInput();
@@ -1223,6 +1228,30 @@ class KelompokVerifikasiController extends Controller
 
             if (count($kList) > 3) {
                 return back()->withErrors(['mata_kuliah' => 'Jumlah koordinator untuk setiap mata kuliah maksimal 3 dosen.'])->withInput();
+            }
+
+            if (count($vList) > 5) {
+                return back()->withErrors(['mata_kuliah' => 'Jumlah verifikator untuk setiap mata kuliah maksimal 5 dosen.'])->withInput();
+            }
+
+            // Check self-verification overlap on the SAME course
+            $courseOverlap = array_intersect($kList, $vList);
+            if (!empty($courseOverlap)) {
+                $dosenObj = Dosen::find(reset($courseOverlap));
+                $dosenName = $dosenObj ? $dosenObj->nama_lengkap : 'Dosen';
+                return back()->withErrors([
+                    'mata_kuliah' => "Dosen {$dosenName} tidak dapat dipilih sebagai Koordinator sekaligus Verifikator pada mata kuliah {$mkName}."
+                ])->withInput();
+            }
+
+            // Validasi Verifikator Soal hanya boleh Dosen Tetap
+            foreach ($vList as $vDosenId) {
+                $vDosen = Dosen::find($vDosenId);
+                if ($vDosen && !$vDosen->isDosenTetap()) {
+                    return back()->withErrors([
+                        'mata_kuliah' => "Dosen {$vDosen->nama_lengkap}" . ($vDosen->kode_dosen ? " ({$vDosen->kode_dosen})" : '') . " berstatus Luar Biasa (LB). Verifikator Soal hanya dapat ditentukan dari Dosen Tetap pada mata kuliah {$mkName}."
+                    ])->withInput();
+                }
             }
 
             // Cek apakah koordinator yang dipilih sudah menjadi verifikator aktif untuk MK yang sama

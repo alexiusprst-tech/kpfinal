@@ -52,6 +52,26 @@ class PloExportImportTest extends TestCase
         $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 
+    public function test_plo_export_neutralizes_formula_injection_payload(): void
+    {
+        Plo::create([
+            'id'        => (string) Str::uuid(),
+            'kode_plo'  => 'PLO03',
+            'deskripsi' => '=HYPERLINK("http://evil.test","click")',
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->get(route('superadmin.plo.export'));
+
+        $response->assertOk();
+
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($response->getFile()->getPathname());
+        $cell = $spreadsheet->getActiveSheet()->getCell('B2');
+
+        $this->assertNotEquals(\PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_FORMULA, $cell->getDataType());
+        $this->assertSame('=HYPERLINK("http://evil.test","click")', $cell->getValue());
+    }
+
     public function test_superadmin_can_confirm_plo_import(): void
     {
         $payload = [

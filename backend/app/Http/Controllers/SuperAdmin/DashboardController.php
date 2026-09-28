@@ -15,6 +15,7 @@ use App\Models\PeriodeVerifikasi;
 use App\Models\Plo;
 use App\Models\Setting;
 use App\Models\Soal;
+use App\Support\FormulaInjectionGuard;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -376,6 +377,7 @@ class DashboardController extends Controller
         }
 
         // Macro Agregasi 2: Per Semester
+        // Fix N+1: bulk-load semua MK aktif sekaligus, group per semester di PHP
         $semesterComparisonData = [
             'labels'      => [],
             'tuntas'      => [],
@@ -384,22 +386,20 @@ class DashboardController extends Controller
             'semesters'   => [],
         ];
 
-        $semesters = MataKuliah::where('status', 'ACTIVE')
-            ->select('semester')
-            ->distinct()
+        $allActiveMkForSemester = MataKuliah::where('status', 'ACTIVE')
             ->orderBy('semester', 'asc')
-            ->pluck('semester');
+            ->get();
 
-        foreach ($semesters as $sem) {
-            if (!$sem) continue;
-            $mkListInSem = MataKuliah::where('status', 'ACTIVE')
-                ->where('semester', $sem)
-                ->get();
+        if ($activePeriod && $allActiveMkForSemester->isNotEmpty()) {
+            $allActiveMkForSemester->load(['soal' => fn ($q) => $q->where('periode_id', $activePeriod->id)]);
+        }
 
-            if ($activePeriod) {
-                $mkListInSem->load(['soal' => fn ($q) => $q->where('periode_id', $activePeriod->id)]);
-            }
+        $mkBySemester = $allActiveMkForSemester
+            ->filter(fn ($mk) => !is_null($mk->semester))
+            ->groupBy('semester')
+            ->sortKeys();
 
+        foreach ($mkBySemester as $sem => $mkListInSem) {
             $totalMkInSem = $mkListInSem->count();
             $tuntasCount = 0;
             $prosesCount = 0;
@@ -546,10 +546,10 @@ class DashboardController extends Controller
                 foreach ($soalList as $s) {
                     fputcsv($handle, [
                         $no++,
-                        $s->mataKuliah->kode_mk ?? '-',
-                        $s->mataKuliah->nama_mk ?? '-',
-                        $s->kategori->nama ?? '-',
-                        $s->uploadedBy->dosen->nama_lengkap ?? $s->uploadedBy->name ?? '-',
+                        FormulaInjectionGuard::sanitizeCsvField($s->mataKuliah->kode_mk ?? '-'),
+                        FormulaInjectionGuard::sanitizeCsvField($s->mataKuliah->nama_mk ?? '-'),
+                        FormulaInjectionGuard::sanitizeCsvField($s->kategori->nama ?? '-'),
+                        FormulaInjectionGuard::sanitizeCsvField($s->uploadedBy->dosen->nama_lengkap ?? $s->uploadedBy->name ?? '-'),
                         $s->status,
                         $s->created_at ? $s->created_at->format('d/m/Y H:i') : '-',
                         $s->updated_at ? $s->updated_at->format('d/m/Y H:i') : '-',

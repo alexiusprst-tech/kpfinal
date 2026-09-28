@@ -28,6 +28,10 @@ class VerifikasiController extends Controller
             abort(403, 'Anda tidak memiliki wewenang penugasan untuk memverifikasi soal mata kuliah ini.');
         }
 
+        if ($soal->uploaded_by === $user->id) {
+            abort(403, 'Anda tidak dapat memverifikasi soal yang Anda unggah sendiri.');
+        }
+
         $validated = $request->validate([
             'action'        => ['required', 'in:APPROVED,REVISION'],
             'catatan'       => ['nullable', 'string', 'max:2000'],

@@ -97,6 +97,7 @@ export default function PloIndex({ ploList, filters }) {
     const [previewStats, setPreviewStats] = useState(null);
     const [editingRow, setEditingRow] = useState(null); // index of row being edited inline
     const [isConfirming, setIsConfirming] = useState(false);
+    const [replaceMissing, setReplaceMissing] = useState(false); // opt-in full-replace
     const fileInputRef = useRef(null);
 
     // Create/Edit form state
@@ -152,6 +153,7 @@ export default function PloIndex({ ploList, filters }) {
         setPreviewErrors([]);
         setPreviewStats(null);
         setEditingRow(null);
+        setReplaceMissing(false);
     };
 
     const handleFileSelect = (e) => {
@@ -265,7 +267,7 @@ export default function PloIndex({ ploList, filters }) {
             return;
         }
         setIsConfirming(true);
-        router.post('/superadmin/plo/confirm', { rows: validRows }, {
+        router.post('/superadmin/plo/confirm', { rows: validRows, replace_missing: replaceMissing }, {
             onSuccess: () => { setIsImportOpen(false); setActiveStep(5); },
             onFinish: () => setIsConfirming(false),
         });
@@ -278,61 +280,76 @@ export default function PloIndex({ ploList, filters }) {
 
             {/* Header Banner */}
             <div className="bg-gradient-to-r from-[#9E1B28] to-[#9E1B28] rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-red-900/10 mb-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
-                            <Target className="w-3.5 h-3.5" />
-                            <span>Program Learning Outcomes</span>
-                        </div>
-                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Master PLO</h1>
-                        <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
-                            Kelola Program Learning Outcomes (PLO) dan capaian pembelajaran lulusan.
-                        </p>
+                <div className="space-y-1">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold backdrop-blur-xs text-rose-100 mb-2 border border-white/10">
+                        <Target className="w-3.5 h-3.5" />
+                        <span>Program Learning Outcomes</span>
                     </div>
-                    <div className="flex gap-2 flex-wrap shrink-0">
-                        <a href="/superadmin/plo/template?v=1" className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white hover:bg-white/20 transition-all">
-                            <Download className="w-3.5 h-3.5" /> Template
-                        </a>
-                        <button
-                            onClick={openImportWizard}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white cursor-pointer hover:bg-white/20 transition-all"
-                        >
-                            <Upload className="w-3.5 h-3.5" /> Impor
-                        </button>
-                        <a href="/superadmin/plo/export" className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-xs font-semibold text-white hover:bg-white/20 transition-all">
-                            <Download className="w-3.5 h-3.5" /> Ekspor
-                        </a>
-                        <button
-                            onClick={() => setIsCreateOpen(true)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-white text-[#9E1B28] rounded-xl text-xs font-bold hover:bg-rose-50 transition-all shadow-sm"
-                        >
-                            <Plus className="w-3.5 h-3.5" /> Tambah PLO
-                        </button>
-                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Master PLO</h1>
+                    <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
+                        Kelola Program Learning Outcomes (PLO) dan capaian pembelajaran lulusan.
+                    </p>
                 </div>
             </div>
 
             {/* Flash Messages */}
 
-            {/* Search */}
-            <div className="relative max-w-sm mb-6">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Cari kode atau deskripsi..."
-                    className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] focus:bg-white outline-none transition-all"
-                />
-                {search && (
-                    <button
-                        type="button"
-                        onClick={() => setSearch('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-                        title="Bersihkan pencarian"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                )}
+            {/* Action & Search Toolbar Card */}
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs mb-6">
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 flex-1">
+                        <div className="relative w-full sm:w-80">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Cari kode atau deskripsi..."
+                                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] focus:bg-white outline-none transition-all font-medium"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearch('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                    title="Bersihkan pencarian"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+
+                        {search && (
+                            <button
+                                onClick={() => setSearch('')}
+                                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors cursor-pointer shrink-0"
+                            >
+                                Reset Filter
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap shrink-0">
+                        <a href="/superadmin/plo/template?v=1" className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 border border-gray-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition-all shadow-xs" title="Unduh Template">
+                            <Download className="w-3.5 h-3.5 text-slate-500" /> Template
+                        </a>
+                        <button
+                            onClick={openImportWizard}
+                            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 border border-gray-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                            title="Impor PLO"
+                        >
+                            <Upload className="w-3.5 h-3.5 text-slate-500" /> Impor
+                        </button>
+                        <a href="/superadmin/plo/export" className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 border border-gray-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition-all shadow-xs" title="Ekspor PLO">
+                            <Download className="w-3.5 h-3.5 text-slate-500" /> Ekspor
+                        </a>
+                        <button
+                            onClick={() => setIsCreateOpen(true)}
+                            className="flex items-center gap-1.5 px-4 py-2.5 bg-[#9E1B28] hover:bg-[#801720] text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-red-900/10 cursor-pointer"
+                        >
+                            <Plus className="w-3.5 h-3.5" /> Tambah PLO
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Table */}
@@ -668,6 +685,24 @@ export default function PloIndex({ ploList, filters }) {
                                         <strong>Catatan:</strong> Baris dengan status Kesalahan tidak akan disimpan. Perbaiki atau hapus sebelum menyimpan.
                                         <br />Data valid yang akan disimpan: <strong>{previewRows.filter(r => r.is_valid).length}</strong> baris.
                                     </div>
+
+                                    {/* Opsi Full-Replace (opt-in) */}
+                                    <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${replaceMissing ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={replaceMissing}
+                                            onChange={e => setReplaceMissing(e.target.checked)}
+                                            className="mt-0.5 accent-[#9E1B28] w-4 h-4 flex-shrink-0"
+                                        />
+                                        <div>
+                                            <p className={`text-xs font-bold ${replaceMissing ? 'text-red-700' : 'text-slate-700'}`}>
+                                                Hapus PLO yang tidak ada dalam file ini
+                                            </p>
+                                            <p className={`text-[11px] mt-0.5 ${replaceMissing ? 'text-red-600' : 'text-slate-500'}`}>
+                                                ⚠ Jika dicentang, PLO yang sudah ada di database tetapi tidak ada dalam file import ini akan <strong>dihapus permanen</strong>. Gunakan hanya untuk full-replace master PLO.
+                                            </p>
+                                        </div>
+                                    </label>
 
                                     <div className="flex gap-3">
                                         <button onClick={() => setActiveStep(3)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">

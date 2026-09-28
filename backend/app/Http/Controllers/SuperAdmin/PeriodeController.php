@@ -200,7 +200,7 @@ class PeriodeController extends Controller
         $validated = $request->validate([
             'nama'            => ['required', 'string', 'max:100'],
             'tanggal_mulai'   => ['required', 'date'],
-            'tanggal_selesai' => ['required', 'date'],
+            'tanggal_selesai' => ['required', 'date', 'after:tanggal_mulai'],
             'deadline_upload' => ['required', 'date'],
             'catatan'         => ['nullable', 'string', 'max:2000'],
         ]);

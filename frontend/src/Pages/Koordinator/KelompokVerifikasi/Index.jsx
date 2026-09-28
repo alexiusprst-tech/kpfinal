@@ -5,7 +5,7 @@ import { showConfirm, showAlert, showToast } from '@/Utils/sweetalert';
 import {
     FolderKanban, Clock, Play, CheckCircle2, AlertCircle,
     Shield, GraduationCap, BookOpen, ChevronDown, ChevronUp,
-    Users, X, Info, Plus, Search, Check, Sparkles
+    Users, X, Info, Plus, Search, Check, Sparkles, Pencil, Edit3
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -62,10 +62,10 @@ function StatCard({ icon: Icon, iconBg, iconColor, value, label, sublabel }) {
 }
 
 /**
- * Modal untuk menentukan verifikator soal per MK.
- * Muncul ketika koordinator klik "Tentukan Verifikator" pada suatu kelompok.
+ * Modal untuk menentukan atau mengedit verifikator soal per MK.
+ * Muncul ketika koordinator klik "Tentukan Verifikator" atau "Edit Verifikator".
  */
-function TentukanVerifikatorModal({ kelompok, dosenAll, onClose, onSubmit }) {
+function TentukanVerifikatorModal({ kelompok, initialMkId = null, dosenAll, onClose, onSubmit }) {
     // Inisialisasi verifikator per mata kuliah dari data yang sudah ada
     const initialMap = useMemo(() => {
         const map = {};
@@ -76,7 +76,9 @@ function TentukanVerifikatorModal({ kelompok, dosenAll, onClose, onSubmit }) {
     }, [kelompok]);
 
     const [verifikatorPerMk, setVerifikatorPerMk] = useState(initialMap);
-    const [activeMkId, setActiveMkId] = useState(kelompok.mk_saya[0]?.mata_kuliah_id || null);
+    const [activeMkId, setActiveMkId] = useState(
+        initialMkId || kelompok.mk_saya[0]?.mata_kuliah_id || null
+    );
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -90,6 +92,9 @@ function TentukanVerifikatorModal({ kelompok, dosenAll, onClose, onSubmit }) {
     // Mata kuliah yang sedang dipilih/aktif
     const activeMk = kelompok.mk_saya.find((mk) => mk.mata_kuliah_id === activeMkId) || kelompok.mk_saya[0];
     const currentVerifIds = (activeMk && verifikatorPerMk[activeMk.mata_kuliah_id]) || [];
+
+    // Deteksi apakah MK aktif ini sudah memiliki verifikator tersimpan sebelumnya (Mode Edit)
+    const isCurrentMkSavedBefore = (activeMk?.verifikator || []).length > 0;
 
     // Filter daftar dosen berdasarkan kata kunci (nama atau kode dosen)
     const filteredDosen = useMemo(() => {
@@ -152,13 +157,26 @@ function TentukanVerifikatorModal({ kelompok, dosenAll, onClose, onSubmit }) {
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#9E1B28] flex items-center justify-center shrink-0 border border-red-100">
-                            <Shield className="w-5 h-5" />
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                            isCurrentMkSavedBefore
+                                ? 'bg-blue-50 text-blue-700 border-blue-100'
+                                : 'bg-red-50 text-[#9E1B28] border-red-100'
+                        }`}>
+                            {isCurrentMkSavedBefore ? <Pencil className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
                         </div>
                         <div>
-                            <h2 className="text-base font-black text-gray-900 leading-tight">
-                                Tentukan Verifikator Soal
-                            </h2>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h2 className="text-base font-black text-gray-900 leading-tight">
+                                    {isCurrentMkSavedBefore ? 'Edit Dosen Verifikator Soal' : 'Tentukan Verifikator Soal'}
+                                </h2>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                                    isCurrentMkSavedBefore
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}>
+                                    {isCurrentMkSavedBefore ? 'Mode Edit' : 'Penugasan Baru'}
+                                </span>
+                            </div>
                             <p className="text-xs text-gray-500 mt-0.5">
                                 Kelompok: <span className="font-bold text-gray-700">{kelompok.nama}</span>
                             </p>
@@ -174,14 +192,22 @@ function TentukanVerifikatorModal({ kelompok, dosenAll, onClose, onSubmit }) {
                 </div>
 
                 {/* Info Bar */}
-                <div className="px-6 py-2.5 bg-blue-50/80 border-b border-blue-100/80 flex items-center justify-between text-xs text-blue-900">
+                <div className={`px-6 py-2.5 border-b flex items-center justify-between text-xs ${
+                    isCurrentMkSavedBefore
+                        ? 'bg-blue-50/80 border-blue-100/80 text-blue-900'
+                        : 'bg-amber-50/80 border-amber-100/80 text-amber-900'
+                }`}>
                     <div className="flex items-center gap-2">
-                        <Info className="w-4 h-4 text-blue-600 shrink-0" />
-                        <span className="text-blue-800">
-                            Ketik nama atau pilih langsung dosen di bawah (wajib 1–5 dosen tetap per mata kuliah).
+                        <Info className={`w-4 h-4 shrink-0 ${isCurrentMkSavedBefore ? 'text-blue-600' : 'text-amber-600'}`} />
+                        <span>
+                            {isCurrentMkSavedBefore
+                                ? 'Anda dapat mengubah, menambah, atau mencabut dosen verifikator (wajib 1–5 dosen tetap per MK).'
+                                : 'Ketik nama atau pilih langsung dosen di bawah (wajib 1–5 dosen tetap per mata kuliah).'}
                         </span>
                     </div>
-                    <span className="hidden sm:inline-block text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2.5 py-0.5 rounded-full">
+                    <span className={`hidden sm:inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                        isCurrentMkSavedBefore ? 'text-blue-700 bg-blue-100/80' : 'text-amber-700 bg-amber-100/80'
+                    }`}>
                         {dosenTetap.length} Dosen Tetap Tersedia
                     </span>
                 </div>
@@ -257,7 +283,7 @@ function TentukanVerifikatorModal({ kelompok, dosenAll, onClose, onSubmit }) {
                             </div>
 
                             {/* Verifikator Terpilih Chips */}
-                            <div className="p-3 bg-white border border-gray-200 rounded-2xl space-y-2">
+                            <div className="p-3.5 bg-white border border-gray-200 rounded-2xl space-y-2">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                                         <Users className="w-3.5 h-3.5 text-gray-400" />
@@ -294,7 +320,7 @@ function TentukanVerifikatorModal({ kelompok, dosenAll, onClose, onSubmit }) {
                                                         type="button"
                                                         onClick={() => handleToggleVerifikator(activeMk.mata_kuliah_id, vId)}
                                                         className="text-blue-400 hover:text-red-600 transition-colors cursor-pointer p-0.5"
-                                                        title="Hapus"
+                                                        title="Hapus dosen ini"
                                                     >
                                                         <X className="w-3.5 h-3.5" />
                                                     </button>
@@ -474,8 +500,12 @@ function TentukanVerifikatorModal({ kelompok, dosenAll, onClose, onSubmit }) {
                             disabled={loading}
                             className="px-5 py-2 text-xs font-bold text-white bg-[#9E1B28] hover:bg-[#681219] rounded-xl shadow-sm transition-colors cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed inline-flex items-center gap-2"
                         >
-                            <Shield className="w-3.5 h-3.5" />
-                            {loading ? 'Menyimpan...' : 'Simpan Verifikator'}
+                            {isCurrentMkSavedBefore ? <Pencil className="w-3.5 h-3.5" /> : <Shield className="w-3.5 h-3.5" />}
+                            {loading
+                                ? 'Menyimpan...'
+                                : isCurrentMkSavedBefore
+                                ? 'Simpan Perubahan Verifikator'
+                                : 'Simpan Verifikator'}
                         </button>
                     </div>
                 </div>
@@ -493,22 +523,24 @@ export default function KelompokVerifikasiIndex({
     // Default terbuka (expanded) agar daftar MK dan Dosen Verifikator langsung terlihat tanpa perlu klik dropdown
     const [collapsedIds, setCollapsedIds] = useState([]);
     const [modalKelompok, setModalKelompok] = useState(null);
+    const [modalActiveMkId, setModalActiveMkId] = useState(null);
 
     useEffect(() => {
         if (flash?.success) showToast('success', flash.success);
         if (flash?.error) showToast('error', flash.error);
     }, [flash]);
 
-    const handleOpenModal = (kelompok) => {
+    const handleOpenModal = (kelompok, mkId = null) => {
         if (!kelompok.can_assign_verifikator) {
             showAlert({
-                title: 'Tidak Dapat Menentukan Verifikator',
-                text: 'Kelompok ini tidak dalam status "Menunggu Verifikator" atau Anda bukan koordinator yang terdaftar.',
+                title: 'Tidak Dapat Mengubah Verifikator',
+                text: 'Kelompok ini tidak dalam status yang dapat diubah atau Anda bukan koordinator yang terdaftar.',
                 icon: 'info',
             });
             return;
         }
         setModalKelompok(kelompok);
+        setModalActiveMkId(mkId || kelompok.mk_saya[0]?.mata_kuliah_id || null);
     };
 
     const handleSubmitVerifikator = (verifikatorPerMk, onFinish) => {
@@ -524,6 +556,7 @@ export default function KelompokVerifikasiIndex({
                 preserveScroll: true,
                 onSuccess: () => {
                     setModalKelompok(null);
+                    setModalActiveMkId(null);
                     onFinish();
                 },
                 onError: (errs) => {
@@ -550,7 +583,7 @@ export default function KelompokVerifikasiIndex({
                         </div>
                         <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Kelompok Verifikasi Saya</h1>
                         <p className="text-xs sm:text-sm text-rose-100/90 font-medium max-w-2xl">
-                            Daftar kelompok verifikasi di mana Anda terdaftar sebagai Koordinator MK. Tentukan verifikator soal untuk mata kuliah yang Anda koordinatori.
+                            Daftar kelompok verifikasi di mana Anda terdaftar sebagai Koordinator MK. Tentukan dan kelola verifikator soal untuk mata kuliah yang Anda koordinatori.
                         </p>
                     </div>
                 </div>
@@ -623,10 +656,23 @@ export default function KelompokVerifikasiIndex({
                                                 {kelompok.can_assign_verifikator && (
                                                     <button
                                                         onClick={() => handleOpenModal(kelompok)}
-                                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#9E1B28] hover:bg-[#681219] text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+                                                        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer ${
+                                                            kelompok.mk_butuh_verifikator > 0
+                                                                ? 'bg-[#9E1B28] hover:bg-[#681219] text-white shadow-red-900/10'
+                                                                : 'bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-xs hover:border-gray-300'
+                                                        }`}
                                                     >
-                                                        <Shield className="w-3.5 h-3.5" />
-                                                        Tentukan Verifikator
+                                                        {kelompok.mk_butuh_verifikator > 0 ? (
+                                                            <>
+                                                                <Shield className="w-3.5 h-3.5" />
+                                                                <span>Tentukan Verifikator</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Pencil className="w-3.5 h-3.5 text-gray-600" />
+                                                                <span>Edit Verifikator</span>
+                                                            </>
+                                                        )}
                                                     </button>
                                                 )}
                                                 <button
@@ -701,7 +747,7 @@ export default function KelompokVerifikasiIndex({
                 </div>
             </div>
 
-            {/* Modal Tentukan Verifikator */}
+            {/* Modal Tentukan / Edit Verifikator */}
             {modalKelompok && (
                 <TentukanVerifikatorModal
                     kelompok={modalKelompok}

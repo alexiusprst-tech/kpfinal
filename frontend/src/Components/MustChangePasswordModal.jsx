@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import { Check, X } from 'lucide-react';
 import { showToast, showConfirm } from '@/Utils/sweetalert';
 
 export default function MustChangePasswordModal({ open }) {
-    if (!open) return null;
-
-    const { auth } = usePage().props;
+    const page = usePage();
+    const auth = page?.props?.auth;
     const user = auth?.user;
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -15,6 +14,23 @@ export default function MustChangePasswordModal({ open }) {
     });
 
     const [show, setShow] = useState({ new: false, confirm: false });
+
+    useEffect(() => {
+        if (open) {
+            const originalBodyOverflow = document.body.style.overflow;
+            const originalHtmlOverflow = document.documentElement.style.overflow;
+
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+
+            return () => {
+                document.body.style.overflow = originalBodyOverflow;
+                document.documentElement.style.overflow = originalHtmlOverflow;
+            };
+        }
+    }, [open]);
+
+    if (!open) return null;
 
     const submit = (e) => {
         e.preventDefault();
@@ -49,12 +65,12 @@ export default function MustChangePasswordModal({ open }) {
     const nip = user?.dosen?.nip;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto overscroll-contain">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" />
 
             {/* Modal Card */}
-            <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200 z-10">
+            <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200 z-10 my-auto">
                 {/* Top Accent Line */}
                 <div className="h-1.5 bg-[#9E1B28] w-full" />
 

@@ -20,6 +20,26 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * ConcurrencyTest
+ *
+ * CATATAN PENTING (Tier 4 Audit 2026-09-28):
+ * Kelas ini bernama "Concurrency" namun TIDAK menguji true concurrency.
+ * Semua test berjalan secara sequential dalam satu koneksi DB SQLite in-memory.
+ * Yang diuji di sini adalah:
+ *   - Idempotency logic: system correctly rejects a second action when the first
+ *     has already transitioned state (sequential guard, bukan concurrent lock).
+ *   - State-guard correctness: pessimistic locking + canBeVerified() mencegah
+ *     double-action meski dalam aliran sequential.
+ *
+ * Untuk true concurrency testing (race conditions, deadlocks, TOCTOU), diperlukan:
+ *   - Dua koneksi DB terpisah (tidak tersedia di SQLite in-memory + RefreshDatabase)
+ *   - Interleaving eksplisit dengan fiber/coroutine atau multi-process
+ *   - Database yang mendukung row-level locking (PostgreSQL/MySQL)
+ *
+ * Jika ingin CI berbasis PostgreSQL yang menguji trigger dan locking nyata,
+ * tambahkan job GitHub Actions terpisah dengan phpunit.pgsql.xml.
+ */
 class ConcurrencyTest extends TestCase
 {
     use RefreshDatabase;
@@ -161,7 +181,7 @@ class ConcurrencyTest extends TestCase
                     'id' => (string) Str::uuid(),
                     'kode' => 'PLO-01',
                     'clo' => [
-                        ['id' => (string) Str::uuid(), 'kode' => 'CLO-01']
+                        ['id' => (string) Str::uuid(), 'kode' => 'CLO-01', 'bobot_lo' => '100%']
                     ]
                 ]
             ]

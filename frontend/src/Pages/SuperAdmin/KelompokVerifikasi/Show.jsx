@@ -153,7 +153,7 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
             const isThisMkVerif = thisMkVerifs.includes(d.id);
             return {
                 value: d.id,
-                label: `${d.kode_dosen} – ${d.nama_lengkap}`,
+                label: d.kode_dosen ? `${d.kode_dosen} – ${d.nama_lengkap}` : d.nama_lengkap,
                 disabled: isThisMkKoor || isThisMkVerif,
             };
         });
@@ -167,7 +167,7 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
             const isThisMkVerif = thisMkVerifs.includes(d.id);
             return {
                 value: d.id,
-                label: `${d.kode_dosen} – ${d.nama_lengkap}`,
+                label: d.kode_dosen ? `${d.kode_dosen} – ${d.nama_lengkap}` : d.nama_lengkap,
                 disabled: isThisMkVerif || isThisMkKoor,
             };
         });
@@ -296,7 +296,7 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
                                                     return (
                                                         <span key={kId} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 text-[#9E1B28] border border-red-200 rounded-lg text-xs font-bold">
                                                             <GraduationCap className="w-3 h-3 shrink-0" />
-                                                            <span className="truncate max-w-[180px]">{kObj?.kode_dosen} - {kObj?.nama_lengkap}</span>
+                                                            <span className="truncate max-w-[180px]">{kObj?.kode_dosen ? `${kObj.kode_dosen} - ` : ''}{kObj?.nama_lengkap}</span>
                                                             <button type="button" onClick={() => handleToggleCoordinator(mkId, kId)} className="text-red-400 hover:text-red-700 transition-colors cursor-pointer">
                                                                 <X className="w-3 h-3" />
                                                             </button>
@@ -350,7 +350,7 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
                                                     return (
                                                         <span key={vId} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg text-xs font-bold">
                                                             <Shield className="w-3 h-3 shrink-0 text-blue-600" />
-                                                            <span className="truncate max-w-[180px]">{vObj?.kode_dosen} - {vObj?.nama_lengkap}</span>
+                                                            <span className="truncate max-w-[180px]">{vObj?.kode_dosen ? `${vObj.kode_dosen} - ` : ''}{vObj?.nama_lengkap}</span>
                                                             <button type="button" onClick={() => handleToggleVerifikator(mkId, vId)} className="text-blue-400 hover:text-red-500 transition-colors cursor-pointer">
                                                                 <X className="w-3 h-3" />
                                                             </button>
@@ -689,7 +689,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                                     {mk.koordinator_list.map((k) => (
                                                         <div key={k.id} className="flex items-center justify-between gap-1 group">
                                                             <div>
-                                                                <span className="font-bold text-gray-800 block">{k.kode_dosen}</span>
+                                                                <span className="font-bold text-gray-800 block">{k.kode_dosen || '-'}</span>
                                                                 <span className="text-[11px] text-gray-500">{k.nama_lengkap}</span>
                                                             </div>
                                                             {kelompok.status !== 'CLOSED' && (
@@ -707,7 +707,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                             ) : mk.koordinator ? (
                                                 <div className="flex items-center justify-between gap-1 group">
                                                     <div>
-                                                        <span className="font-bold text-gray-800 block">{mk.koordinator?.kode_dosen}</span>
+                                                        <span className="font-bold text-gray-800 block">{mk.koordinator?.kode_dosen || '-'}</span>
                                                         <span className="text-[11px] text-gray-500">{mk.koordinator?.nama_lengkap}</span>
                                                     </div>
                                                     {kelompok.status !== 'CLOSED' && (
@@ -730,7 +730,7 @@ export default function KelompokVerifikasiShow({ kelompok, mkListStats, verifika
                                                     {mk.verifikator_list.map((v) => (
                                                         <div key={v.id} className="flex items-center justify-between gap-1 group">
                                                             <div>
-                                                                <span className="font-bold text-gray-800 block">{v.kode_dosen}</span>
+                                                                <span className="font-bold text-gray-800 block">{v.kode_dosen || '-'}</span>
                                                                 <span className="text-[11px] text-gray-500">{v.nama_lengkap}</span>
                                                             </div>
                                                             {kelompok.status !== 'CLOSED' && (

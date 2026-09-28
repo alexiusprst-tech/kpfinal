@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { FileCheck, Eye } from 'lucide-react';
 
@@ -101,10 +101,10 @@ export default function VerifikatorSoalIndex({ soalList, filters }) {
                                         <td className="px-5 py-4"><StatusBadge status={soal.status} /></td>
                                         <td className="px-5 py-4">
                                             <div className="flex items-center justify-end">
-                                                <a href={`/verifikator/soal/${soal.id}`}
+                                                <Link href={`/verifikator/soal/${soal.id}`}
                                                     className="flex items-center gap-1 px-2.5 py-1.5 bg-[#9E1B28] text-white rounded-lg text-xs font-semibold hover:bg-[#801720] transition-colors">
                                                     <Eye className="w-3 h-3" /> Tinjau
-                                                </a>
+                                                </Link>
                                             </div>
                                         </td>
                                     </tr>

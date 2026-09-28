@@ -129,11 +129,12 @@ export default function KoordinatorSoalIndex({ soalList, assignments, kategoriAl
         fd.append('file', revisiFile);
         if (revisiCatatan) fd.append('catatan', revisiCatatan);
         router.post(`/koordinator/revisi/${showRevisi.id}`, fd, {
-            onFinish: () => { setProcessing(false); setShowRevisi(null); setRevisiFile(null); setRevisiCatatan(''); },
+            onSuccess: () => { setShowRevisi(null); setRevisiFile(null); setRevisiCatatan(''); },
             onError: (errs) => {
                 const msg = Object.values(errs)[0] || 'Gagal mengunggah revisi.';
-                showAlert('error', 'Gagal', msg);
-            }
+                showAlert({ title: 'Gagal', text: msg, icon: 'error' });
+            },
+            onFinish: () => setProcessing(false),
         });
     };
 
