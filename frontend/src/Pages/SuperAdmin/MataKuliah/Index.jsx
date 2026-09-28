@@ -31,6 +31,7 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
     const [status, setStatus] = useState(filters.status || '');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editMk, setEditMk] = useState(null);
+    const [deleteMk, setDeleteMk] = useState(null);
 
     // Real-time reactive search & filtering with 250ms debounce
     useEffect(() => {
@@ -57,6 +58,22 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
         setStatus('');
         router.get('/superadmin/mata-kuliah', {}, { preserveState: true, preserveScroll: true });
     };
+
+    useEffect(() => {
+        const hasOpenModal = isCreateOpen || editMk || deleteMk;
+        if (!hasOpenModal) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                if (isCreateOpen) setIsCreateOpen(false);
+                if (editMk) setEditMk(null);
+                if (deleteMk) setDeleteMk(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isCreateOpen, editMk, deleteMk]);
 
     const createForm = useForm({
         kode_mk: '',
@@ -111,8 +128,6 @@ export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
             },
         });
     };
-
-    const [deleteMk, setDeleteMk] = useState(null);
 
     const handleConfirmDelete = async (mk = deleteMk) => {
         if (!mk) return;

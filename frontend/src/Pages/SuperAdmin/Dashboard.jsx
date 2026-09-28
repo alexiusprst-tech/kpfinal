@@ -143,6 +143,17 @@ export default function Dashboard({
     const [reportType, setReportType] = useState('rekap');
     const [isExporting, setIsExporting] = useState(false);
 
+    useEffect(() => {
+        if (!showReportModal) return;
+        const handleKeyDown = (e) => {
+            if ((e.key === 'Escape' || e.key === 'Esc') && !isExporting) {
+                setShowReportModal(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showReportModal, isExporting]);
+
     const displayedPeriods = useMemo(() => {
         if (periodFilter === 'ACTIVE_ONLY') {
             return allPeriods.filter((p) => p.status === 'ACTIVE');

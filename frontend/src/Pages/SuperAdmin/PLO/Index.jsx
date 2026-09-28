@@ -113,6 +113,23 @@ export default function PloIndex({ ploList, filters }) {
         { number: 5, label: 'Berhasil' },
     ];
 
+    useEffect(() => {
+        const hasOpenModal = isImportOpen || deletePlo || isCreateOpen || editPlo;
+        if (!hasOpenModal) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                if (isImportOpen) setIsImportOpen(false);
+                if (deletePlo) setDeletePlo(null);
+                if (isCreateOpen) setIsCreateOpen(false);
+                if (editPlo) setEditPlo(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isImportOpen, deletePlo, isCreateOpen, editPlo]);
+
     // ─── Handlers ─────────────────────────────────────────────────────────────
     const handleCreateSubmit = (e) => {
         e.preventDefault();

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
@@ -26,6 +26,17 @@ import { showConfirm } from '@/Utils/sweetalert';
 import { formatDate, formatDateTime, relativeTime } from '@/Utils/date';
 
 function Modal({ open, onClose, title, children }) {
+    useEffect(() => {
+        if (!open) return;
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                onClose?.();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [open, onClose]);
+
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -33,7 +44,7 @@ function Modal({ open, onClose, title, children }) {
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
                 <div className="flex items-center justify-between p-5 border-b border-gray-100">
                     <h2 className="text-base font-bold text-gray-800">{title}</h2>
-                    <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"><X className="w-4 h-4" /></button>
+                    <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="p-5">{children}</div>
             </div>

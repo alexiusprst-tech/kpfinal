@@ -80,6 +80,16 @@ function AssignmentModal({ kelompok, dosenAll, onClose }) {
     const [mkCoordinatorMap, setMkCoordinatorMap] = useState(buildInitialCoordinatorMap);
     const [mkVerifikatorMap, setMkVerifikatorMap] = useState(buildInitialVerifikatorMap);
 
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                onClose?.();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
     const handleToggleCoordinator = (mkId, dosenId) => {
         if (!dosenId) return;
         setMkCoordinatorMap((prev) => {

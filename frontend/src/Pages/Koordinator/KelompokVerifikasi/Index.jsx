@@ -82,6 +82,16 @@ function TentukanVerifikatorModal({ kelompok, initialMkId = null, dosenAll, onCl
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                onClose?.();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
     // Filter hanya Dosen Tetap
     const dosenTetap = useMemo(() => {
         return dosenAll.filter(

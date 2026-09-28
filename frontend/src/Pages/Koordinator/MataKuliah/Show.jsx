@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
@@ -72,6 +72,17 @@ export default function MataKuliahShow({ mataKuliah, dosenPengampu, periode, sta
     const { flash } = usePage().props;
     const [tab, setTab] = useState('soal');
     const [confirmSoal, setConfirmSoal] = useState(null);
+
+    useEffect(() => {
+        if (!confirmSoal) return;
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                setConfirmSoal(null);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [confirmSoal]);
 
     const ploGroups = useMemo(() => {
         const plosMap = new Map();

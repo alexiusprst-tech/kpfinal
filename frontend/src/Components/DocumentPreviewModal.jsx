@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     X,
     Download,
@@ -23,6 +23,17 @@ export default function DocumentPreviewModal({ open, onClose, fileName, previewU
     const isPdf = ext === 'pdf';
     const isDocx = ext === 'docx';
     const isLegacyDoc = ext === 'doc';
+
+    useEffect(() => {
+        if (!open) return;
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                onClose?.();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [open, onClose]);
 
     useEffect(() => {
         if (!open) {

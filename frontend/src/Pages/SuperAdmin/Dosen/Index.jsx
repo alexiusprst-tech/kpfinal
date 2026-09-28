@@ -60,6 +60,24 @@ export default function Index({ dosenList, filters }) {
         router.get('/superadmin/dosen', {}, { preserveState: true, preserveScroll: true });
     };
 
+    useEffect(() => {
+        const hasOpenModal = isCreateOpen || editDosen || deleteDosen || revokeDosen || passwordDosen;
+        if (!hasOpenModal) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                if (isCreateOpen) setIsCreateOpen(false);
+                if (editDosen) setEditDosen(null);
+                if (deleteDosen) setDeleteDosen(null);
+                if (revokeDosen) setRevokeDosen(null);
+                if (passwordDosen) setPasswordDosen(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isCreateOpen, editDosen, deleteDosen, revokeDosen, passwordDosen]);
+
     const createForm = useForm({
         kode_dosen: '',
         nip: '',

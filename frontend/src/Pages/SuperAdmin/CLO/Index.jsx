@@ -71,6 +71,162 @@ function Stepper({ steps, activeStep }) {
 
 // ─── Toast ─────────────────────────────────────────────────────────────────────
 
+// ─── Custom PLO Select Dropdown ───────────────────────────────────────────
+function PloSelectDropdown({ allPlo, value, onChange }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const containerRef = useRef(null);
+
+    const selectedPlo = allPlo.find(p => String(p.id) === String(value));
+
+    const filteredPlo = allPlo.filter(p => {
+        const text = `${p.kode_plo} ${p.deskripsi || ''}`.toLowerCase();
+        return text.includes(search.toLowerCase());
+    });
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setSearch('');
+            return;
+        }
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                e.stopPropagation();
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown, true);
+        return () => window.removeEventListener('keydown', handleKeyDown, true);
+    }, [isOpen]);
+
+    return (
+        <div className="relative w-full" ref={containerRef}>
+            {/* Trigger Button */}
+            <button
+                type="button"
+                onClick={() => setIsOpen(prev => !prev)}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 border rounded-xl text-xs outline-none bg-white text-left transition-all ${
+                    isOpen
+                        ? 'border-[#9E1B28] ring-2 ring-[#9E1B28]/20 shadow-xs'
+                        : selectedPlo
+                        ? 'border-gray-300 hover:border-gray-400 text-gray-900 font-semibold'
+                        : 'border-gray-300 hover:border-gray-400 text-gray-400'
+                } cursor-pointer`}
+            >
+                <div className="flex items-center gap-2 min-w-0 pr-2">
+                    {selectedPlo ? (
+                        <>
+                            <span className="px-2 py-0.5 rounded-md bg-[#9E1B28] text-white font-bold text-[11px] shrink-0 shadow-xs">
+                                {selectedPlo.kode_plo}
+                            </span>
+                            <span className="truncate text-xs font-semibold text-gray-800">
+                                {selectedPlo.deskripsi || '-'}
+                            </span>
+                        </>
+                    ) : (
+                        <span className="text-gray-400 font-normal">-- Pilih Program Learning Outcome (PLO) --</span>
+                    )}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {selectedPlo && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onChange('');
+                            }}
+                            className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-red-500 transition-colors"
+                            title="Hapus Pilihan"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#9E1B28]' : ''}`} />
+                </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            {isOpen && (
+                <div className="absolute z-50 w-full left-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in duration-100 max-h-72">
+                    {/* Search Bar */}
+                    <div className="p-2.5 border-b border-gray-100 flex items-center gap-2 bg-slate-50/80">
+                        <Search className="w-3.5 h-3.5 text-gray-400 shrink-0 ml-1" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Cari kode atau kata kunci PLO..."
+                            className="w-full text-xs outline-none border-none bg-transparent focus:ring-0 p-0 text-gray-800 placeholder-gray-400 font-medium"
+                            autoFocus
+                        />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={() => setSearch('')}
+                                className="p-1 text-gray-400 hover:text-gray-600 rounded cursor-pointer"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Options List */}
+                    <div className="overflow-y-auto flex-1 divide-y divide-gray-50 p-1.5 space-y-1">
+                        {filteredPlo.length === 0 ? (
+                            <div className="px-4 py-6 text-xs text-gray-400 text-center italic">
+                                PLO tidak ditemukan
+                            </div>
+                        ) : (
+                            filteredPlo.map(plo => {
+                                const isSelected = String(plo.id) === String(value);
+                                return (
+                                    <button
+                                        key={plo.id}
+                                        type="button"
+                                        onClick={() => {
+                                            onChange(plo.id);
+                                            setIsOpen(false);
+                                        }}
+                                        className={`w-full text-left p-2.5 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer ${
+                                            isSelected
+                                                ? 'bg-[#9E1B28]/10 text-[#9E1B28] border border-[#9E1B28]/20'
+                                                : 'hover:bg-slate-50 text-gray-800 border border-transparent'
+                                        }`}
+                                    >
+                                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0 mt-0.5 ${
+                                            isSelected ? 'bg-[#9E1B28] text-white' : 'bg-rose-50 text-[#9E1B28] border border-rose-100'
+                                        }`}>
+                                            {plo.kode_plo}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs leading-relaxed text-gray-700 font-normal whitespace-normal break-words">
+                                                {plo.deskripsi || '-'}
+                                            </p>
+                                        </div>
+                                        {isSelected && (
+                                            <Check className="w-4 h-4 text-[#9E1B28] shrink-0 mt-0.5" />
+                                        )}
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ─── CLO Form (tambah/edit manual dengan alur berurutan) ────────────────────
 function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
     const [mkSearch, setMkSearch] = useState('');
@@ -80,6 +236,7 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
     );
 
     const selectedPloId = (form.plo_ids && form.plo_ids.length > 0) ? form.plo_ids[0] : '';
+    const selectedPloObj = allPlo.find(p => String(p.id) === String(selectedPloId));
     const isPloSelected = Boolean(selectedPloId);
 
     const toggleMk = (id) => {
@@ -99,22 +256,25 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
                         </span>
                     )}
                 </label>
-                <select
+                
+                <PloSelectDropdown
+                    allPlo={allPlo}
                     value={selectedPloId}
-                    onChange={e => {
-                        const val = e.target.value;
+                    onChange={(val) => {
                         setForm(f => ({ ...f, plo_ids: val ? [val] : [] }));
                     }}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#9E1B28]/20 focus:border-[#9E1B28] outline-none bg-white transition-all font-medium text-gray-800"
-                    required
-                >
-                    <option value="">-- Pilih PLO --</option>
-                    {allPlo.map(plo => (
-                        <option key={plo.id} value={plo.id}>
-                            {plo.kode_plo} {plo.deskripsi ? `— ${plo.deskripsi}` : ''}
-                        </option>
-                    ))}
-                </select>
+                />
+
+                {selectedPloObj && (
+                    <div className="mt-2 p-3 bg-red-50/40 rounded-xl border border-red-100/70 text-xs text-slate-700">
+                        <div className="flex items-center gap-1.5 font-bold text-[#9E1B28] mb-1">
+                            <span className="px-2 py-0.5 bg-[#9E1B28] text-white rounded text-[10px]">{selectedPloObj.kode_plo}</span>
+                            <span>Deskripsi Lengkap PLO:</span>
+                        </div>
+                        <p className="leading-relaxed text-slate-600 text-xs">{selectedPloObj.deskripsi}</p>
+                    </div>
+                )}
+                
                 <p className="text-[11px] text-gray-400 mt-1">Pilih capaian PLO yang menjadi acuan penyusunan CLO ini.</p>
             </div>
 
@@ -246,6 +406,17 @@ function CloForm({ form, setForm, allPlo, allMk, onSubmit, processing }) {
 
 // ─── Modal Wrapper ─────────────────────────────────────────────────────────────
 function Modal({ open, onClose, title, children }) {
+    useEffect(() => {
+        if (!open) return;
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                onClose?.();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [open, onClose]);
+
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -253,7 +424,7 @@ function Modal({ open, onClose, title, children }) {
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-5 border-b border-gray-100">
                     <h2 className="text-base font-bold text-gray-800">{title}</h2>
-                    <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500"><X className="w-4 h-4" /></button>
+                    <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="p-5">{children}</div>
             </div>
@@ -316,6 +487,17 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
 
     // Import wizard states
     const [isImportOpen, setIsImportOpen] = useState(false);
+
+    useEffect(() => {
+        if (!isImportOpen) return;
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                setIsImportOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isImportOpen]);
     const [activeStep, setActiveStep] = useState(1);
     const [selectedFile, setSelectedFile] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -361,6 +543,14 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
 
     const handleAdd = (e) => {
         e.preventDefault();
+        if (!form.plo_ids || form.plo_ids.length === 0) {
+            showAlert({
+                title: 'Pilih PLO Terlebih Dahulu',
+                text: 'Silakan pilih Program Learning Outcome (PLO) yang sesuai sebelum menyimpan CLO.',
+                icon: 'warning',
+            });
+            return;
+        }
         setProcessing(true);
         router.post('/superadmin/clo', form, {
             onSuccess: () => { setShowAddModal(false); setForm({ kode_clo: '', deskripsi: '', bloom: '', plo_ids: [], mk_ids: [] }); },
@@ -370,6 +560,14 @@ export default function CloIndex({ cloList, allPlo = [], allMk = [], flatMapping
 
     const handleEdit = (e) => {
         e.preventDefault();
+        if (!form.plo_ids || form.plo_ids.length === 0) {
+            showAlert({
+                title: 'Pilih PLO Terlebih Dahulu',
+                text: 'Silakan pilih Program Learning Outcome (PLO) yang sesuai sebelum menyimpan perubahan CLO.',
+                icon: 'warning',
+            });
+            return;
+        }
         setProcessing(true);
         router.put(`/superadmin/clo/${editItem.id}`, form, {
             onSuccess: () => setEditItem(null),

@@ -47,6 +47,17 @@ function StatCard({ label, value, icon: Icon, badgeBg = 'bg-slate-800' }) {
 
 // ─── Generic Modal ────────────────────────────────────────────────────────────
 function Modal({ open, onClose, title, children, maxWidth = 'max-w-lg' }) {
+    useEffect(() => {
+        if (!open) return;
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                onClose?.();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [open, onClose]);
+
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
