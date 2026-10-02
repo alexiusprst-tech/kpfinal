@@ -9,7 +9,6 @@ import {
     RefreshCw,
     Clock,
     History,
-    User,
     Calendar,
     BookOpen,
     Eye,

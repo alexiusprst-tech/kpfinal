@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import React from 'react';
+import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     FileText,
@@ -20,8 +20,6 @@ export default function BeritaAcaraIndex({
     assignments = [],
     history = []
 }) {
-    const { flash } = usePage().props;
-
     const formatDate = (dateStr) => {
         if (!dateStr) return '—';
         return new Date(dateStr).toLocaleDateString('id-ID', {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { FileCheck, Eye } from 'lucide-react';
 
@@ -31,7 +31,6 @@ const STATUS_FILTERS = [
 ];
 
 export default function VerifikatorSoalIndex({ soalList, filters }) {
-    const { flash } = usePage().props;
     const [statusFilter, setStatusFilter] = useState(filters?.status || '');
 
     const handleFilter = (s) => {

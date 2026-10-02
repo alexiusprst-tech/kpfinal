@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     ArrowLeft,
@@ -23,7 +23,6 @@ function formatSize(bytes) {
 import { showAlert, showConfirm } from '@/Utils/sweetalert';
 
 export default function SoalRevisi({ soal, catatan, cloFeedback, verifikator }) {
-    const { flash } = usePage().props;
     const [step, setStep] = useState('form');
     const [clientError, setClientError] = useState('');
     const [dragOver, setDragOver] = useState(false);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 import { showAlert, showConfirm } from '@/Utils/sweetalert';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 
 import axios from 'axios';
 import {
@@ -23,15 +23,8 @@ import {
     FileText,
     Pencil,
     Save,
-    RotateCcw,
-    Users
+    RotateCcw
 } from 'lucide-react';
-
-// ─── Bloom options ────────────────────────────────────────────────────────────
-const BLOOM_OPTIONS = [
-    '1 - Remember', '2 - Understand', '3 - Apply',
-    '4 - Analyze', '5 - Evaluate', '6 - Create',
-];
 
 // ─── Stepper ──────────────────────────────────────────────────────────────────
 function Stepper({ steps, activeStep }) {
@@ -66,7 +59,6 @@ function Stepper({ steps, activeStep }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function PloIndex({ ploList, filters }) {
-    const { flash } = usePage().props;
     const [search, setSearch] = useState(filters.search || '');
 
     // Real-time reactive search with 300ms debounce

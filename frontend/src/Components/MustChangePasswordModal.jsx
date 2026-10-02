@@ -61,8 +61,6 @@ export default function MustChangePasswordModal({ open }) {
     const isMatchValid = data.password.length > 0 && data.password === data.password_confirmation;
 
     const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'D';
-    const kodeDosen = user?.dosen?.kode_dosen || '101010';
-    const nip = user?.dosen?.nip;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto overscroll-contain">

@@ -11,7 +11,6 @@ use App\Models\KelompokMataKuliah;
 use App\Models\KelompokVerifikasi;
 use App\Models\KelompokVerifikator;
 use App\Models\Notification;
-use App\Models\PenugasanVerifikator;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -272,7 +271,7 @@ class KelompokVerifikasiController extends Controller
                     }
 
                     // Sync semua penugasan operasional (koordinator + verifikator)
-                    $superAdminController = new \App\Http\Controllers\SuperAdmin\KelompokVerifikasiController();
+                    $superAdminController = new SuperAdminKelompokController();
                     $superAdminController->syncOperationalAssignmentsPublic($kelompokVerifikasi, $user->id);
 
                     // Notifikasi Super Admin jika baru aktif pertama kali

@@ -168,7 +168,7 @@ function NavLink({ item, collapsed }) {
 }
 
 export default function AuthenticatedLayout({ children, title = "Beranda" }) {
-    const { auth, activePeriod, flash } = usePage().props;
+    const { auth, flash } = usePage().props;
     const user = auth?.user;
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

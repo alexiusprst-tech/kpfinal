@@ -1,15 +1,10 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
 
 Artisan::command('auth:reset-all-passwords {--force : Jalankan tanpa meminta konfirmasi}', function () {
     $force = $this->option('force');

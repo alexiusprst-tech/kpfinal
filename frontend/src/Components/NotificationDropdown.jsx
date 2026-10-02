@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { usePage, router } from '@inertiajs/react';
 import { Bell, Inbox, Mail } from 'lucide-react';
 
@@ -26,7 +26,7 @@ const AVATAR_GRADIENTS = [
 ];
 
 export default function NotificationDropdown({ align = 'right', className = '' }) {
-    const { auth, notifications } = usePage().props;
+    const { notifications } = usePage().props;
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -76,14 +76,6 @@ export default function NotificationDropdown({ align = 'right', className = '' }
             preserveScroll: true,
             preserveState: true,
         });
-    };
-
-    const getAvatarInitials = (title = '') => {
-        const words = title.trim().split(' ');
-        if (words.length >= 2) {
-            return (words[0][0] + words[1][0]).toUpperCase();
-        }
-        return title.substring(0, 2).toUpperCase() || 'NT';
     };
 
     return (
@@ -166,7 +158,6 @@ export default function NotificationDropdown({ align = 'right', className = '' }
                             ) : (
                                 notifList.map((notif, index) => {
                                     const gradClass = AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length];
-                                    const initials = getAvatarInitials(notif.title);
 
                                     return (
                                         <div

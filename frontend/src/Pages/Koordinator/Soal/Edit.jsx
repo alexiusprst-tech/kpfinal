@@ -1,5 +1,5 @@
-﻿import React, { useRef, useState } from 'react';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import React, { useRef, useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     ArrowLeft,
@@ -20,7 +20,6 @@ function formatSize(bytes) {
 
 
 export default function SoalEdit({ soal, kategoriAll }) {
-    const { flash } = usePage().props;
     const [clientError, setClientError] = useState('');
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef(null);

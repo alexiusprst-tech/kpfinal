@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { showConfirm, showAlert, showToast } from '@/Utils/sweetalert';
 import {
     FolderKanban, Clock, Play, CheckCircle2, AlertCircle,
-    Shield, GraduationCap, BookOpen, ChevronDown, ChevronUp,
-    Users, X, Info, Plus, Search, Check, Sparkles, Pencil, Edit3
+    Shield, BookOpen, ChevronDown, ChevronUp,
+    Users, X, Info, Plus, Search, Check, Sparkles, Pencil
 } from 'lucide-react';
 
 const STATUS_CONFIG = {

@@ -21,7 +21,6 @@ import {
     History,
     CalendarClock,
     Flag,
-    CheckCircle,
     Clock
 } from 'lucide-react';
 

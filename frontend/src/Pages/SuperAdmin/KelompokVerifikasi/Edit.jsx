@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { showToast, showAlert } from '@/Utils/sweetalert';
 import SearchableSelect from '@/Components/SearchableSelect';
@@ -26,7 +26,6 @@ export default function KelompokVerifikasiEdit({
     activeKoordinatorList = [],
     activeVerifikatorList = [],
 }) {
-    const { errors, flash } = usePage().props;
     const [submitting, setSubmitting] = useState(false);
     const [copyNotification, setCopyNotification] = useState('');
 

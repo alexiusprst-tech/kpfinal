@@ -12,14 +12,11 @@ import {
     RefreshCw,
     FileText,
     Search,
-    User,
     Filter,
-    Check,
     Printer,
     FilePlus2,
     Activity as ActivityIcon
 } from 'lucide-react';
-import NotificationDropdown from '@/Components/NotificationDropdown';
 import StatCard from '@/Components/StatCard';
 import { relativeTime } from '@/Utils/date';
 
@@ -44,10 +41,9 @@ function StatusBadge({ status }) {
 }
 
 export default function VerifikatorDashboard({ auth, activePeriod, stats, pendingSoal = [], assignments = [], recentVerifikasis = [], activity = [], noAssignmentMessage }) {
-    const { notifications, auth: pageAuth } = usePage().props;
+    const { auth: pageAuth } = usePage().props;
     const currentUser = auth?.user || pageAuth?.user;
     const userName = currentUser?.name || 'Bapak/Ibu Verifikator';
-    const notifCount = notifications?.count || 0;
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedMk, setSelectedMk] = useState('ALL');
 

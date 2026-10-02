@@ -46,7 +46,7 @@ class SoalController extends Controller
 
         $isAssigned = $this->isAssignedVerifikator($dosen, $soal);
 
-        if (!$isAssigned) {
+        if (!$isAssigned && !$user->isSuperAdmin()) {
             abort(403, 'Anda tidak memiliki akses verifikasi untuk mata kuliah ini.');
         }
 

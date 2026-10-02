@@ -27,8 +27,7 @@ import {
     ChevronRight,
     ChevronDown,
     BookOpen,
-    Layers,
-    Filter
+    Layers
 } from 'lucide-react';
 
 // ─── Bloom options ────────────────────────────────────────────────────────────

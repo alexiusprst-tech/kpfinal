@@ -61,8 +61,7 @@ function relativeTime(dateStr) {
 const PER_PAGE = 6;
 
 export default function KoordinatorDashboard({ activePeriod, deadline, stats, mataKuliahList = [], attention = [], verifikators = [], cloPloOverview = [], activity = [], noAssignmentMessage, kelompokButuhVerifikator = [] }) {
-    const { auth, notifications } = usePage().props;
-    const notifCount = notifications?.count || 0;
+    const { auth } = usePage().props;
     const userName = auth?.user?.name || 'Koordinator';
     const kodeDosen = auth?.user?.dosen?.kode_dosen;
 

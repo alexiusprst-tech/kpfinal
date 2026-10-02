@@ -14,20 +14,6 @@ use Inertia\Inertia;
 
 class MataKuliahController extends Controller
 {
-    private static array $activityLabels = [
-        'UPLOAD_SOAL'                 => 'mengunggah soal baru',
-        'SUBMIT_SOAL'                 => 'men-submit soal untuk verifikasi',
-        'UPLOAD_REVISI'               => 'mengunggah revisi soal',
-        'UPDATE_SOAL'                 => 'memperbarui data soal',
-        'DELETE_SOAL'                 => 'menghapus soal',
-        'CHANGE_PASSWORD'             => 'mengubah kata sandi akun',
-        'VERIFIKASI_APPROVED'         => 'menyetujui soal',
-        'VERIFIKASI_REVISION'         => 'meminta revisi atas soal',
-        'BERITA_ACARA_CREATED'        => 'mengunduh berita acara verifikasi',
-        'BERITA_ACARA_ALL_DOWNLOADED' => 'mengunduh semua berita acara',
-        'BERITA_ACARA_SOAL_DOWNLOADED'=> 'mengunduh berita acara soal',
-    ];
-
     public function show(Request $request, MataKuliah $mataKuliah)
     {
         $user  = $request->user();

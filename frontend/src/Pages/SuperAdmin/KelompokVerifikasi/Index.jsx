@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    ArrowLeft,
     Plus,
     Pencil,
     Eye,
@@ -67,7 +66,6 @@ export default function KelompokVerifikasiIndex({
     dosenList = [], 
     filters = {} 
 }) {
-    const { flash } = usePage().props;
     const [search, setSearch] = useState(filters?.search || '');
     const [openMenuId, setOpenMenuId] = useState(null);
     const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });

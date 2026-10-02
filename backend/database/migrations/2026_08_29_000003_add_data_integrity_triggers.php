@@ -11,9 +11,11 @@ return new class extends Migration
      * PostgreSQL-specific (PL/pgSQL is not available on SQLite), so — like
      * the earlier partial-unique-index migration for penugasan — this is
      * gated to the pgsql driver and is a no-op under the SQLite-backed test
-     * suite. That is a known, pre-existing limitation of this approach (see
-     * RE_AUDIT_2026-08-29.md): these protections are not exercised by
-     * automated tests, only enforced live in Postgres.
+     * suite. That is a known, pre-existing limitation of this approach:
+     * these protections are not exercised by automated tests, only enforced
+     * live in Postgres. See 2026_09_28_000002_add_sqlite_data_integrity_triggers.php
+     * for the narrower SQLite-compatible equivalent used in tests, and
+     * docs/AUDIT_2026-09-30.md for the audit that reviewed this design.
      */
     public function up(): void
     {

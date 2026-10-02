@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { showToast, showAlert } from '@/Utils/sweetalert';
 import SearchableSelect from '@/Components/SearchableSelect';
@@ -12,7 +12,6 @@ import {
     ArrowLeft,
     ArrowRight,
     Save,
-    Play,
     BookOpen,
     Shield,
     Search,
@@ -34,8 +33,6 @@ export default function Create({
     activeKoordinatorList = [],
     activeVerifikatorList = [],
 }) {
-    const { errors, flash } = usePage().props;
-
     // Current Wizard Step: 1 = Periode, 2 = Mata Kuliah, 3 = Koordinator per MK + Review & Simpan
     const [step, setStep] = useState(1);
 

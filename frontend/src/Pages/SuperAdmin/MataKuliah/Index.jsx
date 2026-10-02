@@ -4,8 +4,7 @@ import {
     Head,
     useForm,
     router,
-    Link,
-    usePage
+    Link
 } from '@inertiajs/react';
 import {
     BookOpen,
@@ -19,13 +18,11 @@ import {
     Target,
     Activity,
     X,
-    Filter,
     Eye
 } from 'lucide-react';
 import { showConfirm } from '@/Utils/sweetalert';
 
 export default function Index({ mataKuliahList, allPlo, allClo, filters }) {
-    const { flash } = usePage().props;
     const [search, setSearch] = useState(filters.search || '');
     const [semester, setSemester] = useState(filters.semester || '');
     const [status, setStatus] = useState(filters.status || '');

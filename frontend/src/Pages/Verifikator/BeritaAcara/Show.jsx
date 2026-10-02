@@ -8,7 +8,6 @@ import {
     Clock,
     Download,
     BookOpen,
-    User,
     Calendar,
     Award,
     AlertCircle,

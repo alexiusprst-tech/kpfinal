@@ -6,7 +6,6 @@ import {
     BookOpen,
     CheckCircle2,
     Copy,
-    Edit,
     GraduationCap,
     History,
     Lock,

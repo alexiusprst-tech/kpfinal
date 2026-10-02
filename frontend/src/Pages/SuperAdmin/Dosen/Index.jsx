@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 import { showConfirm } from '@/Utils/sweetalert';
-import { Head, useForm, router, usePage } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 
 import {
     Plus,
@@ -15,7 +15,6 @@ import {
     ShieldAlert,
     AlertTriangle,
     X,
-    Filter,
     UserMinus,
     AlertCircle,
     Key,
@@ -23,7 +22,6 @@ import {
 } from 'lucide-react';
 
 export default function Index({ dosenList, filters }) {
-    const { flash } = usePage().props;
     const [search, setSearch] = useState(filters.search || '');
     const [kategori, setKategori] = useState(filters.kategori || '');
     const [status, setStatus] = useState(filters.status || '');
